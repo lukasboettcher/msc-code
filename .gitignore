@@ -1,3 +1,4 @@
 build/
 *.ll
 *.bc
+venv/
