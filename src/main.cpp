@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     /// Build Program Assignment Graph (SVFIR)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
-    // pag->dump("graph");
+    pag->dump("graph");
 
     ofstream edge_stream, meta_stream;
     edge_stream.open("edges.txt");
