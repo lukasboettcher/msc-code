@@ -1,11 +1,15 @@
+import sys
+import graphviz
 # Addr, Copy, Store, Load, Call, Ret, Gep, Phi, Select, Cmp, BinaryOp, UnaryOp, Branch, ThreadFork, ThreadJoin
-with open('edges.txt') as file:
+edges = []
+with open(sys.argv[1]) as file:
     lines = file.readlines()
     unique_types = set()
     for line in lines:
-        src, _, dst, type = line.split()
-        # print(f"{src} {dst} {type}")
-        if type == '9':
-            print(f"{src} {dst}")
-        unique_types.add(int(type))
-    print(sorted(unique_types))
+        edges.append(line.split())
+    
+    # create pdf graph for all load/store edges
+    dot = graphviz.Digraph()
+    for e in [e for e in edges if e[3] in ['2','3']]:
+        dot.edge(e[0], e[2], label=e[3])
+    dot.render()
