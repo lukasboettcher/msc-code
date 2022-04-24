@@ -10,6 +10,19 @@ class Edge:
         self.dst = dst
         self.type = type
         # self.name = name
+class Node:
+    def __init__(self, id, name) -> None:
+        self.name = name
+        self.id = id
+        self.out_edges:Set[Edge] = set()
+
+    def add_out_edge(self, edge: Edge):
+        assert(edge.src == self.id)
+        if not edge in self.out_edges:
+            self.out_edges.add(edge)
+
+    def get_out_edges(self) -> Set[Edge]:
+        return self.out_edges
 
 class LLVM2GRAPH:
     def __init__(self, GV=False):
