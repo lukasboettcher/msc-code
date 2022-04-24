@@ -4,6 +4,12 @@ import graphviz
 from typing import List, Dict, Any, Tuple, Set
 from itertools import combinations
 
+class Edge:
+    def __init__(self, src: int, dst: int, type: Any) -> None:
+        self.src = src
+        self.dst = dst
+        self.type = type
+        # self.name = name
 
 class LLVM2GRAPH:
     def __init__(self, GV=False):
