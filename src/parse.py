@@ -30,6 +30,18 @@ class Graph:
         self.edges: Set[Edge] = []
         self.nodeTCtr = 0
 
+    def add_or_get_node(self, name: str) -> int:
+        if not name in self.name2id:
+            self.name2id[name] = self.nodeTCtr
+            self.nodeTCtr +=1
+            id = self.name2id[name]
+            assert(not self.name2id[name] in self.id2node)
+            self.id2node[id] = Node(id=id, name=name)
+            return id
+        else:
+            assert(self.name2id[name] in self.id2node)
+            id = self.name2id[name]
+            return id
 class LLVM2GRAPH:
     def __init__(self, GV=False):
         self.graphPath = sys.argv[1]
