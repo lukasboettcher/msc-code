@@ -42,6 +42,14 @@ class Graph:
             assert(self.name2id[name] in self.id2node)
             id = self.name2id[name]
             return id
+        
+    def clone_out_edges(self, id_a: int, id_b: int):
+        a, b = self.id2node[id_a], self.id2node[id_b]
+        # add all edges only in a to b
+        for e in a.get_out_edges() - b.get_out_edges():
+            self.add_edge(b.id, e.dst, e.type)
+        for e in b.get_out_edges() - a.get_out_edges():
+            self.add_edge(a.id, e.dst, e.type)
 
     def add_edge(self, src: int, dst: int, type: Any) -> None:
         new_edge = Edge(src, dst, type)
