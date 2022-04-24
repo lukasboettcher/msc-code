@@ -1,6 +1,8 @@
+from __future__ import annotations
 import sys
 import graphviz
 from typing import List, Dict, Any, Tuple, Set
+from itertools import combinations
 
 
 class LLVM2GRAPH:
