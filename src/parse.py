@@ -23,6 +23,12 @@ class Node:
 
     def get_out_edges(self) -> Set[Edge]:
         return self.out_edges
+class Graph:
+    def __init__(self) -> None:
+        self.name2id: Dict[str, int] = {}
+        self.id2node: Dict[int, Node] = {}
+        self.edges: Set[Edge] = []
+        self.nodeTCtr = 0
 
 class LLVM2GRAPH:
     def __init__(self, GV=False):
