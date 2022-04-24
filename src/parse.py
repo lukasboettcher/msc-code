@@ -42,6 +42,12 @@ class Graph:
             assert(self.name2id[name] in self.id2node)
             id = self.name2id[name]
             return id
+
+    def add_edge(self, src: int, dst: int, type: Any) -> None:
+        new_edge = Edge(src, dst, type)
+        if not new_edge in self.edges:
+            self.edges.append(new_edge)
+        self.id2node[src].add_out_edge(new_edge)
 class LLVM2GRAPH:
     def __init__(self, GV=False):
         self.graphPath = sys.argv[1]
