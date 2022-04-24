@@ -10,6 +10,17 @@ class Edge:
         self.dst = dst
         self.type = type
         # self.name = name
+    def __str__(self):
+        return f'Edge\t{self.src}\t{self.dst}\t{self.type}'
+    def __repr__(self) -> str:
+        return f'Edge({self.src},{self.dst},{self.type})'
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+    def __hash__(self):
+        return hash((self.src, self.dst, self.type))
+
 class Node:
     def __init__(self, id, name) -> None:
         self.name = name
@@ -23,6 +34,15 @@ class Node:
 
     def get_out_edges(self) -> Set[Edge]:
         return self.out_edges
+    def __str__(self):
+        return f'Node\t{self.id}\t{self.name}'
+    def __repr__(self) -> str:
+        return f'Node({self.id},{self.name})'
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+
 class Graph:
     def __init__(self) -> None:
         self.name2id: Dict[str, int] = {}
