@@ -76,6 +76,31 @@ class Graph:
         if not new_edge in self.edges:
             self.edges.append(new_edge)
         self.id2node[src].add_out_edge(new_edge)
+
+    def print(self):
+        for node in self.id2node.values():
+            print(node)
+        print()
+        for e in self.edges:
+            print(e)
+        print('\n')
+    
+    def print_gv(self):
+        dot = graphviz.Digraph()
+        for e in self.edges:
+            src_name = self.id2node[e.src].name
+            dst_name = self.id2node[e.dst].name
+            dot.edge(src_name, dst_name, label=e.type)
+        dot.render()
+
+        
+# g = Graph()
+# ida = g.add_or_get_node('a')
+# idb = g.add_or_get_node('b')
+# ida2 = g.add_or_get_node('a')
+# g.add_edge(ida, idb, 'asdf')
+# g.add_edge(ida, idb, 'asdf')
+
 class LLVM2GRAPH:
     def __init__(self, GV=False):
         self.graphPath = sys.argv[1]
