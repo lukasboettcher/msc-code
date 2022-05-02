@@ -86,13 +86,13 @@ class Graph:
             print(e)
         print('\n')
     
-    def print_gv(self):
+    def print_gv(self, path=None):
         dot = graphviz.Digraph()
         for e in self.edges:
             src_name = self.id2node[e.src].name
             dst_name = self.id2node[e.dst].name
             dot.edge(src_name, dst_name, label=e.type)
-        dot.render()
+        dot.render(filename=path)
 
         
 # g = Graph()
