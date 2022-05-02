@@ -127,11 +127,13 @@ class LLVM2GRAPH:
             self.graph.add_edge(src_addr_id, src_id, 'd')
             self.graph.add_edge(src_id, src_addr_id, '-d')
             self.graph.add_edge(src_addr_id, dst_id, 'a')
+            self.graph.add_edge(dst_id, src_addr_id, '-a')
         elif type == self.LOAD:
             self.graph.add_edge(src_id, dst_id, 'd')
             self.graph.add_edge(dst_id, src_id, '-d')
         elif type == self.CALL:
             self.graph.add_edge(src_id, dst_id, 'a')
+            self.graph.add_edge(dst_id, src_id, '-a')
 
     def run(self):
         with open(self.graphPath) as graphFile:
