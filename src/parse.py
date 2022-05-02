@@ -108,6 +108,7 @@ class LLVM2GRAPH:
         self.graph = Graph()
         self.LOAD = "3"
         self.STORE = "2"
+        self.CALL = "4"
         self.GV = GV
     
     def write_to_file(self, outPath: str):
@@ -128,12 +129,15 @@ class LLVM2GRAPH:
         elif type == self.LOAD:
             self.graph.add_edge(src_id, dst_id, 'd')
             self.graph.add_edge(dst_id, src_id, '-d')
+        elif type == self.CALL:
+            self.graph.add_edge(src_id, dst_id, 'a')
 
     def run(self):
         with open(self.graphPath) as graphFile:
             # add d, -d and a edges to graph for all STORE and LOAD operations
+            # also add a edges for parameter passing
             for src, _, dst, type in [l.split() for l in graphFile.readlines()]:
-                if type in ['2','3']:
+                if type in ['2','3','4']:
                     self.add_to_graph(src, dst, type)
 
         for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
