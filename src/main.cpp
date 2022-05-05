@@ -124,7 +124,7 @@ int main(int argc, char **argv)
         for (auto x : entry.second->getOutEdges())
         {
             // push src dst typ into edges.txt
-            edge_stream << x->getSrcID() << "\t->\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+            edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
         }
     }
 
