@@ -156,12 +156,16 @@ class LLVM2GRAPH:
         self.write_to_file(self.outPath)
 
 
-clang_in = '../src/test.c'
-clang_out = 'out.ll'
 
+clang_in = sys.argv[1]
+clang_out = 'out.ll'
 clang_cmd = f'clang-12 -S -c -Xclang -disable-O0-optnone -fno-discard-value-names -emit-llvm {clang_in} -o {clang_out}'
+
+if not clang_in.split('.')[-1] in ['bc', 'll']:
+    subprocess.run(clang_cmd.split())
+else:
+    clang_out = clang_in
 svf_cmd = f'./main {clang_out}'
-subprocess.run(clang_cmd.split())
 subprocess.run(svf_cmd.split())
 
 graspan_path = '/home/lukas/Documents/Graspan-C'
