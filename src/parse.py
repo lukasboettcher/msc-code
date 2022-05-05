@@ -138,6 +138,9 @@ class LLVM2GRAPH:
             self.graph.add_edge(src_id, dst_id, 'a')
             self.graph.add_edge(dst_id, src_id, '-a')
 
+            # self.graph.add_edge(dst_id, src_id, 'a')
+            # self.graph.add_edge(src_id, dst_id, '-a')
+
     def run(self):
         with open(self.graphPath) as graphFile:
             # add d, -d and a edges to graph for all STORE and LOAD operations
@@ -152,9 +155,24 @@ class LLVM2GRAPH:
 
         self.graph.print()
         if self.GV:
-            self.graph.print_gv()
+            self.graph.print_gv('pre')
         self.write_to_file(self.outPath)
 
+        graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} /home/lukas/Documents/Graspan-C/rules_pointsto 2 12 12 array'
+        print(f'running: {graspam_cmd}')
+        subprocess.run(graspam_cmd.split())
+        print('Reading graspan output edges')
+        with open(self.outPath+'.output') as graspan_out:
+            lines = graspan_out.readlines()
+            for i, (s, d, t) in enumerate([(s,d,t) for s, d, t in map(lambda x: x.split(), lines) if t in ['M', 'V']]):
+                # print(f'{i} of {len(lines)}')
+                self.graph.add_edge(int(s), int(d), t)
+        
+        self.graph.print_file(self.graphPath)
+
+        if self.GV:
+            print('writing graph to file after graspan')
+            self.graph.print_gv('post')
 
 
 clang_in = sys.argv[1]
