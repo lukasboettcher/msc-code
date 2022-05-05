@@ -101,7 +101,7 @@ class Graph:
 
 class LLVM2GRAPH:
     def __init__(self, GV=False):
-        self.graphPath = sys.argv[1]
+        self.graphPath = 'edges.txt'
         self.outPath = self.graphPath + '.modified'
         self.graph = Graph()
         self.LOAD = "3"
