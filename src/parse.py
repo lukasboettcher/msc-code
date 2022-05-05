@@ -90,7 +90,13 @@ class Graph:
             dst_name = self.id2node[e.dst].name
             dot.edge(src_name, dst_name, label=e.type)
         dot.render(filename=path)
-
+    
+    def print_file(self, path):
+        with open(path, "w") as file:
+            for e in self.edges:
+                src_name = self.id2node[e.src].name
+                dst_name = self.id2node[e.dst].name
+                file.write(f'{src_name}\t{dst_name}\t{e.type}\n')
         
 # g = Graph()
 # ida = g.add_or_get_node('a')
