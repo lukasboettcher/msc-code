@@ -142,7 +142,7 @@ class LLVM2GRAPH:
         with open(self.graphPath) as graphFile:
             # add d, -d and a edges to graph for all STORE and LOAD operations
             # also add a edges for parameter passing
-            for src, _, dst, type in [l.split() for l in graphFile.readlines()]:
+            for src, dst, type in [l.split() for l in graphFile.readlines()]:
                 if type in ['2','3','4']:
                     self.add_to_graph(src, dst, type)
 
