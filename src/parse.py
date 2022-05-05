@@ -29,9 +29,7 @@ class Node:
         self.out_edges:Set[Edge] = set()
 
     def add_out_edge(self, edge: Edge):
-        assert(edge.src == self.id)
-        if not edge in self.out_edges:
-            self.out_edges.add(edge)
+        self.out_edges.add(edge)
 
     def get_out_edges(self) -> Set[Edge]:
         return self.out_edges
@@ -74,8 +72,7 @@ class Graph:
 
     def add_edge(self, src: int, dst: int, type: Any) -> None:
         new_edge = Edge(src, dst, type)
-        if not new_edge in self.edges:
-            self.edges.append(new_edge)
+        self.edges.append(new_edge)
         self.id2node[src].add_out_edge(new_edge)
 
     def print(self):
