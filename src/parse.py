@@ -89,7 +89,7 @@ class Graph:
             src_name = self.id2node[e.src].name
             dst_name = self.id2node[e.dst].name
             dot.edge(src_name, dst_name, label=e.type)
-        dot.render(filename=path)
+        dot.render(filename=path, cleanup=True)
     
     def print_file(self, path):
         with open(path, "w") as file:
