@@ -120,6 +120,9 @@ class LLVM2GRAPH:
         with open(outPath, 'w') as outFile:
             if self.GPU:
                 outFile.write(f'{len(self.graph.edges)}\t{self.graph.nodeTCtr}\n')
+            for node in self.graph.id2node.values():
+                for e in node.get_out_edges():
+                    outFile.write(f'{e.src}\t{e.dst}\t{e.type}\n')
 
     def add_to_graph(self, src, dst, type):
 
