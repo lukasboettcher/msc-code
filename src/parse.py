@@ -72,7 +72,7 @@ class Graph:
 
     def add_edge(self, src: int, dst: int, type: Any) -> None:
         new_edge = Edge(src, dst, type)
-        self.edges.append(new_edge)
+        self.edges.add(new_edge)
         self.id2node[src].add_out_edge(new_edge)
 
     def print(self):
