@@ -105,6 +105,7 @@ class Graph:
 # g.add_edge(ida, idb, 'asdf')
 # g.add_edge(ida, idb, 'asdf')
 
+# statement types Addr, Copy, Store, Load, Call, Ret, Gep, Phi, Select, Cmp, BinaryOp, UnaryOp, Branch, ThreadFork, ThreadJoin
 class LLVM2GRAPH:
     def __init__(self, GV=False, GPU=False):
         self.graphPath = 'edges.txt'
@@ -113,6 +114,9 @@ class LLVM2GRAPH:
         self.LOAD = "3"
         self.STORE = "2"
         self.CALL = "4"
+        self.ADDR = "0"
+        self.COPY = "1"
+        self.RETURN = "5"
         self.GV = GV
         self.GPU = GPU
     
@@ -138,9 +142,11 @@ class LLVM2GRAPH:
         elif type == self.LOAD:
             self.graph.add_edge(src_id, dst_id, 'd')
             self.graph.add_edge(dst_id, src_id, '-d')
-        elif type == self.CALL:
+        elif type == self.CALL or type == self.COPY or type == self.RETURN:
             self.graph.add_edge(src_id, dst_id, 'a')
             self.graph.add_edge(dst_id, src_id, '-a')
+        elif type == self.ADDR:
+            self.graph.add_edge(src_id, dst_id, 'm')
 
             # self.graph.add_edge(dst_id, src_id, 'a')
             # self.graph.add_edge(src_id, dst_id, '-a')
@@ -150,8 +156,7 @@ class LLVM2GRAPH:
             # add d, -d and a edges to graph for all STORE and LOAD operations
             # also add a edges for parameter passing
             for src, dst, type in [l.split() for l in graphFile.readlines()]:
-                if type in ['2','3','4']:
-                    self.add_to_graph(src, dst, type)
+                self.add_to_graph(src, dst, type)
 
         for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
             for a,b in combinations(alias_nodes,2):
