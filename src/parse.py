@@ -46,7 +46,7 @@ class Graph:
     def __init__(self) -> None:
         self.name2id: Dict[str, int] = {}
         self.id2node: Dict[int, Node] = {}
-        self.edges: Set[Edge] = []
+        self.edges: Set[Edge] = set()
         self.nodeTCtr = 0
 
     def add_or_get_node(self, name: str) -> int:
