@@ -70,10 +70,14 @@ class Graph:
         for e in b.get_out_edges() - a.get_out_edges():
             self.add_edge(a.id, e.dst, e.type)
 
-    def add_edge(self, src: int, dst: int, type: Any) -> None:
+    def add_edge(self, src: int, dst: int, type: Any, add_inverse=False) -> None:
         new_edge = Edge(src, dst, type)
         self.edges.add(new_edge)
         self.id2node[src].add_out_edge(new_edge)
+        if add_inverse:
+            new_edge_inv = Edge(dst, src, '-'+type)
+            self.edges.add(new_edge_inv)
+            self.id2node[dst].add_out_edge(new_edge_inv)
 
     def print(self):
         for node in self.id2node.values():
