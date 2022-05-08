@@ -106,7 +106,7 @@ class Graph:
 # g.add_edge(ida, idb, 'asdf')
 
 class LLVM2GRAPH:
-    def __init__(self, GV=False):
+    def __init__(self, GV=False, GPU=False):
         self.graphPath = 'edges.txt'
         self.outPath = self.graphPath + '.modified'
         self.graph = Graph()
@@ -114,11 +114,12 @@ class LLVM2GRAPH:
         self.STORE = "2"
         self.CALL = "4"
         self.GV = GV
+        self.GPU = GPU
     
     def write_to_file(self, outPath: str):
         with open(outPath, 'w') as outFile:
-            for e in self.graph.edges:
-                outFile.write(f'{e.src}\t{e.dst}\t{e.type}\n')
+            if self.GPU:
+                outFile.write(f'{len(self.graph.edges)}\t{self.graph.nodeTCtr}\n')
 
     def add_to_graph(self, src, dst, type):
 
@@ -158,7 +159,11 @@ class LLVM2GRAPH:
             self.graph.print_gv('pre')
         self.write_to_file(self.outPath)
 
-        graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} /home/lukas/Documents/Graspan-C/rules_pointsto 2 12 12 array'
+        if self.GPU:
+            graspam_cmd = f'/home/lukas/Documents/Graspan-G/bin/comp /home/lukas/Documents/Graspan-G/src/inputFiles/rules_pointsto.txt {self.outPath} 0'
+        else:
+            graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} /home/lukas/Documents/Graspan-C/rules_pointsto 4 24 24 array'
+
         print(f'running: {graspam_cmd}')
         subprocess.run(graspam_cmd.split())
         print('Reading graspan output edges')
@@ -187,5 +192,5 @@ svf_cmd = f'./main {clang_out}'
 subprocess.run(svf_cmd.split())
 
 graspan_path = '/home/lukas/Documents/Graspan-C'
-main = LLVM2GRAPH(GV=True)
+main = LLVM2GRAPH(GV=True, GPU=False)
 main.run()
