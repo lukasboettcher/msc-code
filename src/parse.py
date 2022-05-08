@@ -158,11 +158,12 @@ class LLVM2GRAPH:
             for src, dst, type in [l.split() for l in graphFile.readlines()]:
                 self.add_to_graph(src, dst, type)
 
+        print('adding transitive a edges')
         for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
             for a,b in combinations(alias_nodes,2):
                 self.graph.clone_out_edges(a,b)
 
-        self.graph.print()
+        # self.graph.print()
         if self.GV:
             self.graph.print_gv('pre')
         self.write_to_file(self.outPath)
@@ -181,6 +182,7 @@ class LLVM2GRAPH:
                 # print(f'{i} of {len(lines)}')
                 self.graph.add_edge(int(s), int(d), t)
         
+        print('writing graph to edges.txt')
         self.graph.print_file(self.graphPath)
 
         if self.GV:
@@ -188,6 +190,7 @@ class LLVM2GRAPH:
             self.graph.print_gv('post')
 
 
+print('running preprocessing')
 clang_in = sys.argv[1]
 clang_out = 'out.ll'
 clang_cmd = f'clang-12 -S -c -Xclang -disable-O0-optnone -fno-discard-value-names -emit-llvm {clang_in} -o {clang_out}'
