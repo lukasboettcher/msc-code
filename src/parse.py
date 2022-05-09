@@ -212,9 +212,15 @@ class LLVM2GRAPH:
         self.write_to_file(self.outPath)
 
         if self.GPU:
-            graspam_cmd = f'/home/lukas/Documents/Graspan-G/bin/comp /home/lukas/Documents/Graspan-G/src/inputFiles/rules_pointsto.txt {self.outPath} 0'
+            if self.DIRECT:
+                graspam_cmd = f'/home/lukas/Documents/Graspan-G/bin/comp ../graspan_rules/gpu/rules_pointsto_llvm.txt {self.outPath} 0'
+            else:
+                graspam_cmd = f'/home/lukas/Documents/Graspan-G/bin/comp ../graspan_rules/gpu/rules_pointsto_with_as.txt {self.outPath} 0'
         else:
-            graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} /home/lukas/Documents/Graspan-C/rules_pointsto 4 24 24 array'
+            if self.DIRECT:
+                graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} ../graspan_rules/cpu/rules_pointsto_llvm 2 24 24 array'
+            else:
+                graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} ../graspan_rules/cpu/rules_pointsto_with_as 2 24 24 array'
 
         print(f'running: {graspam_cmd}')
         subprocess.run(graspam_cmd.split())
