@@ -230,9 +230,13 @@ class LLVM2GRAPH:
         print('Reading graspan output edges')
         with open(self.outPath+'.output') as graspan_out:
             lines = graspan_out.readlines()
-            for i, (s, d, t) in enumerate([(s,d,t) for s, d, t in map(lambda x: x.split(), lines) if t in ['O', 'M', 'V']]):
-                # print(f'{i} of {len(lines)}')
-                self.graph.add_edge(int(s), int(d), t)
+            # for s, d, t in [(s,d,t) for s, d, t in map(lambda x: x.split(), lines) if t in ['O', 'M', 'V']]:
+
+            for line in map(lambda x: x.split(), lines):
+                s, d, t = line
+                if t in ['O', 'M', 'V', 'p'] :
+                    self.graph.add_edge(int(s), int(d), t)
+
         
         print('writing graph to edges.txt')
         self.graph.print_file(self.graphPath)
