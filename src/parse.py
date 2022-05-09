@@ -179,15 +179,30 @@ class LLVM2GRAPH:
             # self.graph.add_edge(dst_id, src_id, 'a')
             # self.graph.add_edge(src_id, dst_id, '-a')
 
+    def add_to_graph_direct(self, src, dst, type):
+        src_id = self.graph.add_or_get_node(src)
+        dst_id = self.graph.add_or_get_node(dst)
+        if type == self.STORE: 
+            self.graph.add_edge(src_id, dst_id, 's', add_inverse=True)
+        elif type == self.LOAD:
+            self.graph.add_edge(src_id, dst_id, 'l', add_inverse=True)
+        elif type == self.ADDR:
+            self.graph.add_edge(src_id, dst_id, '&', add_inverse=True)
+        elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
+            self.graph.add_edge(src_id, dst_id, 'a', add_inverse=True)
+
     def run(self):
         with open(self.graphPath) as graphFile:
             # add d, -d and a edges to graph for all STORE and LOAD operations
             # also add a edges for parameter passing
             for src, dst, type in [l.split() for l in graphFile.readlines()]:
-                self.add_to_graph(src, dst, type)
+                if self.DIRECT:
+                    self.add_to_graph_direct(src, dst, type)
+                else:
+                    self.add_to_graph(src, dst, type)
 
-        print('adding transitive a edges')
-        for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
+        # print('adding transitive a edges')
+        # for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
             for a,b in combinations(alias_nodes,2):
                 self.graph.clone_out_edges(a,b)
 
