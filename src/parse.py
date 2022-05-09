@@ -223,7 +223,10 @@ class LLVM2GRAPH:
                 graspam_cmd = f'/home/lukas/Documents/Graspan-C/bin/comp {self.outPath} ../graspan_rules/cpu/rules_pointsto_with_as 2 24 24 array'
 
         print(f'running: {graspam_cmd}')
+        graspan_start = time.time()
         subprocess.run(graspam_cmd.split())
+        graspan_end = time.time()
+        print(f'graspan done after {graspan_end-graspan_start}')
         print('Reading graspan output edges')
         with open(self.outPath+'.output') as graspan_out:
             lines = graspan_out.readlines()
