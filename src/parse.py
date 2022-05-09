@@ -145,6 +145,7 @@ class LLVM2GRAPH:
 
         self.GV = GV
         self.GPU = GPU
+        self.DIRECT = direct
     
     def write_to_file(self, outPath: str):
         with open(outPath, 'w') as outFile:
