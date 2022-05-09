@@ -4,6 +4,7 @@ import graphviz
 from typing import List, Dict, Any, Tuple, Set
 from itertools import combinations
 import subprocess
+import time
 
 def count_type():
     with open('edges.txt') as file:
@@ -122,6 +123,7 @@ class Graph:
 # g.add_edge(ida, idb, 'asdf')
 
 # statement types Addr, Copy, Store, Load, Call, Ret, Gep, Phi, Select, Cmp, BinaryOp, UnaryOp, Branch, ThreadFork, ThreadJoin
+# {'2': 609172, '3': 503726, '5': 102173, '0': 200831, '7': 167238, '4': 466359, '1': 382181, '8': 29761, '6': 916449, '10': 301280, '9': 347646, '12': 519719}
 class LLVM2GRAPH:
     def __init__(self, GV=False, GPU=False, direct=False):
         self.graphPath = 'edges.txt'
@@ -259,5 +261,5 @@ svf_cmd = f'./main {clang_out}'
 subprocess.run(svf_cmd.split())
 
 graspan_path = '/home/lukas/Documents/Graspan-C'
-main = LLVM2GRAPH(GV=True, GPU=False)
+main = LLVM2GRAPH(GV=False, GPU=False, direct=True)
 main.run()
