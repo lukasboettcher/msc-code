@@ -203,8 +203,8 @@ class LLVM2GRAPH:
 
         # print('adding transitive a edges')
         # for alias_nodes in filter(None,[[edge.dst for edge in v.get_out_edges() if edge.type == '-d'] for k,v in self.graph.id2node.items()]):
-            for a,b in combinations(alias_nodes,2):
-                self.graph.clone_out_edges(a,b)
+        #     for a,b in combinations(alias_nodes,2):
+        #         self.graph.clone_out_edges(a,b)
 
         # self.graph.print()
         if self.GV:
