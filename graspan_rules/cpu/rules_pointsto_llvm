@@ -1,0 +1,12 @@
+p	-&
+p	-a	p
+p	L1	p
+L1	-l	p
+p	S1	p
+S1	-p	-s
+-p	&
+-p	-p	a
+-p	-L1	l
+-L1	-p	-p
+-p	-S1	p
+-S1	-p	s

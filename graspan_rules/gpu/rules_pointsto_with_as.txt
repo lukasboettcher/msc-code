@@ -1,0 +1,29 @@
+# number of rules
+16
+# rules
+a	A1	a
+-a	-a	D
+D	d	-d
+O	m	AMs
+M	DV	d
+DV	-d	V
+V	MAM	AMs
+MAM	MAs	Mq
+Mq
+Mq	M
+MAs
+MAs	MAs	MA
+MA	Mq	-a
+AMs
+AMs	AMs	AM
+AM	a	Mq
+
+# name in paper = rule here
+# MA = M
+# VF = V 
+# 
+
+# d
+# Mq
+# MAs
+# AMs
