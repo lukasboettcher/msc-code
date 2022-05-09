@@ -123,7 +123,7 @@ class Graph:
 
 # statement types Addr, Copy, Store, Load, Call, Ret, Gep, Phi, Select, Cmp, BinaryOp, UnaryOp, Branch, ThreadFork, ThreadJoin
 class LLVM2GRAPH:
-    def __init__(self, GV=False, GPU=False):
+    def __init__(self, GV=False, GPU=False, direct=False):
         self.graphPath = 'edges.txt'
         self.outPath = self.graphPath + '.modified'
         self.graph = Graph()
@@ -133,6 +133,16 @@ class LLVM2GRAPH:
         self.ADDR = "0"
         self.COPY = "1"
         self.RETURN = "5"
+        self.GEP = "6"
+        self.PHI = "7"
+        self.SELECT = "8"
+        self.CMP = "9"
+        self.BIN = "10"
+        self.UNA = "11"
+        self.BRANCH = "12"
+        self.FORK = "13"
+        self.JOIN = "14"
+
         self.GV = GV
         self.GPU = GPU
     
