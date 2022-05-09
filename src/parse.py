@@ -5,6 +5,18 @@ from typing import List, Dict, Any, Tuple, Set
 from itertools import combinations
 import subprocess
 
+def count_type():
+    with open('edges.txt') as file:
+        lines = file.readlines()
+        d = dict()
+        for line in lines:
+            _, _, t = line.split()
+            if t in d:
+                d[t] = d[t] + 1
+            else:
+                d[t] = 1
+    print(d)
+
 class Edge:
     def __init__(self, src: int, dst: int, type: Any) -> None:
         self.src = src
