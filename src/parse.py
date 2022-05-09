@@ -168,11 +168,12 @@ class LLVM2GRAPH:
         elif type == self.LOAD:
             self.graph.add_edge(src_id, dst_id, 'd')
             self.graph.add_edge(dst_id, src_id, '-d')
-        elif type == self.CALL or type == self.COPY or type == self.RETURN:
+        elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
             self.graph.add_edge(src_id, dst_id, 'a')
             self.graph.add_edge(dst_id, src_id, '-a')
         elif type == self.ADDR:
-            self.graph.add_edge(src_id, dst_id, 'm')
+            self.graph.add_edge(src_id, dst_id, '-d')
+            self.graph.add_edge(dst_id, src_id, 'd')
 
             # self.graph.add_edge(dst_id, src_id, 'a')
             # self.graph.add_edge(src_id, dst_id, '-a')
