@@ -123,27 +123,20 @@ class Graph:
 # g.add_edge(ida, idb, 'asdf')
 
 # statement types Addr, Copy, Store, Load, Call, Ret, Gep, Phi, Select, Cmp, BinaryOp, UnaryOp, Branch, ThreadFork, ThreadJoin
+# new model       Addr, Copy, Store, Load, NormalGep, VariantGep
 # {'2': 609172, '3': 503726, '5': 102173, '0': 200831, '7': 167238, '4': 466359, '1': 382181, '8': 29761, '6': 916449, '10': 301280, '9': 347646, '12': 519719}
 class LLVM2GRAPH:
     def __init__(self, GV=False, GPU=False, direct=False):
         self.graphPath = 'edges.txt'
         self.outPath = self.graphPath + '.modified'
         self.graph = Graph()
-        self.LOAD = "3"
-        self.STORE = "2"
-        self.CALL = "4"
+
         self.ADDR = "0"
         self.COPY = "1"
-        self.RETURN = "5"
-        self.GEP = "6"
-        self.PHI = "7"
-        self.SELECT = "8"
-        self.CMP = "9"
-        self.BIN = "10"
-        self.UNA = "11"
-        self.BRANCH = "12"
-        self.FORK = "13"
-        self.JOIN = "14"
+        self.STORE = "2"
+        self.LOAD = "3"
+        self.NGEP = "4"
+        self.VGEP = "5"
 
         self.GV = GV
         self.GPU = GPU
@@ -171,7 +164,8 @@ class LLVM2GRAPH:
         elif type == self.LOAD:
             self.graph.add_edge(src_id, dst_id, 'd')
             self.graph.add_edge(dst_id, src_id, '-d')
-        elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
+        # elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
+        elif type == self.COPY or type == self.NGEP or type == self.VGEP:
             self.graph.add_edge(src_id, dst_id, 'a')
             self.graph.add_edge(dst_id, src_id, '-a')
         elif type == self.ADDR:
@@ -190,7 +184,8 @@ class LLVM2GRAPH:
             self.graph.add_edge(src_id, dst_id, 'l', add_inverse=True)
         elif type == self.ADDR:
             self.graph.add_edge(src_id, dst_id, '&', add_inverse=True)
-        elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
+        # elif type == self.CALL or type == self.COPY or type == self.RETURN or type == self.BIN or type == self.SELECT or type == self.PHI or type == self.GEP:
+        elif type == self.COPY or type == self.NGEP or type == self.VGEP:
             self.graph.add_edge(src_id, dst_id, 'a', add_inverse=True)
 
     def run(self):
