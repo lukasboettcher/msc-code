@@ -108,20 +108,30 @@ int main(int argc, char **argv)
     /// Build Program Assignment Graph (SVFIR)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
-    pag->dump("graph");
+    // pag->dump("graph");
+
+    // Addr, Copy, Store, Load, NormalGep, VariantGep
+    ConstraintGraph* cg = new ConstraintGraph(pag);
+    cg->dump("graph");
+
+    // Andersen* ander = new Andersen(pag);
+    // ander->analyze();
+    // ander->dumpAllPts();
 
     ofstream edge_stream, meta_stream;
     edge_stream.open("edges.txt");
     meta_stream.open("meta.txt");
 
     meta_stream << "total nodes: " << pag->getPAGNodeNum() << "\ttotal edges: " << pag->getPAGEdgeNum() << endl;
+    // cout << "total nodes: " << cg->getTotalNodeNum() << "\ttotal edges: " << cg->getTotalEdgeNum() << endl;
 
-    for (auto &entry : *pag)
+    for (auto &entry : *cg)
     {
         // push desc into meta.txt
-        meta_stream << entry.second->toString() << endl;
+        meta_stream << pag->getGNode(entry.second->getId())->toString() << endl;
+        // meta_stream << entry.second->toString() << endl;
 
-        for (auto x : entry.second->getOutEdges())
+        for (auto &x : entry.second->getOutEdges())
         {
             // push src dst typ into edges.txt
             edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
