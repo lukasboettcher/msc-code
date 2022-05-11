@@ -126,7 +126,7 @@ class Graph:
 # new model       Addr, Copy, Store, Load, NormalGep, VariantGep
 # {'2': 609172, '3': 503726, '5': 102173, '0': 200831, '7': 167238, '4': 466359, '1': 382181, '8': 29761, '6': 916449, '10': 301280, '9': 347646, '12': 519719}
 class LLVM2GRAPH:
-    def __init__(self, GV=False, GPU=False, direct=False):
+    def __init__(self, GV=False, GPU=False, direct=False, writeback=True):
         self.graphPath = 'edges.txt'
         self.outPath = self.graphPath + '.modified'
         self.graph = Graph()
@@ -141,6 +141,7 @@ class LLVM2GRAPH:
         self.GV = GV
         self.GPU = GPU
         self.DIRECT = direct
+        self.writeback = writeback
     
     def write_to_file(self, outPath: str):
         with open(outPath, 'w') as outFile:
@@ -224,23 +225,29 @@ class LLVM2GRAPH:
         subprocess.run(graspam_cmd.split())
         graspan_end = time.time()
         print(f'graspan done after {graspan_end-graspan_start}')
-        print('Reading graspan output edges')
-        with open(self.outPath+'.output') as graspan_out:
-            lines = graspan_out.readlines()
-            # for s, d, t in [(s,d,t) for s, d, t in map(lambda x: x.split(), lines) if t in ['O', 'M', 'V']]:
+        if self.writeback:
+            print('Reading graspan output edges')
+            with open(self.outPath+'.output') as graspan_out:
+                lines = graspan_out.readlines()
+                # for s, d, t in [(s,d,t) for s, d, t in map(lambda x: x.split(), lines) if t in ['O', 'M', 'V']]:
+                pts = dict()
+                for node in self.graph.id2node.values():
+                    pts[node.id] = set()
+                for line in map(lambda x: x.split(), lines):
+                    s, d, t = line
+                    if t in ['O', 'M', 'V', 'p'] :
+                        self.graph.add_edge(int(s), int(d), t)
+                        if self.DIRECT:
+                            pts[int(s)].add(int(d))
+                # print(pts)
+            print(f'graspan + pts set construction done after {time.time()-graspan_start}')
 
-            for line in map(lambda x: x.split(), lines):
-                s, d, t = line
-                if t in ['O', 'M', 'V', 'p'] :
-                    self.graph.add_edge(int(s), int(d), t)
+            print('writing graph to edges.txt')
+            self.graph.print_file(self.graphPath)
 
-        
-        print('writing graph to edges.txt')
-        self.graph.print_file(self.graphPath)
-
-        if self.GV:
-            print('writing graph to file after graspan')
-            self.graph.print_gv('post')
+            if self.GV:
+                print('writing graph to file after graspan')
+                self.graph.print_gv('post')
 
 
 print('running preprocessing')
