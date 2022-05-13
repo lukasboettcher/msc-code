@@ -360,7 +360,7 @@ void edges2Elements(uint lower, uint upper, Partition p, uint *elements, uint of
 		cv.notify_one();
 	}
 }
-
+/*
 uint* readElements_c(Partition p, int k, uint *degree, boost::asio::io_service &ioServ)
 {
 	uint numOldEdges = 0, numDeltaEdges = 0, numTmpEdges = 0;
@@ -442,7 +442,7 @@ uint* readElements_c(Partition p, int k, uint *degree, boost::asio::io_service &
 	while (!finished) cv.wait(lck);
 	delete[] edges;
 	return elements;
-}
+}*/
 
 uint* readElements_n(Partition p, int k)
 {
@@ -454,7 +454,7 @@ uint* readElements_n(Partition p, int k)
 	fclose(fp);
 	return elements;
 }
-
+/*
 uint* readElements(Partition p, int k, uint *degree, boost::asio::io_service &ioServ)
 {
 	if (COMPRESSED) {
@@ -463,11 +463,12 @@ uint* readElements(Partition p, int k, uint *degree, boost::asio::io_service &io
 		return readElements_n(p, k);
 	}
 }
-
+*/
 void readAndTransferElements(Partition p, int k, int start, uint heapSize, uint *elementPool, uint *degree, boost::asio::io_service &ioServ)
 {
 	cout << "Reading Elements..." << flush;
-	uint *elements = readElements(p, k, degree, ioServ);
+	// uint *elements = readElements(p, k, degree, ioServ);
+	uint *elements = readElements_n(p, k);
 	cout << "OK." << endl;
 	cout << "Transferring Elements..." << flush;
 	transferElements(p, elements, start, heapSize, elementPool);
@@ -506,7 +507,7 @@ int ffs(uint num)
 	}
 	return r;
 }
-
+/*
 void elements2Edges(uint lower, uint upper, uint virtualNumPartialVars, uint *elements, uint offset, uchar *edges, uint numTasks)
 {
 	for (uint i = lower; i < upper; i++) {
@@ -537,7 +538,8 @@ void elements2Edges(uint lower, uint upper, uint virtualNumPartialVars, uint *el
 		cv.notify_one();
 	}
 }
-
+*/
+/*
 void storeElements_c(Partition p, int k, uint *elements, uint *degree, boost::asio::io_service &ioServ)
 {
 	uint numOldEdges = 0, numDeltaEdges = 0, numTmpEdges = 0;
@@ -598,6 +600,7 @@ void storeElements_c(Partition p, int k, uint *elements, uint *degree, boost::as
 	fclose(fp);
 	delete[] edges;
 }
+*/
 
 void storeElements_n(Partition p, int k, uint *elements)
 {
@@ -609,7 +612,7 @@ void storeElements_n(Partition p, int k, uint *elements)
 	fclose(fp);
 	delete[] elements;
 }
-
+/*
 void storeElements(Partition p, int k, uint *elements, uint *degree, boost::asio::io_service &ioServ)
 {
 	if (COMPRESSED) {
@@ -619,6 +622,7 @@ void storeElements(Partition p, int k, uint *elements, uint *degree, boost::asio
 		storeElements_n(p, k, elements);
 	}
 }
+*/
 
 void transferBackAndStoreElements(Partition p, int k, int start, uint heapSize, uint *elementPool, uint *degree, boost::asio::io_service &ioServ)
 {
@@ -627,7 +631,8 @@ void transferBackAndStoreElements(Partition p, int k, int start, uint heapSize, 
 	uint *elements = transferBackElements(p, start, heapSize, elementPool);
 	cout << "OK." << endl;
 	cout << "Storing Elements..." << flush;
-	storeElements(p, k, elements, degree, ioServ);
+	// storeElements(p, k, elements, degree, ioServ);
+	storeElements_n(p, k, elements);
 	cout << "OK." << endl;
 }
 
@@ -759,7 +764,8 @@ void repartition(vector<Partition> &partitions, int s, int d, int start, uint he
 	repartElements(partitions, s, d, elements, elements1, elements2, degree);
 	transferElements(partitions[s], elements1, start, heapSize, elementPool);
 	renamePartitions(partitions.size(), d);
-	storeElements(partitions[d], d, elements2, degree, ioServ);
+	// storeElements(partitions[d], d, elements2, degree, ioServ);
+	storeElements_n(partitions[d], d, elements2);
 }
 
 void precomputation(char *filePath, vector<Partition> &partitions, map<string, int> labelMap, uint *degree, uint heapSize, uint *elementPool, boost::asio::io_service &ioServ, uint filter)
