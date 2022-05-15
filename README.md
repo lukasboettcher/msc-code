@@ -44,3 +44,13 @@ possible rules to add alias information
 
 ## debugging graspan
 clear && make graspan && graspan/graspan ../graspan_debugging/test-rules.txt ../graspan_debugging/test-edges.txt 1
+
+# analyse dataflow linux kernel
+## sparse matrix mm
+real    1m57.516s
+user    1m44.907s
+sys     0m11.942s
+## graspan-c
+real    7m43.412s
+user    6m41.107s
+sys     1m13.887s
