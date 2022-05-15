@@ -82,6 +82,7 @@ void readAndTransferRules(char *filePath, map<string, int> &labelMap)
 		string item;
 		while (getline(lineStream, item, '\t')) {
 			if (labelMap.count(item) == 0) {
+				cout << "\t inserting " << item << " with number: " << k << endl;
 				labelMap.insert(pair<string, int>(item, k));
 				k++;
 			}
@@ -226,6 +227,7 @@ void insert(uint index, uint var, uint *elements, uint &freeList)
 	uint unit = UNIT_OF(var);
 	uint bit = BIT_OF(var);
 	uint myBits = 1 << bit;
+	cout << "\t\t######   for dst: " << var << " base: " << base << " unit: " << unit << " bit: " << bit  <<  endl ;
 	for (;;) {
 		uint toBase = elements[index + BASE];
 		if (toBase == NIL) {
@@ -282,6 +284,7 @@ void initializeEdges(uint lower, uint upper, Partition p, uint *edges, uint *val
 				elements[index + BASE] = NIL;
 				elements[headIndex] = index;
 			}
+			cout << endl << "inserting src: " << src << " dst: " << dst << " rel: " << rel << " at index: " << index << " headindex: " << headIndex << endl;
 			insert(index, dst, elements, freeList);
 		}
 	}
@@ -316,7 +319,8 @@ uint* createGraph(Partition &p, uint *edges, uint numKeys, uint *valIndex, uint 
 	for (uint i = 0; i < nSegs; i++) {
 		lower = i * segSize;
 		upper = (i == nSegs - 1) ? numKeys : lower + segSize;
-		ioServ.post(boost::bind(initializeEdges, lower, upper, p, edges, valIndex, elements, freeList, nSegs));
+		// ioServ.post(boost::bind(initializeEdges, lower, upper, p, edges, valIndex, elements, freeList, nSegs));
+		initializeEdges(lower, upper, p, edges, valIndex, elements, freeList, nSegs);
 		for (uint j = lower; j < upper; j++) {
 			uint src = edges[j];
 			freeList += degree[src + numVars * 4] * ELEMENT_WIDTH;
@@ -331,7 +335,7 @@ uint* createGraph(Partition &p, uint *edges, uint numKeys, uint *valIndex, uint 
 	cout << "OK." << endl;
 	return elements;
 }
-
+/*
 void edges2Elements(uint lower, uint upper, Partition p, uint *elements, uint offset, uint freeList, uchar *edges, uint *degree, uint numTasks)
 {
 	uint numPartialVars = p.lastVar - p.firstVar + 1;
@@ -360,6 +364,7 @@ void edges2Elements(uint lower, uint upper, Partition p, uint *elements, uint of
 		cv.notify_one();
 	}
 }
+*/
 /*
 uint* readElements_c(Partition p, int k, uint *degree, boost::asio::io_service &ioServ)
 {
@@ -907,7 +912,7 @@ int main(int argc, char** argv)
 				done = false;
 		}
 		if (done) {
-			cudaFree(elementPool);
+			// cudaFree(elementPool);
 			break;
 		}
 	}
@@ -916,13 +921,71 @@ int main(int argc, char** argv)
 	uint numEdges = 0;
 	for (uint i = 0; i < numVars; i++)
 		numEdges += degree[i];
-	delete[] degree;
+	// delete[] degree;
 
 	cout << "===== SPAGPU FINISHED =====" << endl;
 	cout << "NUM SUPERSTEPS: " << superstepNo << endl;
 	cout << "FINAL NUM PARTITIONS: " << partitions.size() << endl;
 	cout << "FINAL NUM EDGES: " << numEdges << endl;
 	cout << "TOTAL SPAGPU TIME: " << getElapsedTime(startTime) << "min." << endl;
+
+	for(const auto& elem : labelMap)
+	{
+		std::cout << elem.first << "\t" << elem.second << "\n";
+	}
+	for(const auto& p : partitions)
+	{
+		std::cout << p.firstVar << "\t" << p.lastVar << "\t" << p.deltaSize << "\t" << p.tmpSize << "\t" << p.oldSize << "\n";
+	}
+	cout << "numvars: " << numVars << " numlabels: " << numLabels <<endl<< endl;
+
+	for (size_t i = 0; i < 2; i++) // partitions.size()
+	{
+		string str = "Partition" + to_string(i);
+		FILE *fp = fopen(argv[1], "rb");
+		fseek(fp, 0L, SEEK_END);
+		// long sz = ftell(fp);
+		// rewind(fp);
+		// uint *elements = new uint[sz];
+
+		Partition p = partitions[i];
+
+		uint numElements = 0;
+		for (uint i = p.firstVar; i <= p.lastVar; i++)
+			numElements += degree[i + numVars * 3];
+		uint numPartialVars = p.lastVar - p.firstVar + 1;
+		uint virtualNumPartialVars = roundToNextMultipleOf(numPartialVars);
+		uint headSize = virtualNumPartialVars * numLabels;
+		uint poolSize = headSize + numElements * ELEMENT_WIDTH;
+		uint *elements = new uint[p.oldSize];
+		fread(elements, sizeof(uint), p.oldSize, fp);
+		fclose(fp);
+		// uint *elements = new uint[poolSize]();
+		// assert(sz == poolSize);
+		cout << "vars in part: " << numPartialVars << " headsize: " << headSize << " poolsize: " << poolSize << " size of file: " << p.oldSize << endl << endl << endl;
+		for (size_t j = 0; j < p.oldSize; j++)
+		{
+						
+			if (j == headSize)
+			{
+				cout << "######### HEADER ENDED\n";
+			}
+			cout << j <<  "\t";
+
+			uint x = elements[j];
+
+			if (x == NIL || (int)x == -1)
+			{
+				cout << "\t NIL" << endl;
+			}else
+			{
+				cout << x << endl;
+			}
+			
+			
+		}
+		
+	}
 
 	return 0;
 }
