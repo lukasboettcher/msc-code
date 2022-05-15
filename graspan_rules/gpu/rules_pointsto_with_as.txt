@@ -1,7 +1,7 @@
 # number of rules
 16
 # rules
-a	A1	a
+a	D	a
 -a	-a	D
 D	d	-d
 O	m	AMs
