@@ -41,3 +41,6 @@ possible rules to add alias information
 #A2
 #A2	A3	p
 #A3	-p	A2
+
+## debugging graspan
+clear && make graspan && graspan/graspan ../graspan_debugging/test-rules.txt ../graspan_debugging/test-edges.txt 1
