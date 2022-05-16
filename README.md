@@ -54,3 +54,8 @@ sys     0m11.942s
 real    7m43.412s
 user    6m41.107s
 sys     1m13.887s
+
+# graph tool
+## for synthetic graph construction
+
+docker run --rm -it -u`id -u` -v `pwd`:/wd -w /wd tiagopeixoto/graph-tool
