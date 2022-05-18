@@ -72,3 +72,6 @@ for rule in [r for r in rules if r.type == 0]:
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), list(range(len(nodes))), list(range(len(nodes))))
     append_edges(rule.lhs, new_matrix)
 
+change = True
+while change:
+    change = False
