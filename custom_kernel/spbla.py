@@ -79,6 +79,9 @@ while change:
     for rule in [r for r in rules if r.type == 2]:
         lhs, (rhs1, rhs2) = rule.lhs, rule.rhs
 
+        # check of rhs has changed, if not, skip
+        if rule.rhs_c == ms[rhs1].nvals + ms[rhs2].nvals:
+            continue
         before = ms[lhs].nvals
         while True:
             ms[rhs1].mxm(ms[rhs2], out=ms[lhs], accumulate=True)
