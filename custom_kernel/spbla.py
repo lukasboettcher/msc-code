@@ -63,12 +63,10 @@ with open(edge_file) as file:
             else:
                 edgeLists[t].append(s,d)
 
-print('file contents read, creating sparse matrices')
-num_verts = len(nodes)
-e_edges = sp.Matrix.from_lists((num_verts,num_verts), e_srcs, e_dsts)
-n_edges = sp.Matrix.from_lists((num_verts,num_verts), n_srcs, n_dsts)
-# ne_edges = e_edges.transpose()
-# nn_edges = n_edges.transpose()
+for rule in [r for r in rules if r.type == 1]:
+    edges = edgeLists[rule.rhs]
+    new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
+    append_edges(rule.lhs, new_matrix)
 
 t = n_edges.dup()  # Duplicate matrix where to store result
 total = 0  # Current number of values
