@@ -8,7 +8,11 @@ def transitive_closure(a: sp.Matrix, b: sp.Matrix, t: sp.Matrix):
         total = t.nvals
         a.mxm(b, out=t, accumulate=True)
 
-    return t
+class Rule:
+    def __init__(self, type: int, lhs: str, rhs=None) -> None:
+        self.type = type
+        self.lhs = lhs
+        self.rhs = rhs
 
 
 class EdgeList:
