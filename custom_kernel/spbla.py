@@ -1,5 +1,6 @@
 import pyspbla as sp
 import sys
+from typing import List, Dict, Any, Tuple, Set, Union
 
 def transitive_closure(a: sp.Matrix):
     """
