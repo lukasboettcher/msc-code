@@ -20,6 +20,15 @@ def transitive_closure(a: sp.Matrix):
     return t
 
 
+class EdgeList:
+    def __init__(self, init_row: str, init_col: str) -> None:
+        self.rows = [int(init_row)]
+        self.cols = [int(init_col)]
+    def append(self, src: str, dst: str):
+        self.rows.append(int(src))
+        self.cols.append(int(dst))
+    def __len__(self):
+        return len(self.rows)
 
 # shape = (2, 2)
 # a = sp.Matrix.empty(shape=shape)
