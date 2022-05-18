@@ -43,6 +43,8 @@ class EdgeList:
 # print(a, sep='\n')
 # print(a.mxm(b), sep='\n')
 nodes = set()
+edgeLists: Dict[str, EdgeList] = dict()
+ms: Dict[str, sp.Matrix] = dict()
 
 e_srcs = list()
 e_dsts = list()
