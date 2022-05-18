@@ -56,16 +56,12 @@ with open(edge_file) as file:
     for line in file:
         if len(line) > 3:
             s, d, t = line.split()
-            s_num = int(s)
-            d_num = int(d)
-            nodes.add(s_num)
-            nodes.add(d_num)
-            if t == 'e':
-                e_srcs.append(s_num)
-                e_dsts.append(d_num)
-            elif t == 'n':
-                n_srcs.append(s_num)
-                n_dsts.append(d_num)
+            nodes.add(s)
+            nodes.add(d)
+            if t not in edgeLists:
+                edgeLists[t] = EdgeList(s, d)
+            else:
+                edgeLists[t].append(s,d)
 
 print('file contents read, creating sparse matrices')
 num_verts = len(nodes)
