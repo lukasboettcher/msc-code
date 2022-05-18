@@ -68,11 +68,7 @@ for rule in [r for r in rules if r.type == 1]:
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
     append_edges(rule.lhs, new_matrix)
 
-t = n_edges.dup()  # Duplicate matrix where to store result
-total = 0  # Current number of values
-print('memory set up, running compute now')
-while total != t.nvals:
-    print(f'running, nnz: {t.nvals}')
-    total = t.nvals
-    t.mxm(e_edges, out=t, accumulate=True)  # t += t * t
+for rule in [r for r in rules if r.type == 0]:
+    new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), list(range(len(nodes))), list(range(len(nodes))))
+    append_edges(rule.lhs, new_matrix)
 
