@@ -2,10 +2,11 @@ import pyspbla as sp
 import sys
 from typing import List, Dict, Any, Tuple, Set, Union
 
+def transitive_closure(a: sp.Matrix, b: sp.Matrix, t: sp.Matrix):
     total = -1
     while total != t.nvals:
         total = t.nvals
-        t.mxm(t, out=t, accumulate=True)  # t += t * t
+        a.mxm(b, out=t, accumulate=True)
 
     return t
 
