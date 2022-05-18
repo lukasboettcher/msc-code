@@ -82,6 +82,10 @@ while change:
         # check of rhs has changed, if not, skip
         if rule.rhs_c == ms[rhs1].nvals + ms[rhs2].nvals:
             continue
+        if not lhs in ms:
+            ms[lhs] = sp.Matrix.empty(shape=(len(nodes), len(nodes)))
+        
+        # detect whether lhs matrix was changed
         before = ms[lhs].nvals
         while True:
             ms[rhs1].mxm(ms[rhs2], out=ms[lhs], accumulate=True)
