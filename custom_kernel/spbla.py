@@ -42,8 +42,11 @@ ms: Dict[str, sp.Matrix] = dict()
 # dataflow grammar
 rules = [Rule(1, 'E', 'e'), Rule(1, 'N', 'n'), Rule(2, 'N', ('N', 'E'))]
 
-# a_edges = sp.Matrix.empty(shape=())
-# d_edges = sp.Matrix.empty(shape=())
+def append_edges(lhs: str, m: sp.Matrix):
+    if lhs in ms:
+        ms[lhs] = ms[lhs].ewiseadd(m)
+    else:
+        ms[lhs] = m
 
 # na_edges = sp.Matrix.from_lists()
 # nd_edges = sp.Matrix.empty(shape=())
