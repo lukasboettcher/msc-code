@@ -33,23 +33,14 @@ class EdgeList:
     def __len__(self):
         return len(self.rows)
 
-# shape = (2, 2)
-# a = sp.Matrix.empty(shape=shape)
-# b = sp.Matrix.empty(shape=shape)
-
-# a[0, 1] = True
-# b[1, 0] = True
-
-# print(a, sep='\n')
-# print(a.mxm(b), sep='\n')
 nodes = set()
 edgeLists: Dict[str, EdgeList] = dict()
 ms: Dict[str, sp.Matrix] = dict()
 
-e_srcs = list()
-e_dsts = list()
-n_srcs = list()
-n_dsts = list()
+# simple grammar
+# rules = [Rule(1, 'A', 'a'), Rule(1, 'B', 'b'), Rule(2, 'C', ('A', 'B'))]
+# dataflow grammar
+rules = [Rule(1, 'E', 'e'), Rule(1, 'N', 'n'), Rule(2, 'N', ('N', 'E'))]
 
 # a_edges = sp.Matrix.empty(shape=())
 # d_edges = sp.Matrix.empty(shape=())
