@@ -78,5 +78,10 @@ while change:
     for rule in [r for r in rules if r.type == 2]:
         lhs, (rhs1, rhs2) = rule.lhs, rule.rhs
 
+        before = ms[lhs].nvals
         while True:
             ms[rhs1].mxm(ms[rhs2], out=ms[lhs], accumulate=True)
+            if ms[lhs].nvals == before:
+                break
+            before = ms[lhs].nvals
+            change = True
