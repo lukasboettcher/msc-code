@@ -14,6 +14,14 @@ class Rule:
         self.lhs = lhs
         self.rhs = rhs
 
+    def __repr__(self) -> str:
+        return f"Rule {self.lhs} -> {self.rhs}"
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+    def __hash__(self):
+        return hash((self.type, self.lhs, self.rhs))
 
 class EdgeList:
     def __init__(self, init_row: str, init_col: str) -> None:
