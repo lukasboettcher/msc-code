@@ -13,6 +13,7 @@ class Rule:
         self.type = type
         self.lhs = lhs
         self.rhs = rhs
+        self.rhs_c = -1
 
     def __repr__(self) -> str:
         return f"Rule {self.lhs} -> {self.rhs}"
@@ -85,3 +86,4 @@ while change:
                 break
             before = ms[lhs].nvals
             change = True
+        rule.rhs_c = ms[rhs1].nvals + ms[rhs2].nvals
