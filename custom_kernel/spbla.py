@@ -49,9 +49,7 @@ def append_edges(lhs: str, m: sp.Matrix):
     else:
         ms[lhs] = m
 
-# na_edges = sp.Matrix.from_lists()
-# nd_edges = sp.Matrix.empty(shape=())
-
+print('Reading Edges')
 edge_file = sys.argv[1]
 with open(edge_file) as file:
     for line in file:
@@ -64,11 +62,13 @@ with open(edge_file) as file:
             else:
                 edgeLists[t].append(s,d)
 
+print('Creating initial Matrices from Edges')
 for rule in [r for r in rules if r.type == 1]:
     edges = edgeLists[rule.rhs]
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
     append_edges(rule.lhs, new_matrix)
 
+print('Adding Epsilon Edges')
 for rule in [r for r in rules if r.type == 0]:
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), list(range(len(nodes))), list(range(len(nodes))))
     append_edges(rule.lhs, new_matrix)
@@ -88,9 +88,17 @@ while change:
         # detect whether lhs matrix was changed
         before = ms[lhs].nvals
         while True:
+            print(f'\rrunning for lhs: {lhs}, nnz: {ms[lhs].nvals}', flush=True, end='')
             ms[rhs1].mxm(ms[rhs2], out=ms[lhs], accumulate=True)
             if ms[lhs].nvals == before:
                 break
             before = ms[lhs].nvals
             change = True
+        print()
+        # update rhs state
         rule.rhs_c = ms[rhs1].nvals + ms[rhs2].nvals
+    
+# print results
+# for rule in [r for r in rules ]:
+#     print(rule.lhs)
+#     print(ms[rule.lhs], sep='\n') 
