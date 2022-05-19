@@ -2,3 +2,4 @@ build/
 *.ll
 *.bc
 venv/
+!bitcode-samples/*
