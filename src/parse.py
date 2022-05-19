@@ -263,5 +263,5 @@ svf_cmd = f'./main {clang_out}'
 subprocess.run(svf_cmd.split())
 
 graspan_path = '/home/lukas/Documents/Graspan-C'
-main = LLVM2GRAPH(GV=False, GPU=False, direct=True)
+main = LLVM2GRAPH(GV=False, GPU=True, direct=False, writeback=False)
 main.run()
