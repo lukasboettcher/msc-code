@@ -2,11 +2,13 @@ import pyspbla as sp
 import sys
 from typing import List, Dict, Any, Tuple, Set, Union
 
+
 def transitive_closure(a: sp.Matrix, b: sp.Matrix, t: sp.Matrix):
     total = -1
     while total != t.nvals:
         total = t.nvals
         a.mxm(b, out=t, accumulate=True)
+
 
 class Rule:
     def __init__(self, type: int, lhs: str, rhs=None) -> None:
@@ -17,22 +19,28 @@ class Rule:
 
     def __repr__(self) -> str:
         return f"Rule {self.lhs} -> {self.rhs}"
+
     def __eq__(self, other):
         if type(other) is type(self):
             return self.__dict__ == other.__dict__
         return False
+
     def __hash__(self):
         return hash((self.type, self.lhs, self.rhs))
+
 
 class EdgeList:
     def __init__(self, init_row: str, init_col: str) -> None:
         self.rows = [int(init_row)]
         self.cols = [int(init_col)]
+
     def append(self, src: str, dst: str):
         self.rows.append(int(src))
         self.cols.append(int(dst))
+
     def __len__(self):
         return len(self.rows)
+
 
 nodes = set()
 edgeLists: Dict[str, EdgeList] = dict()
