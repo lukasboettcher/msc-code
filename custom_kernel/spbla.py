@@ -91,15 +91,14 @@ for r in rules:
     symbols.add(r.lhs)
     ms[r.lhs] = sp.Matrix.empty((len(nodes), len(nodes)))
 
+print("Filling type 1 Matrices with edge data")
 for rule in [r for r in rules if r.type == 1]:
     edges = edgeLists[rule.rhs]
-    new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
-    append_edges(rule.lhs, new_matrix)
+    ms[rule.lhs].build(cols=edges.cols, rows=edges.rows)
 
 print("Adding Epsilon Edges")
 for rule in [r for r in rules if r.type == 0]:
-    new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), list(range(len(nodes))), list(range(len(nodes))))
-    append_edges(rule.lhs, new_matrix)
+    ms[rule.lhs].build(cols=range(len(nodes)), rows=range(len(nodes)))
 
 change = True
 while change:
