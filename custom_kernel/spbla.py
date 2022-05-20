@@ -51,13 +51,7 @@ ms: Dict[str, sp.Matrix] = dict()
 # dataflow grammar
 rules = [Rule(1, 'E', 'e'), Rule(1, 'N', 'n'), Rule(2, 'N', ('N', 'E'))]
 
-def append_edges(lhs: str, m: sp.Matrix):
-    if lhs in ms:
-        ms[lhs] = ms[lhs].ewiseadd(m)
-    else:
-        ms[lhs] = m
-
-print('Reading Edges')
+print("Reading Edges")
 edge_file = sys.argv[1]
 with open(edge_file) as file:
     for line in file:
@@ -76,7 +70,7 @@ for rule in [r for r in rules if r.type == 1]:
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
     append_edges(rule.lhs, new_matrix)
 
-print('Adding Epsilon Edges')
+print("Adding Epsilon Edges")
 for rule in [r for r in rules if r.type == 0]:
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), list(range(len(nodes))), list(range(len(nodes))))
     append_edges(rule.lhs, new_matrix)
