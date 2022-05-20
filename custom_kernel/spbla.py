@@ -49,7 +49,27 @@ ms: Dict[str, sp.Matrix] = dict()
 # simple grammar
 # rules = [Rule(1, 'A', 'a'), Rule(1, 'B', 'b'), Rule(2, 'C', ('A', 'B'))]
 # dataflow grammar
-rules = [Rule(1, 'E', 'e'), Rule(1, 'N', 'n'), Rule(2, 'N', ('N', 'E'))]
+# rules = [Rule(1, 'E', 'e'), Rule(1, 'N', 'n'), Rule(2, 'N', ('N', 'E'))]
+# points to grammar
+rules = [
+    Rule(1, "D", "d"),
+    Rule(1, "-D", "-d"),
+    Rule(1, "A", "a"),
+    Rule(1, "-A", "-a"),
+    Rule(0, "MAs"),
+    Rule(0, "AMs"),
+    Rule(2, "M", ("DV", "D")),
+    Rule(2, "DV", ("-D", "V")),
+    Rule(2, "V", ("MAM", "AMs")),
+    Rule(2, "V", ("MAs", "AMs")),
+    Rule(2, "MAM", ("MAs", "M")),
+    Rule(2, "MAs", ("MAs", "MA")),
+    Rule(2, "MAs", ("MAs", "-A")),
+    Rule(2, "MA", ("M", "-A")),
+    Rule(2, "AMs", ("AMs", "AM")),
+    Rule(2, "AMs", ("AMs", "A")),
+    Rule(2, "AM", ("A", "M")),
+]
 
 print("Reading Edges")
 edge_file = sys.argv[1]
