@@ -1,4 +1,4 @@
 enable_language(CUDA)
-find_package(Boost 1.7 REQUIRED COMPONENTS system thread)
+find_package(Boost REQUIRED COMPONENTS system thread)
 add_executable(graspan main.cpp kernel.cu)
 target_link_libraries(graspan pthread ${CUDA_LIBRARIES} ${Boost_LIBRARIES})
