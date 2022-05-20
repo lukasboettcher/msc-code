@@ -101,21 +101,18 @@ for rule in [r for r in rules if r.type == 0]:
     ms[rule.lhs].build(cols=range(len(nodes)), rows=range(len(nodes)))
 
 change = True
+iter = 1
 while change:
     change = False
     for rule in [r for r in rules if r.type == 2]:
         lhs, (rhs1, rhs2) = rule.lhs, rule.rhs
-
         # check of rhs has changed, if not, skip
         if rule.rhs_c == ms[rhs1].nvals + ms[rhs2].nvals:
             continue
-        if not lhs in ms:
-            ms[lhs] = sp.Matrix.empty(shape=(len(nodes), len(nodes)))
-        
         # detect whether lhs matrix was changed
         before = ms[lhs].nvals
         while True:
-            print(f'\rrunning for lhs: {lhs}, nnz: {ms[lhs].nvals}', flush=True, end='')
+            print(f"\r[{iter}] running for lhs: {lhs}, nnz: {ms[lhs].nvals}", flush=True, end="")
             ms[rhs1].mxm(ms[rhs2], out=ms[lhs], accumulate=True)
             if ms[lhs].nvals == before:
                 break
@@ -124,8 +121,9 @@ while change:
         print()
         # update rhs state
         rule.rhs_c = ms[rhs1].nvals + ms[rhs2].nvals
-    
+    iter += 1
+
 # print results
-# for rule in [r for r in rules ]:
-#     print(rule.lhs)
-#     print(ms[rule.lhs], sep='\n') 
+# for s in symbols:
+#     print(s)
+#     print(ms[s], sep="\n")
