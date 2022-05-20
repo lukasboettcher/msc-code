@@ -4,10 +4,11 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/llvm-12",
-                "/usr/include/llvm-c-12",
+                "/usr/include/llvm-13",
+                "/usr/include/llvm-c-13",
                 "${workspaceFolder}/include"
-            ]
+            ],
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4
