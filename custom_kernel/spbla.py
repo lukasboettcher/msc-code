@@ -82,9 +82,15 @@ with open(edge_file) as file:
             if t not in edgeLists:
                 edgeLists[t] = EdgeList(s, d)
             else:
-                edgeLists[t].append(s,d)
+                edgeLists[t].append(s, d)
 
-print('Creating initial Matrices from Edges')
+# create empty matrices for all symbols in grammar
+print("Creating initial empty Matrices for all Symbols")
+symbols = set()
+for r in rules:
+    symbols.add(r.lhs)
+    ms[r.lhs] = sp.Matrix.empty((len(nodes), len(nodes)))
+
 for rule in [r for r in rules if r.type == 1]:
     edges = edgeLists[rule.rhs]
     new_matrix = sp.Matrix.from_lists((len(nodes), len(nodes)), edges.rows, edges.cols)
