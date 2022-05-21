@@ -17,3 +17,6 @@ target_link_libraries(main Svf ${llvm_libs})
 add_subdirectory(lib)
 add_subdirectory(tools)
 add_subdirectory(graspan)
+
+add_executable(spbla_main src/spbla.cpp)
+target_link_libraries(spbla_main spbla)
