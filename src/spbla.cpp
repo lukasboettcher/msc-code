@@ -88,9 +88,8 @@ int main(int argc, char const *argv[])
     unordered_set<spbla_Index> nodes;
     unordered_set<string> symbols;
 
-    spbla_Index nvals = 5;
-    spbla_Index rows[nvals] = {0, 1};
-    spbla_Index cols[nvals] = {1, 2};
+    ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Points-to/arch_afterInline.txt");
+    ifstream rules_f("/home/lukas/Documents/msc-test/src/rules2.txt");
 
     spbla_Initialize(SPBLA_HINT_NO);
     spbla_Matrix_New(&matrix, 10, 10);
