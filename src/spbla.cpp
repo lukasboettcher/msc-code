@@ -96,6 +96,15 @@ int main(int argc, char const *argv[])
     parse_edges(&edges_f, edge_lists, nodes);
     cout << "\tPARSING EDGES DONE" << endl;
 
+    cout << "\tCreating Empty Matrices" << endl;
+    // create empty initial matrices
+    for (auto s : symbols)
+    {
+        cout << "for: " << s << endl;
+        spbla_Matrix matrix;
+        spbla_Matrix_New(&matrix, nodes.size(), nodes.size());
+        ms[s] = matrix;
+    }
 
     spbla_Matrix_Build(matrix, rows, cols, nvals, SPBLA_HINT_NO);
 
