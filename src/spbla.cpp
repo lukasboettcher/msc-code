@@ -91,8 +91,11 @@ int main(int argc, char const *argv[])
     ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Points-to/arch_afterInline.txt");
     ifstream rules_f("/home/lukas/Documents/msc-test/src/rules2.txt");
 
-    spbla_Initialize(SPBLA_HINT_NO);
-    spbla_Matrix_New(&matrix, 10, 10);
+    parse_rules(&rules_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
+    cout << "\tPARSING RULES DONE" << endl;
+    parse_edges(&edges_f, edge_lists, nodes);
+    cout << "\tPARSING EDGES DONE" << endl;
+
 
     spbla_Matrix_Build(matrix, rows, cols, nvals, SPBLA_HINT_NO);
 
