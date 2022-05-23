@@ -1,4 +1,18 @@
 #include <spbla/spbla.h>
+void print_matrix(spbla_Matrix &m)
+{
+    spbla_Index *rows, *cols, nvals;
+    spbla_Matrix_Nvals(m, &nvals);
+    rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    spbla_Matrix_ExtractPairs(m, rows, cols, &nvals);
+    cout << "Printing Matrix with nvals: " << nvals << endl;
+    for (spbla_Index i = 0; i < nvals; i++)
+        cout << rows[i] << " " << cols[i] << endl;
+    free(rows);
+    free(cols);
+}
+
 void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, unordered_set<spbla_Index> &nodes)
 {
     string type;
