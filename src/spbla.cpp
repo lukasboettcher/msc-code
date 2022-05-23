@@ -172,10 +172,11 @@ int main(int argc, char const *argv[])
         iter++;
     }
 
-    for (spbla_Index i = 0; i < nvals; i++)
-        std::cout << rows[i] << " " << cols[i] << std::endl;
+    for (auto &&s : symbols)
+    {
+        spbla_Matrix_Free(ms[s]);
+    }
 
-    spbla_Matrix_Free(matrix);
     spbla_Finalize();
     return 0;
 }
