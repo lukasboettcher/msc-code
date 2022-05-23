@@ -19,5 +19,7 @@ add_subdirectory(lib)
 add_subdirectory(tools)
 add_subdirectory(graspan)
 
+add_library(spbla SHARED IMPORTED)
+set_target_properties(spbla PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/libspbla.so)
 add_executable(spbla_main src/spbla.cpp)
 target_link_libraries(spbla_main spbla OpenMP::OpenMP_CXX)
