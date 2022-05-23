@@ -117,7 +117,24 @@ int main(int argc, char const *argv[])
         spbla_Matrix_Build(ms[s], range, range, nodes.size(), SPBLA_HINT_NO);
     }
 
-    // spbla_Matrix_Duplicate(matrix, &matrix_copy);
+    cout << "\tAdding Graph Edges" << endl;
+    // add edges from graph
+    for (auto &term : terminal_to_nonterminals)
+    {
+        spbla_Matrix tmp;
+        spbla_Index *rows, *cols;
+
+        spbla_Matrix_New(&tmp, nodes.size(), nodes.size());
+        rows = edge_lists[term.first].first.data();
+        cols = edge_lists[term.first].second.data();
+
+        spbla_Matrix_Build(tmp, rows, cols, edge_lists[term.first].first.size(), SPBLA_HINT_NO);
+
+        for (auto &nterm : term.second)
+            spbla_Matrix_EWiseAdd(ms[nterm], ms[nterm], tmp, SPBLA_HINT_ACCUMULATE);
+
+        spbla_Matrix_Free(tmp);
+    }
 
     spbla_MxM(matrix, matrix, matrix, SPBLA_HINT_ACCUMULATE);
 
