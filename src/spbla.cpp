@@ -106,7 +106,16 @@ int main(int argc, char const *argv[])
         ms[s] = matrix;
     }
 
-    spbla_Matrix_Build(matrix, rows, cols, nvals, SPBLA_HINT_NO);
+    cout << "\tAdding Epsilon Edges" << endl;
+    // add epsilon edges
+    for (auto s : epsilon_nonterminals)
+    {
+        spbla_Index *range;
+        range = (spbla_Index *)malloc(sizeof(spbla_Index) * nodes.size());
+        for (size_t i = 0; i < nodes.size(); i++)
+            range[i] = i;
+        spbla_Matrix_Build(ms[s], range, range, nodes.size(), SPBLA_HINT_NO);
+    }
 
     // spbla_Matrix_Duplicate(matrix, &matrix_copy);
 
