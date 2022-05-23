@@ -79,6 +79,7 @@ void parse_rules(
 
 int main(int argc, char const *argv[])
 {
+    spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
     map<string, spbla_Matrix> ms;
     unordered_set<string> epsilon_nonterminals;
     unordered_map<string, unordered_set<string>> terminal_to_nonterminals;
