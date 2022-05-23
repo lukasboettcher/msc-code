@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.4.3)
 project(MSC-CODE)
 
+find_package(OpenMP REQUIRED)
 find_package(LLVM REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(AddLLVM)
@@ -19,4 +20,4 @@ add_subdirectory(tools)
 add_subdirectory(graspan)
 
 add_executable(spbla_main src/spbla.cpp)
-target_link_libraries(spbla_main spbla)
+target_link_libraries(spbla_main spbla OpenMP::OpenMP_CXX)
