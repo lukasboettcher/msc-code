@@ -1,4 +1,10 @@
 #include <spbla/spbla.h>
+spbla_Index get_nnz(spbla_Matrix m)
+{
+    spbla_Index nvals;
+    spbla_Matrix_Nvals(m, &nvals);
+    return nvals;
+}
 
 void print_edges(unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists)
 {
