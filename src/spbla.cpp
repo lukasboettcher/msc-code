@@ -136,12 +136,41 @@ int main(int argc, char const *argv[])
         spbla_Matrix_Free(tmp);
     }
 
-    spbla_MxM(matrix, matrix, matrix, SPBLA_HINT_ACCUMULATE);
+    vector<int> rule_rhs_c(rules.size(), -1);
+    bool change = true;
+    int iter = 1;
+    while (change)
+    {
+        change = false;
+        for (size_t i = 0; i < rules.size(); i++)
+        {
+            auto rule = rules[i];
+            spbla_Index total = 0;
+            spbla_Index before, current, nvals_a, nvals_b;
+            spbla_Matrix A,B,C;
+            A = ms[rule.second.first];
+            B = ms[rule.second.second];
+            C = ms[rule.first];
 
-    spbla_Matrix_ExtractPairs(matrix, rows, cols, &nvals);
-    spbla_Index nrows, ncols;
-    spbla_Matrix_Ncols(matrix, &ncols);
-    spbla_Matrix_Nrows(matrix, &nrows);
+            if (rule_rhs_c[i] == get_nnz(A) + get_nnz(B))
+                continue;
+
+            before = get_nnz(ms[rule.first]);
+
+            while (true)
+            {
+                cout << "\r[" << iter << "]running for lhs: " << rule.first << ", nnz: " << get_nnz(ms[rule.first]) << flush;
+                spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE); // C += A x B
+                if (get_nnz(C) == before)
+                    break;
+                before = get_nnz(C);
+                change = true;
+            }
+            cout << endl;
+            rule_rhs_c[i] = get_nnz(A) + get_nnz(B);
+        }
+        iter++;
+    }
 
     for (spbla_Index i = 0; i < nvals; i++)
         std::cout << rows[i] << " " << cols[i] << std::endl;
