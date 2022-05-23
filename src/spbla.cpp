@@ -1,4 +1,8 @@
 #include <spbla/spbla.h>
+#include <bits/stdc++.h>
+
+using namespace std;
+
 spbla_Index get_nnz(spbla_Matrix m)
 {
     spbla_Index nvals;
@@ -88,6 +92,9 @@ int main(int argc, char const *argv[])
     unordered_set<spbla_Index> nodes;
     unordered_set<string> symbols;
 
+    // ifstream edges_f("/home/lukas/Documents/msc-test/src/edges.txt");
+    // ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Dataflow/lnx_arch_df");
+    // ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Dataflow/lnx_kernel_df");
     ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Points-to/arch_afterInline.txt");
     ifstream rules_f("/home/lukas/Documents/msc-test/src/rules2.txt");
 
@@ -142,6 +149,8 @@ int main(int argc, char const *argv[])
     while (change)
     {
         change = false;
+        #pragma omp parallel
+        #pragma omp single
         for (size_t i = 0; i < rules.size(); i++)
         {
             auto rule = rules[i];
@@ -157,6 +166,8 @@ int main(int argc, char const *argv[])
 
             before = get_nnz(ms[rule.first]);
 
+
+            #pragma omp task depend(in:A,B), depend(inout:C), firstprivate(before, A,B,C)
             while (true)
             {
                 cout << "\r[" << iter << "]running for lhs: " << rule.first << ", nnz: " << get_nnz(ms[rule.first]) << flush;
