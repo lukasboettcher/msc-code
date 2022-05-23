@@ -1,4 +1,18 @@
 #include <spbla/spbla.h>
+
+void print_edges(unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists)
+{
+    for (auto &&i : edge_lists)
+    {
+        cout << i.first << endl;
+        for (size_t j = 0; j < i.second.first.size(); j++)
+        {
+            cout << i.second.first[j] << i.second.second[j] << endl;
+        }
+        cout << endl;
+    }
+}
+
 void print_matrix(spbla_Matrix &m)
 {
     spbla_Index *rows, *cols, nvals;
