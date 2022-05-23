@@ -79,7 +79,13 @@ void parse_rules(
 
 int main(int argc, char const *argv[])
 {
-    spbla_Matrix matrix, matrix_copy;
+    map<string, spbla_Matrix> ms;
+    unordered_set<string> epsilon_nonterminals;
+    unordered_map<string, unordered_set<string>> terminal_to_nonterminals;
+    vector<pair<string, pair<string, string>>> rules;
+    unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists;
+    unordered_set<spbla_Index> nodes;
+    unordered_set<string> symbols;
 
     spbla_Index nvals = 5;
     spbla_Index rows[nvals] = {0, 1};
