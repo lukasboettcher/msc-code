@@ -1,4 +1,19 @@
 #include <spbla/spbla.h>
+void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, unordered_set<spbla_Index> &nodes)
+{
+    string type;
+    spbla_Index src, dst;
+    while (*s >> src >> dst >> type)
+    {
+        nodes.insert(src);
+        nodes.insert(dst);
+        if (!edge_lists.count(type))
+            edge_lists[type] = {vector<spbla_Index>(), vector<spbla_Index>()};
+        edge_lists[type].first.push_back(src);
+        edge_lists[type].second.push_back(dst);
+    }
+}
+
 void parse_rules(
     istream *s,
     unordered_set<string> &epsilon_nonterminals,
