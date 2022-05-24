@@ -37,6 +37,28 @@ void print_matrix(spbla_Matrix &m)
     free(cols);
 }
 
+void write_matrix_disk(spbla_Matrix &m, string path)
+{
+    FILE *fp = fopen(path.c_str(), "w");
+    if (fp)
+    {
+        cerr << "Error opening File at: " <<  path << endl;
+        return;
+    }
+
+    spbla_Index *rows, *cols, nvals;
+    spbla_Matrix_Nvals(m, &nvals);
+    rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    spbla_Matrix_ExtractPairs(m, rows, cols, &nvals);
+    fprintf(fp, "%i\n", nvals);
+    for (spbla_Index i = 0; i < nvals; i++)
+        fprintf(fp, "%i\t%i\n", rows[i], cols[i]);
+    free(rows);
+    free(cols);
+    fclose(fp);
+}
+
 void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, unordered_set<spbla_Index> &nodes)
 {
     string type;
