@@ -114,11 +114,14 @@ int main(int argc, char const *argv[])
     unordered_set<spbla_Index> nodes;
     unordered_set<string> symbols;
 
-    // ifstream edges_f("/home/lukas/Documents/msc-test/src/edges.txt");
-    // ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Dataflow/lnx_arch_df");
-    // ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Dataflow/lnx_kernel_df");
-    ifstream edges_f("/home/lukas/Downloads/Graspan Datasets and Support/Graphs/Linux 4.4-rc5 Points-to/arch_afterInline.txt");
-    ifstream rules_f("/home/lukas/Documents/msc-test/src/rules2.txt");
+    if (argc != 3)
+    {
+        cout << "./spbla_main <edges_path> <rules_path>" << endl;
+        return EXIT_FAILURE;
+    }
+
+    ifstream edges_f(argv[1]);
+    ifstream rules_f(argv[2]);
 
     parse_rules(&rules_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
     cout << "\tPARSING RULES DONE" << endl;
@@ -171,14 +174,14 @@ int main(int argc, char const *argv[])
     while (change)
     {
         change = false;
-        #pragma omp parallel
-        #pragma omp single
+#pragma omp parallel
+#pragma omp single
         for (size_t i = 0; i < rules.size(); i++)
         {
             auto rule = rules[i];
             spbla_Index total = 0;
             spbla_Index before, current, nvals_a, nvals_b;
-            spbla_Matrix A,B,C;
+            spbla_Matrix A, B, C;
             A = ms[rule.second.first];
             B = ms[rule.second.second];
             C = ms[rule.first];
@@ -188,8 +191,7 @@ int main(int argc, char const *argv[])
 
             before = get_nnz(ms[rule.first]);
 
-
-            #pragma omp task depend(in:A,B), depend(inout:C), firstprivate(before, A,B,C)
+            // #pragma omp task depend(in:A,B), depend(inout:C), firstprivate(before, A,B,C)
             while (true)
             {
                 cout << "\r[" << iter << "]running for lhs: " << rule.first << ", nnz: " << get_nnz(ms[rule.first]) << flush;
