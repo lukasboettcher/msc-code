@@ -253,7 +253,7 @@ class LLVM2GRAPH:
 print('running preprocessing')
 clang_in = sys.argv[1]
 clang_out = 'out.ll'
-clang_cmd = f'clang-12 -S -c -Xclang -disable-O0-optnone -fno-discard-value-names -emit-llvm {clang_in} -o {clang_out}'
+clang_cmd = f'clang-13 -S -c -Xclang -disable-O0-optnone -fno-discard-value-names -emit-llvm {clang_in} -o {clang_out}'
 
 if not clang_in.split('.')[-1] in ['bc', 'll']:
     subprocess.run(clang_cmd.split())
