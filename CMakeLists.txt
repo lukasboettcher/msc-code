@@ -23,3 +23,7 @@ add_library(spbla SHARED IMPORTED)
 set_target_properties(spbla PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/libspbla.so)
 add_executable(spbla_main src/spbla.cpp)
 target_link_libraries(spbla_main spbla OpenMP::OpenMP_CXX)
+
+# add_executable(inline src/inlining.cpp)
+# target_link_libraries(inline ${llvm_libs})
+add_library(inline MODULE src/inlining.cpp)
