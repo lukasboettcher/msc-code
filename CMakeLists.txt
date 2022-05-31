@@ -27,3 +27,6 @@ target_link_libraries(spbla_main spbla OpenMP::OpenMP_CXX)
 # add_executable(inline src/inlining.cpp)
 # target_link_libraries(inline ${llvm_libs})
 add_library(inline MODULE src/inlining.cpp)
+
+add_executable(leak src/leaktest.cpp)
+target_link_libraries(leak Svf ${llvm_libs})
