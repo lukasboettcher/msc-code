@@ -177,11 +177,25 @@ int main(int argc, char **argv)
         }
     }
 
-    for (auto &val : alloc_values)
+    cout << "\tfinding free arg vals\n";
+    for (auto arg : pag->getCallSiteArgsMap())
     {
-        Set<const VFGNode *> visited;
-        traverseOnVFG(svfg, val, visited);
-        
+        PTACallGraph::FunctionSet callees;
+        callgraph->getCallees(arg.first, callees);
+        for (auto &fun : callees)
+        {
+            auto fn_name = fun->getName();
+            if (fn_name.find("free") != std::string::npos)
+            {
+                for (auto &fvar : arg.second)
+                {
+                    std::cout << fn_name << "\t with id: " << fvar->getId() << '\n';
+                    // auto value = fvar->getValue();
+                    free_values.insert(fvar);
+                }
+                
+            }
+        }
     }
     
 
