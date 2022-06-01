@@ -1,8 +1,26 @@
+#include <stdlib.h>
+int g = 1;
+
+void procedure(int *a)
+{
+  if (*a > 0)
+  {
+    if (*a == 5)
+    {
+      free(a);
+    }
+    
+    *a = *a - g;
+    procedure(a);
+  }
+}
+
 int main()
 {
-  int x, *p, *q;
-  p = &x;
-  q = &x;
+  int *x = malloc(sizeof(int)*1);
+  x[0] = 10;
+
+  procedure(x);
 
   // int *a, b, c, *d, **e, *f;
   // a = &b;
