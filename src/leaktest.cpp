@@ -152,14 +152,12 @@ int main(int argc, char **argv)
         for (auto &x : entry.second->getOutEdges())
             edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
 
-    /// Print points-to information
-    /// printPts(ander, value1);
-
-    /// Call Graph
+    cout << "\trunning Andersen Analysis\n";
+    Andersen *ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
     PTACallGraph *callgraph = ander->getPTACallGraph();
 
-    SVFGBuilder svfBuilder(true);
-    SVFG *svfg = svfBuilder.buildFullSVFG(ander);
+    set<const SVF::SVFVar *> alloc_values;
+    set<const SVF::SVFVar *> free_values;
 
     set<const Value *> alloc_values;
     /// ICFG
