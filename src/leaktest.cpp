@@ -159,24 +159,20 @@ int main(int argc, char **argv)
     set<const SVF::SVFVar *> alloc_values;
     set<const SVF::SVFVar *> free_values;
 
-    set<const Value *> alloc_values;
-    /// ICFG
-    cout << "printing alloc funs\n";
+    cout << "\tfinding alloc return vals\n";
     for (auto ret : pag->getCallSiteRets())
     {
         const RetICFGNode *cs = ret.first;
-
         PTACallGraph::FunctionSet callees;
         callgraph->getCallees(cs->getCallICFGNode(), callees);
         for (auto &fun : callees)
         {
             auto fn_name = fun->getName();
-            // cout << fun->getName() << endl;
             if (fn_name.find("alloc") != std::string::npos)
             {
-                std::cout << fn_name << '\n';
-                auto x = ret.second->getValue();
-                alloc_values.insert(x);
+                std::cout << fn_name << "\t with id: " << ret.second->getId() << '\n';
+                // auto value = ret.second->getValue();
+                alloc_values.insert(ret.second);
             }
         }
     }
