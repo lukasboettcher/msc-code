@@ -137,11 +137,12 @@ int main(int argc, char **argv)
     SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(moduleNameVec);
     svfModule->buildSymbolTableInfo();
 
-    cout << "building PAG\n";
-    /// Build Program Assignment Graph (SVFIR)
+    // building PAG and ICFG and CG
+    cout << "\tbuilding PAG\n";
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
     ICFG *icfg = pag->getICFG();
+    ConstraintGraph *cg = new ConstraintGraph(pag);
 
     cout << "running Andersen Analysis\n";
     /// Create Andersen's pointer analysis
