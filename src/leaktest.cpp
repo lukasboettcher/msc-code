@@ -197,28 +197,26 @@ int main(int argc, char **argv)
             }
         }
     }
-    
 
-    /// Value-Flow Graph (VFG)
-    // VFG* vfg = new VFG(callgraph);
+    for (auto &var : alloc_values)
+        edge_stream << var->getId() << "\t" << var->getId() << "\tm\n";
+    for (auto &var : free_values)
+        edge_stream << var->getId() << "\t" << var->getId() << "\tf\n";
 
-    /// Sparse value-flow graph (SVFG)
     // SVFGBuilder svfBuilder(true);
-    // SVFG* svfg = svfBuilder.buildFullSVFG(ander);
+    // SVFG *svfg = svfBuilder.buildFullSVFG(ander);
 
-    /// Collect uses of an LLVM Value
-    /// traverseOnVFG(svfg, value);
+    // for (auto &val : alloc_values)
+    // {
+    //     Set<const VFGNode *> visited;
+    //     traverseOnVFG(svfg, val, visited);
+    // }
 
-    /// Collect all successor nodes on ICFG
-    /// traverseOnICFG(icfg, value);
-
-    // clean up memory
-    // delete vfg;
-    delete svfg;
+    // delete svfg;
     AndersenWaveDiff::releaseAndersenWaveDiff();
     SVFIR::releaseSVFIR();
 
-    LLVMModuleSet::getLLVMModuleSet()->dumpModulesToFile(".svf.bc");
+    // LLVMModuleSet::getLLVMModuleSet()->dumpModulesToFile(".svf.bc");
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
 
     llvm::llvm_shutdown();
