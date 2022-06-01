@@ -144,12 +144,13 @@ int main(int argc, char **argv)
     ICFG *icfg = pag->getICFG();
     ConstraintGraph *cg = new ConstraintGraph(pag);
 
-    cout << "running Andersen Analysis\n";
-    /// Create Andersen's pointer analysis
-    Andersen *ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
+    // dumping CG
+    ofstream edge_stream;
+    edge_stream.open("edges.txt");
 
-    /// Query aliases
-    /// aliasQuery(ander,value1,value2);
+    for (auto &entry : *cg)
+        for (auto &x : entry.second->getOutEdges())
+            edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
 
     /// Print points-to information
     /// printPts(ander, value1);
