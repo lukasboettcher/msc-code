@@ -1,0 +1,17 @@
+D   d
+-D  -d
+A   a
+-A  -a
+MAs
+AMs
+M   DV  D
+DV  -D  V
+V   MAM AMs
+V   MAs AMs
+MAM MAs M
+MAs MAs MA
+MAs MAs -A
+MA  M   -A
+AMs AMs AM
+AMs AMs A
+AM  A   M
