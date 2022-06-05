@@ -126,7 +126,7 @@ int main(int argc, char const *argv[])
 
     parse_rules(&rules_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
     cout << "\tPARSING RULES DONE" << endl;
-    parse_edges(&edges_f, edge_lists, nodes);
+    parse_edges(&edges_f, edge_lists, node2id, node_cnt);
     cout << "\tPARSING EDGES DONE" << endl;
 
     cout << "\tCreating Empty Matrices" << endl;
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[])
     {
         cout << "for: " << s << endl;
         spbla_Matrix matrix;
-        spbla_Matrix_New(&matrix, nodes.size(), nodes.size());
+        spbla_Matrix_New(&matrix, node_cnt, node_cnt);
         ms[s] = matrix;
     }
 
@@ -144,10 +144,10 @@ int main(int argc, char const *argv[])
     for (auto s : epsilon_nonterminals)
     {
         spbla_Index *range;
-        range = (spbla_Index *)malloc(sizeof(spbla_Index) * nodes.size());
-        for (size_t i = 0; i < nodes.size(); i++)
+        range = (spbla_Index *)malloc(sizeof(spbla_Index) * node_cnt);
+        for (size_t i = 0; i < node_cnt; i++)
             range[i] = i;
-        spbla_Matrix_Build(ms[s], range, range, nodes.size(), SPBLA_HINT_NO);
+        spbla_Matrix_Build(ms[s], range, range, node_cnt, SPBLA_HINT_NO);
     }
 
     cout << "\tAdding Graph Edges" << endl;
@@ -157,7 +157,7 @@ int main(int argc, char const *argv[])
         spbla_Matrix tmp;
         spbla_Index *rows, *cols;
 
-        spbla_Matrix_New(&tmp, nodes.size(), nodes.size());
+        spbla_Matrix_New(&tmp, node_cnt, node_cnt);
         rows = edge_lists[term.first].first.data();
         cols = edge_lists[term.first].second.data();
 
