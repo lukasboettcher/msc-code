@@ -162,6 +162,8 @@ int main(int argc, char **argv)
             }
         }
 
+    return 0;
+
     cout << "\trunning Andersen Analysis\n";
     Andersen *ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
     PTACallGraph *callgraph = ander->getPTACallGraph();
@@ -203,7 +205,6 @@ int main(int argc, char **argv)
                     // auto value = fvar->getValue();
                     free_values.insert(fvar);
                 }
-                
             }
         }
     }
