@@ -118,6 +118,13 @@ void traverseOnVFG(const SVFG *vfg, const Value *val, Set<const VFGNode *> &visi
     */
 }
 
+void write_edge(ofstream &edge_stream, unsigned src, unsigned dst, unsigned type, unsigned offset)
+{   
+    edge_stream << src << "_" << offset << "\t" << dst << "\t" << type << endl;
+    edge_stream << dst << "\t" << src << "_" << offset << "\t"
+                << "-" << type << endl;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -151,15 +158,10 @@ int main(int argc, char **argv)
     for (auto &entry : *cg)
         for (auto &x : entry.second->getOutEdges())
         {
-            if (NormalGepCGEdge* normalGep = SVFUtil::dyn_cast<NormalGepCGEdge>(x))
-            {
-                // const LocationSet ls = normalGep->getLocationSet();
-                edge_stream << x->getSrcID() << "_" << normalGep->getConstantFieldIdx() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
-            }
+            if (NormalGepCGEdge *normalGep = SVFUtil::dyn_cast<NormalGepCGEdge>(x))
+                write_edge(edge_stream, x->getSrcID(), x->getDstID(), x->getEdgeKind(), normalGep->getConstantFieldIdx());
             else
-            {
-                edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
-            }
+                write_edge(edge_stream, x->getSrcID(), x->getDstID(), x->getEdgeKind(), 0);
         }
 
     return 0;
