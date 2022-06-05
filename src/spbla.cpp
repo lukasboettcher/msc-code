@@ -59,18 +59,19 @@ void write_matrix_disk(spbla_Matrix &m, string path)
     fclose(fp);
 }
 
-void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, unordered_set<spbla_Index> &nodes)
+void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, map<string, spbla_Index> &node2id, size_t &node_ctr)
 {
-    string type;
-    spbla_Index src, dst;
+    string type, src, dst;
     while (*s >> src >> dst >> type)
     {
-        nodes.insert(src);
-        nodes.insert(dst);
+        if (node2id.find(src) == node2id.end())
+            node2id[src] = node_ctr++;
+        if (node2id.find(dst) == node2id.end())
+            node2id[dst] = node_ctr++;
         if (!edge_lists.count(type))
             edge_lists[type] = {vector<spbla_Index>(), vector<spbla_Index>()};
-        edge_lists[type].first.push_back(src);
-        edge_lists[type].second.push_back(dst);
+        edge_lists[type].first.push_back(node2id[src]);
+        edge_lists[type].second.push_back(node2id[dst]);
     }
 }
 
