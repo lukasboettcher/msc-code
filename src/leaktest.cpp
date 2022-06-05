@@ -150,7 +150,17 @@ int main(int argc, char **argv)
 
     for (auto &entry : *cg)
         for (auto &x : entry.second->getOutEdges())
-            edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+        {
+            if (NormalGepCGEdge* normalGep = SVFUtil::dyn_cast<NormalGepCGEdge>(x))
+            {
+                // const LocationSet ls = normalGep->getLocationSet();
+                edge_stream << x->getSrcID() << "_" << normalGep->getConstantFieldIdx() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+            }
+            else
+            {
+                edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+            }
+        }
 
     cout << "\trunning Andersen Analysis\n";
     Andersen *ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
