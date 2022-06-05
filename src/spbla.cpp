@@ -111,7 +111,8 @@ int main(int argc, char const *argv[])
     unordered_map<string, unordered_set<string>> terminal_to_nonterminals;
     vector<pair<string, pair<string, string>>> rules;
     unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists;
-    unordered_set<spbla_Index> nodes;
+    size_t node_cnt = 0;
+    map<string, spbla_Index> node2id;
     unordered_set<string> symbols;
 
     if (argc != 3)
