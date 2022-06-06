@@ -3,6 +3,11 @@
 #include "WPA/Andersen.h"
 #include "SVF-FE/SVFIRBuilder.h"
 #include "Util/Options.h"
+#include "Graphs/CHG.h"
+#include "SVF-FE/LLVMUtil.h"
+#include "MemoryModel/PointsTo.h"
+#include "WPA/Andersen.h"
+#include "WPA/Steensgaard.h"
 
 #include "Graphs/IRGraph.h"
 
