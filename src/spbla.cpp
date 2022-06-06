@@ -42,7 +42,7 @@ void write_matrix_disk(spbla_Matrix &m, string path)
     FILE *fp = fopen(path.c_str(), "w");
     if (fp)
     {
-        cerr << "Error opening File at: " <<  path << endl;
+        cerr << "Error opening File at: " << path << endl;
         return;
     }
 
