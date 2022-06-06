@@ -92,6 +92,70 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
     }
 }
 
+bool processGepPts(ConstraintGraph* consCG, SVFIR * pag, const PointsTo& pts, const GepCGEdge* edge)
+{
+
+    PointsTo tmpDstPts;
+    if (SVFUtil::isa<VariantGepCGEdge>(edge))
+    {
+        // If a pointer is connected by a variant gep edge,
+        // then set this memory object to be field insensitive,
+        // unless the object is a black hole/constant.
+        for (NodeID o : pts)
+        {
+            if (consCG->isBlkObjOrConstantObj(o))
+            {
+                tmpDstPts.set(o);
+                continue;
+            }
+            const MemObj* mem =  pag->getBaseObj(o);
+            if (!mem->isFieldInsensitive())
+            {
+                MemObj* mem =  const_cast<MemObj*>(pag->getBaseObj(o));
+                mem->setFieldInsensitive();
+                consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
+            }
+
+            // Add the field-insensitive node into pts.
+            NodeID baseId = consCG->getFIObjVar(o);
+            tmpDstPts.set(baseId);
+        }
+    }
+    else if (const NormalGepCGEdge* normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+    {
+        // TODO: after the node is set to field insensitive, handling invariant
+        // gep edge may lose precision because offsets here are ignored, and the
+        // base object is always returned.
+        for (NodeID o : pts)
+        {
+            if (consCG->isBlkObjOrConstantObj(o))
+            {
+                tmpDstPts.set(o);
+                continue;
+            }
+
+            // if (!matchType(edge->getSrcID(), o, normalGepEdge)) continue;
+
+            NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+            tmpDstPts.set(fieldSrcPtdNode);
+            // addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
+        }
+    }
+    // else
+    // {
+    //     assert(false && "Andersen::processGepPts: New type GEP edge type?");
+    // }
+
+    // NodeID dstId = edge->getDstID();
+    // if (unionPts(dstId, tmpDstPts))
+    // {
+    //     pushIntoWorklist(dstId);
+    //     return true;
+    // }
+
+    return true;
+}
+
 int main(int argc, char **argv)
 {
 
