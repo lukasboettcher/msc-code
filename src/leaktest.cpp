@@ -153,28 +153,26 @@ class TestDDAClient : public DDAClient
 {
 
 public:
-    typedef OrderedSet<const PAGNode*> PAGNodeSet;
+    typedef OrderedSet<const PAGNode *> PAGNodeSet;
 
-    TestDDAClient(SVFModule* module) : DDAClient(module) {}
+    TestDDAClient(SVFModule *module) : DDAClient(module) {}
     ~TestDDAClient() {}
 
-    virtual OrderedNodeSet& collectCandidateQueries(SVFIR* pag);
+    virtual OrderedNodeSet &collectCandidateQueries(SVFIR *pag);
 
-    virtual void performStat(PointerAnalysis* pta);
+    virtual inline void performStat(PointerAnalysis *pta) {}
 
 private:
-    typedef OrderedMap<NodeID,const CallICFGNode*> VTablePtrToCallSiteMap;
+    typedef OrderedMap<NodeID, const CallICFGNode *> VTablePtrToCallSiteMap;
     VTablePtrToCallSiteMap vtableToCallSiteMap;
     PAGNodeSet loadSrcNodes;
     PAGNodeSet storeDstNodes;
     PAGNodeSet gepSrcNodes;
 };
 
-OrderedNodeSet& TestDDAClient::collectCandidateQueries(SVFIR* pag)
+OrderedNodeSet &TestDDAClient::collectCandidateQueries(SVFIR *pag)
 {
     setPAG(pag);
-
-
 
     // SVFStmt::SVFStmtSetTy& loads = pag->getSVFStmtSet(SVFStmt::Load);
     // for (SVFStmt::SVFStmtSetTy::iterator iter = loads.begin(), eiter =
@@ -195,10 +193,9 @@ OrderedNodeSet& TestDDAClient::collectCandidateQueries(SVFIR* pag)
         for (auto &param : params)
         {
             addCandidate(param->getId());
-            cout << "\t" << param->toString()  <<" :  " << param->getId() << endl;
+            cout << "\t" << param->toString() << " :  " << param->getId() << endl;
         }
     }
-    
 
     // SVFStmt::SVFStmtSetTy& loads = pag->getSVFStmtSet(SVFStmt::Load);
     // for (SVFStmt::SVFStmtSetTy::iterator iter = loads.begin(), eiter =
