@@ -159,6 +159,65 @@ private:
     PAGNodeSet storeDstNodes;
     PAGNodeSet gepSrcNodes;
 };
+
+OrderedNodeSet& TestDDAClient::collectCandidateQueries(SVFIR* pag)
+{
+    setPAG(pag);
+
+
+
+    // SVFStmt::SVFStmtSetTy& loads = pag->getSVFStmtSet(SVFStmt::Load);
+    // for (SVFStmt::SVFStmtSetTy::iterator iter = loads.begin(), eiter =
+    //             loads.end(); iter != eiter; ++iter)
+    // {
+    //     PAGNode* loadsrc = (*iter)->getSrcNode();
+    //     // loadSrcNodes.insert(loadsrc);
+    //     addCandidate(loadsrc->getId());
+    // }
+
+    SVF::SVFIR::CallSiteSet s = pag->getCallSiteSet();
+
+    for (auto &call : s)
+    {
+        cout << " {fun: " << call->getFun()->getName() << "}" << endl;
+        // TODO, check if params get used w/o check (nullptrs)
+        auto params = call->getActualParms();
+        for (auto &param : params)
+        {
+            addCandidate(param->getId());
+            cout << "\t" << param->toString()  <<" :  " << param->getId() << endl;
+        }
+    }
+    
+
+    // SVFStmt::SVFStmtSetTy& loads = pag->getSVFStmtSet(SVFStmt::Load);
+    // for (SVFStmt::SVFStmtSetTy::iterator iter = loads.begin(), eiter =
+    //             loads.end(); iter != eiter; ++iter)
+    // {
+    //     PAGNode* loadsrc = (*iter)->getSrcNode();
+    //     // loadSrcNodes.insert(loadsrc);
+    //     addCandidate(loadsrc->getId());
+    // }
+
+    // SVFStmt::SVFStmtSetTy& stores = pag->getSVFStmtSet(SVFStmt::Store);
+    // for (SVFStmt::SVFStmtSetTy::iterator iter = stores.begin(), eiter =
+    //             stores.end(); iter != eiter; ++iter)
+    // {
+    //     PAGNode* storedst = (*iter)->getDstNode();
+    //     // storeDstNodes.insert(storedst);
+    //     addCandidate(storedst->getId());
+    // }
+    // SVFStmt::SVFStmtSetTy& geps = pag->getSVFStmtSet(SVFStmt::Gep);
+    // for (SVFStmt::SVFStmtSetTy::iterator iter = geps.begin(), eiter =
+    //             geps.end(); iter != eiter; ++iter)
+    // {
+    //     PAGNode* gepsrc = (*iter)->getSrcNode();
+    //     // gepSrcNodes.insert(gepsrc);
+    //     addCandidate(gepsrc->getId());
+    // }
+    return candidateQueries;
+}
+
 int main(int argc, char **argv)
 {
 
