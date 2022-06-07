@@ -243,6 +243,32 @@ int main(int argc, char **argv)
     SVFIR *pag = builder.build(svfModule);
     ICFG *icfg = pag->getICFG();
     ConstraintGraph *cg = new ConstraintGraph(pag);
+    // pag->dump("pag");
+
+    cout << "\tcreating demand driven pta client\n";
+    DDAClient *_client;
+    // _client = new DDAClient(svfModule);
+    // NodeID q = 17;
+    // _client->setQuery(q);
+    // q = 28;
+    // _client->setQuery(q);
+
+    _client = new TestDDAClient(svfModule);
+    _client->initialise(svfModule);
+
+    cout << "\tcreating demand driven pointer analysis\n";
+    PointerAnalysis *_pta;
+    _pta = new ContextDDA(pag, _client);
+
+    _pta->initialize();
+    cout << "\tanswering demand driven pointer queries\n";
+    _client->answerQueries(_pta);
+    _pta->finalize();
+
+    // _client->performStat(_pta);
+    // printQueryPTS(_client, _pta);
+
+    return 0;
 
     // dumping CG
     ofstream edge_stream;
@@ -256,8 +282,6 @@ int main(int argc, char **argv)
             else
                 write_edge(edge_stream, x->getSrcID(), x->getDstID(), x->getEdgeKind(), 0);
         }
-
-    return 0;
 
     cout << "\trunning Andersen Analysis\n";
     Andersen *ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
