@@ -3,6 +3,11 @@
 #include "WPA/Andersen.h"
 #include "SVF-FE/SVFIRBuilder.h"
 #include "Util/Options.h"
+#include "MemoryModel/PointerAnalysisImpl.h"
+#include "DDA/DDAClient.h"
+#include "Util/SCC.h"
+#include "DDA/DDAPass.h"
+#include "DDA/ContextDDA.h"
 
 using namespace llvm;
 using namespace std;
