@@ -139,6 +139,26 @@ void printQueryPTS(DDAClient *_client, PointerAnalysis *_pta)
     }
 }
 
+class TestDDAClient : public DDAClient
+{
+
+public:
+    typedef OrderedSet<const PAGNode*> PAGNodeSet;
+
+    TestDDAClient(SVFModule* module) : DDAClient(module) {}
+    ~TestDDAClient() {}
+
+    virtual OrderedNodeSet& collectCandidateQueries(SVFIR* pag);
+
+    virtual void performStat(PointerAnalysis* pta);
+
+private:
+    typedef OrderedMap<NodeID,const CallICFGNode*> VTablePtrToCallSiteMap;
+    VTablePtrToCallSiteMap vtableToCallSiteMap;
+    PAGNodeSet loadSrcNodes;
+    PAGNodeSet storeDstNodes;
+    PAGNodeSet gepSrcNodes;
+};
 int main(int argc, char **argv)
 {
 
