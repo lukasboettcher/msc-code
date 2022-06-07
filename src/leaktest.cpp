@@ -129,6 +129,15 @@ void write_edge(ofstream &edge_stream, unsigned src, unsigned dst, unsigned type
     edge_stream << dst << "\t" << src << "_" << offset << "\t"
                 << "-" << type << endl;
 }
+void printQueryPTS(DDAClient *_client, PointerAnalysis *_pta)
+{
+    const OrderedNodeSet &candidates = _client->getCandidateQueries();
+    for (OrderedNodeSet::const_iterator it = candidates.begin(), eit = candidates.end(); it != eit; ++it)
+    {
+        const PointsTo &pts = _pta->getPts(*it);
+        _pta->dumpPts(*it, pts);
+    }
+}
 
 int main(int argc, char **argv)
 {
