@@ -272,6 +272,16 @@ int main(int argc, char **argv)
     _client->answerQueries(_pta);
     _pta->finalize();
 
+    const OrderedNodeSet &candidates = _client->getCandidateQueries();
+    for (OrderedNodeSet::const_iterator it = candidates.begin(), eit = candidates.end(); it != eit; ++it)
+    {
+        const PointsTo &pts = _pta->getPts(*it);
+        // TODO: implement nullptr check here
+        for (PointsTo::iterator it = pts.begin(), eit = pts.end(); it != eit; ++it)
+            if (pag->isNullPtr(*it))
+                cout << "WARNING\t" << *it << " is a nullptr" << endl; // placeholder
+    }
+
     // _client->performStat(_pta);
     // printQueryPTS(_client, _pta);
 
