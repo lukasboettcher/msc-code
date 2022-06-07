@@ -124,11 +124,21 @@ void traverseOnVFG(const SVFG *vfg, const Value *val, Set<const VFGNode *> &visi
 }
 
 void write_edge(ofstream &edge_stream, unsigned src, unsigned dst, unsigned type, unsigned offset)
-{   
-    edge_stream << src << "_" << offset << "\t" << dst << "\t" << type << endl;
-    edge_stream << dst << "\t" << src << "_" << offset << "\t"
-                << "-" << type << endl;
+{
+    if (offset)
+    {
+        edge_stream << src << "_" << offset << "\t" << dst << "\t" << type << endl;
+        edge_stream << dst << "\t" << src << "_" << offset << "\t"
+                    << "-" << type << endl;
+    }
+    else
+    {
+        edge_stream << src << "\t" << dst << "\t" << type << endl;
+        edge_stream << dst << "\t" << src << "\t"
+                    << "-" << type << endl;
+    }
 }
+
 void printQueryPTS(DDAClient *_client, PointerAnalysis *_pta)
 {
     const OrderedNodeSet &candidates = _client->getCandidateQueries();
