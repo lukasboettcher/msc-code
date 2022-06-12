@@ -92,7 +92,7 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
     }
 }
 
-bool processGepPts(ConstraintGraph* consCG, SVFIR * pag, const PointsTo& pts, const GepCGEdge* edge)
+bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
     PointsTo tmpDstPts;
@@ -108,10 +108,10 @@ bool processGepPts(ConstraintGraph* consCG, SVFIR * pag, const PointsTo& pts, co
                 tmpDstPts.set(o);
                 continue;
             }
-            const MemObj* mem =  pag->getBaseObj(o);
+            const MemObj *mem = pag->getBaseObj(o);
             if (!mem->isFieldInsensitive())
             {
-                MemObj* mem =  const_cast<MemObj*>(pag->getBaseObj(o));
+                MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
                 mem->setFieldInsensitive();
                 consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
             }
@@ -119,9 +119,12 @@ bool processGepPts(ConstraintGraph* consCG, SVFIR * pag, const PointsTo& pts, co
             // Add the field-insensitive node into pts.
             NodeID baseId = consCG->getFIObjVar(o);
             tmpDstPts.set(baseId);
+
+            edge_stream << baseId << "\t" << edge->getDstID() << "\t" << 0 << endl;
+            edge_stream << edge->getDstID() << "\t" << baseId << "\t-" << 0 << endl;
         }
     }
-    else if (const NormalGepCGEdge* normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+    else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
     {
         // TODO: after the node is set to field insensitive, handling invariant
         // gep edge may lose precision because offsets here are ignored, and the
@@ -138,6 +141,9 @@ bool processGepPts(ConstraintGraph* consCG, SVFIR * pag, const PointsTo& pts, co
 
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
             tmpDstPts.set(fieldSrcPtdNode);
+
+            edge_stream << fieldSrcPtdNode << "\t" << edge->getDstID() << "\t" << 0 << endl;
+            edge_stream << edge->getDstID() << "\t" << fieldSrcPtdNode << "\t-" << 0 << endl;
             // addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
         }
     }
