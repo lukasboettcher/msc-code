@@ -186,8 +186,8 @@ int main(int argc, char **argv)
     // pag->dump("graph");
 
     // Addr, Copy, Store, Load, NormalGep, VariantGep
-    ConstraintGraph* cg = new ConstraintGraph(pag);
-    cg->dump("graph");
+    ConstraintGraph *cg = new ConstraintGraph(pag);
+    // cg->dump("graph-cg");
 
     // Andersen* ander = new Andersen(pag);
     // ander->analyze();
@@ -203,13 +203,26 @@ int main(int argc, char **argv)
     for (auto &entry : *cg)
     {
         // push desc into meta.txt
-        meta_stream << pag->getGNode(entry.second->getId())->toString() << endl;
+        // meta_stream << pag->getGNode(entry.second->getId())->toString() << endl;
         // meta_stream << entry.second->toString() << endl;
 
         for (auto &x : entry.second->getOutEdges())
         {
             // push src dst typ into edges.txt
-            edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+
+            if (const GepCGEdge *gepEdge = SVFUtil::dyn_cast<GepCGEdge>(x))
+            {
+                set<NodeID> pts;
+                for (auto &addr_in : entry.second->getAddrInEdges())
+                    pts.insert(addr_in->getSrcID());
+
+                processGepPts(edge_stream, cg, pag, pts, gepEdge);
+            }
+            else
+            {
+                edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+                edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
+            }
         }
     }
 
