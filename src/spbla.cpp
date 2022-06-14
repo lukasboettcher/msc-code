@@ -23,7 +23,7 @@ void print_edges(unordered_map<string, pair<vector<spbla_Index>, vector<spbla_In
     }
 }
 
-void print_matrix(spbla_Matrix &m)
+void print_matrix(spbla_Matrix &m, map<spbla_Index, string> *id2node = nullptr)
 {
     spbla_Index *rows, *cols, nvals;
     spbla_Matrix_Nvals(m, &nvals);
@@ -32,7 +32,10 @@ void print_matrix(spbla_Matrix &m)
     spbla_Matrix_ExtractPairs(m, rows, cols, &nvals);
     cout << "Printing Matrix with nvals: " << nvals << endl;
     for (spbla_Index i = 0; i < nvals; i++)
-        cout << rows[i] << " " << cols[i] << endl;
+        if (id2node)
+            cout << (*id2node)[rows[i]] << " " << (*id2node)[cols[i]] << endl;
+        else
+            cout << rows[i] << " " << cols[i] << endl;
     free(rows);
     free(cols);
 }
