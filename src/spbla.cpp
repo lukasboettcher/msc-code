@@ -251,9 +251,8 @@ int main(int argc, char const *argv[])
             spbla_Index total = 0;
             spbla_Index before, current, nvals_a, nvals_b;
             spbla_Matrix A, B, C;
-            A = ms[rule.second.first];
-            B = ms[rule.second.second];
-            C = ms[rule.first];
+
+            load_matrices(rule, ms, A, B, C);
 
             if (rule_rhs_c[i] == get_nnz(A) + get_nnz(B))
                 continue;
@@ -271,6 +270,7 @@ int main(int argc, char const *argv[])
                 change = true;
             }
             cout << endl;
+            store_matrices(rule, ms, A, B, C);
             rule_rhs_c[i] = get_nnz(A) + get_nnz(B);
         }
         iter++;
