@@ -125,6 +125,24 @@ spbla_Matrix create_spbla_transpose(spbla_Matrix in)
     spbla_Matrix_Transpose(out, in, SPBLA_HINT_NO);
     return out;
 }
+
+spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
+{
+    spbla_Matrix ret;
+    const char negative = '-';
+    if (!("-" == rule.substr(0, 1)))
+    // if (rule.compare(0, 1, &negative))
+    {
+        ret = ms[rule];
+    }
+    else
+    {
+        ret = create_spbla_transpose(ms[rule]);
+        cout << "\tRule " << rule << " requires transpose\n";
+    }
+
+    return ret;
+}
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
