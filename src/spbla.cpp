@@ -155,6 +155,21 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
         spbla_Matrix_Free(to_store);
     }
 }
+
+void load_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Matrix> &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
+{
+    A = load_matrix(rule.second.first, ms);
+    B = load_matrix(rule.second.second, ms);
+    C = load_matrix(rule.first, ms);
+}
+
+void store_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Matrix> &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
+{
+    store_matrix(rule.second.first, ms, A);
+    store_matrix(rule.second.second, ms, B);
+    store_matrix(rule.first, ms, C);
+}
+
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
