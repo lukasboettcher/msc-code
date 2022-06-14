@@ -1,0 +1,9 @@
+a   0
+c   1
+s   2
+l   3
+c   4
+c   5
+c   s   -a
+c   a  l
+a  a   c
