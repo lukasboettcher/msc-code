@@ -143,6 +143,18 @@ spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
 
     return ret;
 }
+
+void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_store)
+{
+    const char negative = '-';
+    if ("-" == rule.substr(0, 1))
+    // if (!rule.compare(0, 1, &negative))
+    {
+        rule.erase(0, 1);
+        spbla_Matrix_Transpose(ms[rule], to_store, SPBLA_HINT_ACCUMULATE);
+        spbla_Matrix_Free(to_store);
+    }
+}
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
