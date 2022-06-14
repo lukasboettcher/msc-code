@@ -180,6 +180,7 @@ int main(int argc, char const *argv[])
     unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists;
     size_t node_cnt = 0;
     map<string, spbla_Index> node2id;
+    map<spbla_Index, string> id2node;
     unordered_set<string> symbols;
 
     if (argc != 3)
@@ -193,7 +194,7 @@ int main(int argc, char const *argv[])
 
     parse_rules(&rules_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
     cout << "\tPARSING RULES DONE" << endl;
-    parse_edges(&edges_f, edge_lists, node2id, node_cnt);
+    parse_edges(&edges_f, edge_lists, node2id, id2node, node_cnt);
     cout << "\tPARSING EDGES DONE" << endl;
 
     cout << "\tCreating Empty Matrices" << endl;
