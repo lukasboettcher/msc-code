@@ -114,6 +114,17 @@ void parse_rules(
     }
 }
 
+spbla_Matrix create_spbla_transpose(spbla_Matrix in)
+{
+    spbla_Matrix out;
+    spbla_Index rows, cols;
+    spbla_Matrix_Nrows(in, &rows);
+    spbla_Matrix_Ncols(in, &cols);
+
+    spbla_Matrix_New(&out, rows, cols);
+    spbla_Matrix_Transpose(out, in, SPBLA_HINT_NO);
+    return out;
+}
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
