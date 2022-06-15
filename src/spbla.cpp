@@ -131,7 +131,6 @@ spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
     spbla_Matrix ret;
     const char negative = '-';
     if (!("-" == rule.substr(0, 1)))
-    // if (rule.compare(0, 1, &negative))
     {
         ret = ms[rule];
     }
@@ -148,10 +147,10 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
 {
     const char negative = '-';
     if ("-" == rule.substr(0, 1))
-    // if (!rule.compare(0, 1, &negative))
     {
         rule.erase(0, 1);
-        spbla_Matrix_Transpose(ms[rule], to_store, SPBLA_HINT_ACCUMULATE);
+        spbla_Matrix_Transpose(ms[rule], to_store, SPBLA_HINT_NO);
+        spbla_Matrix_EWiseAdd(ms[rule], ms[rule], to_store, SPBLA_HINT_NO);
         spbla_Matrix_Free(to_store);
     }
 }
