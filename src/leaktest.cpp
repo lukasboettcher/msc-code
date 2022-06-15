@@ -277,6 +277,8 @@ int main(int argc, char **argv)
     {
         const PointsTo &pts = _pta->getPts(*it);
         // TODO: implement nullptr check here
+        if (pts.empty())
+            cout << "WARNING\t" << *it << " has no target, dangling ptr" << endl;
         for (PointsTo::iterator it = pts.begin(), eit = pts.end(); it != eit; ++it)
             if (pag->isNullPtr(*it))
                 cout << "WARNING\t" << *it << " is a nullptr" << endl; // placeholder
