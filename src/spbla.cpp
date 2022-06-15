@@ -160,8 +160,7 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
     {
         rule.erase(0, 1);
         spbla_Matrix to_store_T = create_spbla_transpose(to_store);
-        spbla_Matrix_EWiseAdd(ms[rule], ms[rule], to_store_T, SPBLA_HINT_NO);
-        
+        spblaCheck(spbla_Matrix_EWiseAdd(ms[rule], ms[rule], to_store_T, SPBLA_HINT_NO));
         spbla_Matrix_Free(to_store);
         spbla_Matrix_Free(to_store_T);
     }
@@ -227,7 +226,7 @@ int main(int argc, char const *argv[])
         range = (spbla_Index *)malloc(sizeof(spbla_Index) * node_cnt);
         for (size_t i = 0; i < node_cnt; i++)
             range[i] = i;
-        spbla_Matrix_Build(ms[s], range, range, node_cnt, SPBLA_HINT_NO);
+        spblaCheck(spbla_Matrix_Build(ms[s], range, range, node_cnt, SPBLA_HINT_NO));
     }
 
     cout << "\tAdding Graph Edges" << endl;
@@ -241,10 +240,10 @@ int main(int argc, char const *argv[])
         rows = edge_lists[term.first].first.data();
         cols = edge_lists[term.first].second.data();
 
-        spbla_Matrix_Build(tmp, rows, cols, edge_lists[term.first].first.size(), SPBLA_HINT_NO);
+        spblaCheck(spbla_Matrix_Build(tmp, rows, cols, edge_lists[term.first].first.size(), SPBLA_HINT_NO));
 
         for (auto &nterm : term.second)
-            spbla_Matrix_EWiseAdd(ms[nterm], ms[nterm], tmp, SPBLA_HINT_ACCUMULATE);
+            spblaCheck(spbla_Matrix_EWiseAdd(ms[nterm], ms[nterm], tmp, SPBLA_HINT_ACCUMULATE));
 
         spbla_Matrix_Free(tmp);
     }
@@ -275,7 +274,7 @@ int main(int argc, char const *argv[])
             while (true)
             {
                 cout << "\r[" << iter << "]running for [" << rule.first << " <- " << rule.second.first << " " << rule.second.second << "], nnz: " << get_nnz(ms[rule.first]) << flush;
-                spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE); // C += A x B
+                spblaCheck(spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE)); // C += A x B
                 if (get_nnz(C) == before)
                     break;
                 before = get_nnz(C);
