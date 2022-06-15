@@ -137,8 +137,8 @@ spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
     }
     else
     {
+        rule.erase(0, 1);
         ret = create_spbla_transpose(ms[rule]);
-        cout << "\tRule " << rule << " requires transpose\n";
     }
 
     return ret;
