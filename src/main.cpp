@@ -92,6 +92,64 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
     }
 }
 
+void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
+{
+    // check for must alias cases, whether our alias analysis produce the correct results
+    if (const SVFFunction* checkFun = SVFUtil::getFunction(fun))
+    {
+        if(!checkFun->getLLVMFun()->use_empty())
+            outs() << "[" << "custom analysis" << "] Checking " << fun << "\n";
+
+        for (Value::user_iterator i = checkFun->getLLVMFun()->user_begin(), e =
+                    checkFun->getLLVMFun()->user_end(); i != e; ++i)
+            if (SVFUtil::isCallSite(*i))
+            {
+
+                CallSite cs(*i);
+                assert(cs.getNumArgOperands() == 2
+                       && "arguments should be two pointers!!");
+                Value* V1 = cs.getArgOperand(0);
+                Value* V2 = cs.getArgOperand(1);
+                NodeID n1 = pag->getValueNode(V1);
+                NodeID n2 = pag->getValueNode(V2);
+
+                cout << n1 << "\t" << n2 << "\t" << fun << endl;
+                test_stream << n1 << "\t" << n2 << "\t" << fun << endl;
+
+            //     SVF::AliasResult aliasRes = AndersenBase::alias(V1, V2);
+
+            //     bool checkSuccessful = false;
+            //     if (fun == "MAYALIAS")
+            //     {
+            //         if (aliasRes == AliasResult::MayAlias || aliasRes == AliasResult::MustAlias)
+            //             checkSuccessful = true;
+            //     }
+            //     else if (fun == "NOALIAS" )
+            //     {
+            //         if (aliasRes == AliasResult::NoAlias)
+            //             checkSuccessful = true;
+            //     }
+
+            //     NodeID id1 = pag->getValueNode(V1);
+            //     NodeID id2 = pag->getValueNode(V2);
+
+            //     if (checkSuccessful)
+            //         outs() << SVFUtil::sucMsg("\t SUCCESS :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
+            //                << SVFUtil::getSourceLoc(*i) << ")\n";
+            //     else
+            //     {
+            //         SVFUtil::errs() << SVFUtil::errMsg("\t FAILURE :") << fun
+            //                         << " check <id:" << id1 << ", id:" << id2
+            //                         << "> at (" << SVFUtil::getSourceLoc(*i) << ")\n";
+            //         assert(false && "test case failed!");
+            //     }
+            }
+            else
+                assert(false && "alias check functions not only used at callsite??");
+
+    }
+}
+
 bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
