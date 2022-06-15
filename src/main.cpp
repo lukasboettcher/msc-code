@@ -177,9 +177,8 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
             // Add the field-insensitive node into pts.
             NodeID baseId = consCG->getFIObjVar(o);
             tmpDstPts.set(baseId);
-
+            // add addr edge (inv pts edge)
             edge_stream << baseId << "\t" << edge->getDstID() << "\t" << 0 << endl;
-            edge_stream << edge->getDstID() << "\t" << baseId << "\t-" << 0 << endl;
         }
     }
     else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
@@ -199,9 +198,9 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
 
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
             tmpDstPts.set(fieldSrcPtdNode);
-
+            // add addr edge (inv pts edge)
+            cout << "\tfield id: " << fieldSrcPtdNode << endl;
             edge_stream << fieldSrcPtdNode << "\t" << edge->getDstID() << "\t" << 0 << endl;
-            edge_stream << edge->getDstID() << "\t" << fieldSrcPtdNode << "\t-" << 0 << endl;
             // addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
         }
     }
