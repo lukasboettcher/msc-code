@@ -215,6 +215,11 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
     //     return true;
     // }
 
+    for (auto &node : gepNodes)
+    {
+        edge_stream << node << "\t" << edge->getDstID() << "\t" << 0 << endl;
+    }
+
     return true;
 }
 
