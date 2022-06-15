@@ -157,6 +157,7 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
 
 void load_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Matrix> &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
 {
+    // cout << "loading: " << rule.first << " " <<  rule.second.first << " " << rule.second.second << endl;
     A = load_matrix(rule.second.first, ms);
     B = load_matrix(rule.second.second, ms);
     C = load_matrix(rule.first, ms);
@@ -261,7 +262,7 @@ int main(int argc, char const *argv[])
             // #pragma omp task depend(in:A,B), depend(inout:C), firstprivate(before, A,B,C)
             while (true)
             {
-                cout << "\r[" << iter << "]running for lhs: " << rule.first << ", nnz: " << get_nnz(ms[rule.first]) << flush;
+                cout << "\r[" << iter << "]running for [" << rule.first << " <- " << rule.second.first << " " << rule.second.second << "], nnz: " << get_nnz(ms[rule.first]) << flush;
                 spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE); // C += A x B
                 if (get_nnz(C) == before)
                     break;
