@@ -240,11 +240,11 @@ int main(int argc, char **argv)
     /// Build Program Assignment Graph (SVFIR)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
-    // pag->dump("graph");
+    pag->dump("graph-pag");
 
     // Addr, Copy, Store, Load, NormalGep, VariantGep
     ConstraintGraph *cg = new ConstraintGraph(pag);
-    // cg->dump("graph-cg");
+    cg->dump("graph-cg-init");
 
     // Andersen* ander = new Andersen(pag);
     // ander->analyze();
@@ -278,10 +278,16 @@ int main(int argc, char **argv)
             else
             {
                 edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
-                edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
+                // edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
             }
         }
     }
+    ofstream test_stream;
+    test_stream.open("test.txt");
+    validateSuccessTests("MUSTALIAS", pag, test_stream);
+    validateSuccessTests("NOALIAS", pag, test_stream);
+
+    cg->dump("graph-cg");
 
     SVFIR::releaseSVFIR();
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
