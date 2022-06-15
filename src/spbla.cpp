@@ -159,9 +159,11 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
     if ("-" == rule.substr(0, 1))
     {
         rule.erase(0, 1);
-        spbla_Matrix_Transpose(ms[rule], to_store, SPBLA_HINT_NO);
-        spbla_Matrix_EWiseAdd(ms[rule], ms[rule], to_store, SPBLA_HINT_NO);
+        spbla_Matrix to_store_T = create_spbla_transpose(to_store);
+        spbla_Matrix_EWiseAdd(ms[rule], ms[rule], to_store_T, SPBLA_HINT_NO);
+        
         spbla_Matrix_Free(to_store);
+        spbla_Matrix_Free(to_store_T);
     }
 }
 
