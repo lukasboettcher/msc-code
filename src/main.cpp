@@ -154,7 +154,7 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
 bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
-    PointsTo tmpDstPts;
+    unordered_set<NodeID> gepNodes;
     if (SVFUtil::isa<VariantGepCGEdge>(edge))
     {
         // If a pointer is connected by a variant gep edge,
@@ -164,7 +164,7 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
         {
             if (consCG->isBlkObjOrConstantObj(o))
             {
-                tmpDstPts.set(o);
+                gepNodes.insert(o);
                 continue;
             }
             const MemObj *mem = pag->getBaseObj(o);
@@ -177,9 +177,8 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
 
             // Add the field-insensitive node into pts.
             NodeID baseId = consCG->getFIObjVar(o);
-            tmpDstPts.set(baseId);
+            gepNodes.insert(baseId);
             // add addr edge (inv pts edge)
-            edge_stream << baseId << "\t" << edge->getDstID() << "\t" << 0 << endl;
         }
     }
     else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
@@ -191,14 +190,14 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
         {
             if (consCG->isBlkObjOrConstantObj(o))
             {
-                tmpDstPts.set(o);
+                gepNodes.insert(o);
                 continue;
             }
 
             // if (!matchType(edge->getSrcID(), o, normalGepEdge)) continue;
 
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
-            tmpDstPts.set(fieldSrcPtdNode);
+            gepNodes.insert(fieldSrcPtdNode);
             // add addr edge (inv pts edge)
             // cout << "\tfield id: " << fieldSrcPtdNode << endl;
             // addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
