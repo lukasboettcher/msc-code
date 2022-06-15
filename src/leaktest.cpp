@@ -271,6 +271,7 @@ int main(int argc, char **argv)
     cout << "\tanswering demand driven pointer queries\n";
     _client->answerQueries(_pta);
     _pta->finalize();
+    cout << "\tcalculated "<< _client->getCandidateQueries().size() <<" queries\n";
 
     const OrderedNodeSet &candidates = _client->getCandidateQueries();
     for (OrderedNodeSet::const_iterator it = candidates.begin(), eit = candidates.end(); it != eit; ++it)
