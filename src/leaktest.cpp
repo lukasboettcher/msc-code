@@ -187,13 +187,13 @@ OrderedNodeSet &TestDDAClient::collectCandidateQueries(SVFIR *pag)
 
     for (auto &call : s)
     {
-        cout << " {fun: " << call->getFun()->getName() << "}" << endl;
+        // cout << " {fun: " << call->getFun()->getName() << "}" << endl;
         // TODO, check if params get used w/o check (nullptrs)
         auto params = call->getActualParms();
         for (auto &param : params)
         {
             addCandidate(param->getId());
-            cout << "\t" << param->toString() << " :  " << param->getId() << endl;
+            // cout << "\t" << param->toString() << " :  " << param->getId() << endl;
         }
     }
 
