@@ -269,8 +269,8 @@ int main(int argc, char const *argv[])
                 change = true;
             }
             cout << endl;
-            store_matrices(rule, ms, A, B, C);
             rule_rhs_c[i] = get_nnz(A) + get_nnz(B);
+            store_matrices(rule, ms, A, B, C);
         }
         iter++;
     }
