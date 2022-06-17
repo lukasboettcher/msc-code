@@ -170,6 +170,35 @@ void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, 
     store_matrix(rule.first, ms, C);
 }
 
+bool alias(spbla_Index *rows, spbla_Index *cols, spbla_Index nvals, spbla_Index a, spbla_Index b, spbla_Matrix m)
+{
+    size_t i, first_a_idx, first_b_idx;
+    spbla_vec_t ptsA, ptsB, intersect;
+
+    first_a_idx = std::lower_bound(rows, rows + nvals, a) - rows;
+    first_b_idx = std::lower_bound(cols, cols + nvals, b) - cols;
+
+    for (i = first_a_idx; i < nvals; i++)
+    {
+        if (rows[i] != a)
+            break;
+        ptsA.push_back(cols[i]);
+        // ptsA.insert(cols[i]);
+    }
+
+    for (i = first_b_idx; i < nvals; i++)
+    {
+        if (rows[i] != b)
+            break;
+        ptsB.push_back(cols[i]);
+        // ptsA.insert(cols[i]);
+    }
+
+    std::set_intersection(ptsA.begin(), ptsA.end(), ptsB.begin(), ptsB.end(), std::back_inserter(intersect));
+
+    return intersect.size();
+}
+
 void extract_adj(spbla_Matrix m, AdjMatrix *adjm)
 {   
     spbla_Matrix_Nvals(m, &adjm->nvals);
