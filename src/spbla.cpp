@@ -1,5 +1,4 @@
-#include <spbla/spbla.h>
-#include <bits/stdc++.h>
+#include <mmxcflr.h>
 
 #define spblaCheck(ans) { spblaAssert((ans), __FILE__, __LINE__); }
 inline void spblaAssert(spbla_Status code, const char *file, int line, bool abort=true)
