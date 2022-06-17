@@ -19,7 +19,7 @@ spbla_Index get_nnz(spbla_Matrix m)
     return nvals;
 }
 
-void print_edges(unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists)
+void print_edges(Edges edge_lists)
 {
     for (auto &&i : edge_lists)
     {
@@ -71,7 +71,7 @@ void write_matrix_disk(spbla_Matrix &m, string path)
     fclose(fp);
 }
 
-void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> &edge_lists, map<string, spbla_Index> &node2id, map<spbla_Index, string> &id2node, size_t &node_ctr)
+void parse_edges(istream *s, Edges &edge_lists, map<string, spbla_Index> &node2id, map<spbla_Index, string> &id2node, size_t &node_ctr)
 {
     string type, src, dst;
     while (*s >> src >> dst >> type)
@@ -96,10 +96,10 @@ void parse_edges(istream *s, unordered_map<string, pair<vector<spbla_Index>, vec
 
 void parse_rules(
     istream *s,
-    unordered_set<string> &epsilon_nonterminals,
-    unordered_map<string, unordered_set<string>> &terminal_to_nonterminals,
-    vector<pair<string, pair<string, string>>> &rules,
-    unordered_set<string> &symbols)
+    SymbolSet &epsilon_nonterminals,
+    unordered_map<string, SymbolSet> &terminal_to_nonterminals,
+    Rules &rules,
+    SymbolSet &symbols)
 {
     string symbol, line;
     size_t k = 0;
@@ -135,7 +135,7 @@ spbla_Matrix create_spbla_transpose(spbla_Matrix in)
     return out;
 }
 
-spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
+spbla_Matrix load_matrix(string rule, MatrixMap &ms)
 {
     spbla_Matrix ret;
     const char negative = '-';
@@ -152,7 +152,7 @@ spbla_Matrix load_matrix(string rule, map<string, spbla_Matrix> &ms)
     return ret;
 }
 
-void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_store)
+void store_matrix(string rule, MatrixMap &ms, spbla_Matrix to_store)
 {
     const char negative = '-';
     if ("-" == rule.substr(0, 1))
@@ -165,7 +165,7 @@ void store_matrix(string rule, map<string, spbla_Matrix> &ms, spbla_Matrix to_st
     }
 }
 
-void load_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Matrix> &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
+void load_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
 {
     // cout << "loading: " << rule.first << " " <<  rule.second.first << " " << rule.second.second << endl;
     A = load_matrix(rule.second.first, ms);
@@ -173,7 +173,7 @@ void load_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Ma
     C = load_matrix(rule.first, ms);
 }
 
-void store_matrices(pair<string, pair<string, string>> rule, map<string, spbla_Matrix> &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
+void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, spbla_Matrix &C)
 {
     store_matrix(rule.second.first, ms, A);
     store_matrix(rule.second.second, ms, B);
@@ -183,15 +183,15 @@ void store_matrices(pair<string, pair<string, string>> rule, map<string, spbla_M
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
-    map<string, spbla_Matrix> ms;
-    unordered_set<string> epsilon_nonterminals;
-    unordered_map<string, unordered_set<string>> terminal_to_nonterminals;
-    vector<pair<string, pair<string, string>>> rules;
-    unordered_map<string, pair<vector<spbla_Index>, vector<spbla_Index>>> edge_lists;
+    MatrixMap ms;
+    SymbolSet epsilon_nonterminals;
+    unordered_map<string, SymbolSet> terminal_to_nonterminals;
+    Rules rules;
+    Edges edge_lists;
     size_t node_cnt = 0;
     map<string, spbla_Index> node2id;
     map<spbla_Index, string> id2node;
-    unordered_set<string> symbols;
+    SymbolSet symbols;
 
     if (argc != 3)
     {
