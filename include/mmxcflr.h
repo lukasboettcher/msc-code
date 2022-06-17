@@ -30,6 +30,8 @@ typedef std::unordered_map<std::string, std::pair<spbla_vec_t, spbla_vec_t>> Edg
 typedef struct AdjMatrix AdjMatrix;
 
 
+void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm);
+bool alias(spbla_Index *rows, spbla_Index *cols, spbla_Index nvals, spbla_Index a, spbla_Index b, spbla_Matrix m);
 
 
 #endif
