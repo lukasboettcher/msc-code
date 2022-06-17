@@ -170,6 +170,109 @@ void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, 
     store_matrix(rule.first, ms, C);
 }
 
+void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm)
+{
+    spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
+    MatrixMap ms;
+    SymbolSet epsilon_nonterminals;
+    unordered_map<string, SymbolSet> terminal_to_nonterminals;
+    Rules rules;
+    SymbolSet symbols;
+
+    parse_rules(&grammar_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
+    cout << "\tPARSING RULES DONE" << endl;
+
+    cout << "\tCreating Empty Matrices" << endl;
+    // create empty initial matrices
+    for (auto s : symbols)
+    {
+        cout << "for: " << s << endl;
+        spbla_Matrix matrix;
+        spbla_Matrix_New(&matrix, node_cnt, node_cnt);
+        ms[s] = matrix;
+    }
+
+    cout << "\tAdding Epsilon Edges" << endl;
+    // add epsilon edges
+    for (auto s : epsilon_nonterminals)
+    {
+        spbla_Index *range;
+        range = (spbla_Index *)malloc(sizeof(spbla_Index) * node_cnt);
+        for (size_t i = 0; i < node_cnt; i++)
+            range[i] = i;
+        spblaCheck(spbla_Matrix_Build(ms[s], range, range, node_cnt, SPBLA_HINT_NO));
+    }
+
+    cout << "\tAdding Graph Edges" << endl;
+    // add edges from graph
+    for (auto &term : terminal_to_nonterminals)
+    {
+        spbla_Matrix tmp;
+        spbla_Index *rows, *cols;
+
+        spbla_Matrix_New(&tmp, node_cnt, node_cnt);
+        rows = edge_lists[term.first].first.data();
+        cols = edge_lists[term.first].second.data();
+
+        spblaCheck(spbla_Matrix_Build(tmp, rows, cols, edge_lists[term.first].first.size(), SPBLA_HINT_NO));
+
+        for (auto &nterm : term.second)
+            spblaCheck(spbla_Matrix_EWiseAdd(ms[nterm], ms[nterm], tmp, SPBLA_HINT_ACCUMULATE));
+
+        spbla_Matrix_Free(tmp);
+    }
+
+    vector<int> rule_rhs_c(rules.size(), -1);
+    bool change = true;
+    int iter = 1;
+    while (change)
+    {
+        change = false;
+#pragma omp parallel
+#pragma omp single
+        for (size_t i = 0; i < rules.size(); i++)
+        {
+            auto rule = rules[i];
+            spbla_Index total = 0;
+            spbla_Index before, current, nvals_a, nvals_b;
+            spbla_Matrix A, B, C;
+
+            load_matrices(rule, ms, A, B, C);
+
+            if (rule_rhs_c[i] == get_nnz(A) + get_nnz(B))
+                continue;
+
+            before = get_nnz(ms[rule.first]);
+
+            // #pragma omp task depend(in:A,B), depend(inout:C), firstprivate(before, A,B,C)
+            while (true)
+            {
+                cout << "\r[" << iter << "]running for [" << rule.first << " <- " << rule.second.first << " " << rule.second.second << "], nnz: " << get_nnz(ms[rule.first]) << flush;
+                spblaCheck(spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE)); // C += A x B
+                if (get_nnz(C) == before)
+                    break;
+                before = get_nnz(C);
+                change = true;
+            }
+            cout << endl;
+            rule_rhs_c[i] = get_nnz(A) + get_nnz(B);
+            store_matrices(rule, ms, A, B, C);
+        }
+        iter++;
+    }
+
+    spbla_Matrix pts = create_spbla_transpose(ms["a"]);
+    extract_adj(pts, adjm);
+    spbla_Matrix_Free(pts);
+
+    for (auto &&s : symbols)
+    {
+        spbla_Matrix_Free(ms[s]);
+    }
+
+    spbla_Finalize();
+}
+
 int main(int argc, char const *argv[])
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
