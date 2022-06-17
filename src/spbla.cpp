@@ -1,15 +1,5 @@
 #include <mmxcflr.h>
 
-#define spblaCheck(ans) { spblaAssert((ans), __FILE__, __LINE__); }
-inline void spblaAssert(spbla_Status code, const char *file, int line, bool abort=true)
-{
-   if (code != 0) 
-   {
-      fprintf(stderr,"spbla_assert: %d %s %d\n", code, file, line);
-      if (abort) exit(code);
-   }
-}
-
 using namespace std;
 
 spbla_Index get_nnz(spbla_Matrix m)

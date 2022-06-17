@@ -5,6 +5,15 @@
 #include "spbla/spbla.h"
 #include <bits/stdc++.h>
 
+#define spblaCheck(ans) { spblaAssert((ans), __FILE__, __LINE__); }
+inline void spblaAssert(spbla_Status code, const char *file, int line, bool abort=true)
+{
+   if (code != 0) 
+   {
+      fprintf(stderr,"spbla_assert: %d %s %d\n", code, file, line);
+      if (abort) exit(code);
+   }
+}
 typedef std::map<std::string, spbla_Matrix> MatrixMap;
 typedef std::unordered_set<std::string> SymbolSet;
 typedef std::pair<std::string, std::pair<std::string, std::string>> Rule;
