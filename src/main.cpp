@@ -96,10 +96,9 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
 
 void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType)
 {
-    auto adjForType = edges[to_string(type)];
-    adjForType.first.push_back((spbla_Index)src);
-    adjForType.second.push_back((spbla_Index)dst);
-    node_ctr++;
+    string type = to_string(consEdgeType);
+    edges[type].first.push_back((spbla_Index)src);
+    edges[type].second.push_back((spbla_Index)dst);
 };
 
 void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
