@@ -11,6 +11,8 @@
 
 #include "Graphs/IRGraph.h"
 
+#include <mmxcflr.h>
+
 using namespace llvm;
 using namespace std;
 using namespace SVF;
