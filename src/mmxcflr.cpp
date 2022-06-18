@@ -205,8 +205,8 @@ bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b)
 }
 
 void extract_adj(spbla_Matrix m, AdjMatrix *adjm)
-{   
-    spbla_Matrix_Nvals(m, &adjm->nvals);
+{
+    spblaCheck(spbla_Matrix_Nvals(m, &adjm->nvals));
 
     adjm->rows = (spbla_Index *)malloc(sizeof(spbla_Index) * adjm->nvals);
     adjm->cols = (spbla_Index *)malloc(sizeof(spbla_Index) * adjm->nvals);
