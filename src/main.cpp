@@ -269,6 +269,10 @@ int main(int argc, char **argv)
     edge_stream.open("edges.txt");
     meta_stream.open("meta.txt");
 
+    AdjMatrix *ajm = (AdjMatrix *)malloc(sizeof(AdjMatrix));
+    Edges edges;
+    size_t node_cnt;
+
     meta_stream << "total nodes: " << pag->getPAGNodeNum() << "\ttotal edges: " << pag->getPAGEdgeNum() << endl;
     // cout << "total nodes: " << cg->getTotalNodeNum() << "\ttotal edges: " << cg->getTotalEdgeNum() << endl;
 
