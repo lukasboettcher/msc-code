@@ -308,6 +308,7 @@ int main(int argc, char **argv)
             {
                 edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
                 // edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
+                storeEdge(node_cnt, edges, x->getSrcID(), x->getDstID(), x->getEdgeKind());
             }
         }
     }
