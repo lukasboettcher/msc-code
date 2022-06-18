@@ -13,7 +13,7 @@ set(llvm_libs LLVM)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
 
 add_executable(main src/main.cpp)
-target_link_libraries(main Svf ${llvm_libs})
+target_link_libraries(main mmxcflr Svf ${llvm_libs})
 
 add_subdirectory(lib)
 add_subdirectory(tools)
@@ -30,3 +30,6 @@ add_library(inline MODULE src/inlining.cpp)
 
 add_executable(leak src/leaktest.cpp)
 target_link_libraries(leak Svf ${llvm_libs})
+
+add_library(mmxcflr src/mmxcflr.cpp)
+target_link_libraries(mmxcflr spbla OpenMP::OpenMP_CXX)
