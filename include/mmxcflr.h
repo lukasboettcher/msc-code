@@ -3,7 +3,17 @@
 #define MMXCFLR_
 
 #include "spbla/spbla.h"
-#include <bits/stdc++.h>
+#include <iostream>
+#include <sstream>
+#include <fstream> 
+#include <map>
+#include <string>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
 
 #define spblaCheck(ans) { spblaAssert((ans), __FILE__, __LINE__); }
 inline void spblaAssert(spbla_Status code, const char *file, int line, bool abort=true)
