@@ -312,6 +312,9 @@ int main(int argc, char **argv)
             }
         }
     }
+
+    run(rules_f, edges, (size_t)cg->getTotalNodeNum(), ajm);
+
     ofstream test_stream;
     test_stream.open("test.txt");
     validateSuccessTests("MUSTALIAS", pag, test_stream);
