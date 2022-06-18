@@ -161,7 +161,7 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
     }
 }
 
-bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
+bool processGepPts(size_t &node_ctr, Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
     unordered_set<NodeID> gepNodes;
@@ -228,6 +228,7 @@ bool processGepPts(ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, s
     for (auto &node : gepNodes)
     {
         edge_stream << node << "\t" << edge->getDstID() << "\t" << 0 << endl;
+        storeEdge(node_ctr, edges, node, edge->getDstID(), 0);
     }
 
     return true;
@@ -287,7 +288,7 @@ int main(int argc, char **argv)
                 for (auto &addr_in : entry.second->getAddrInEdges())
                     pts.insert(addr_in->getSrcID());
 
-                processGepPts(edge_stream, cg, pag, pts, gepEdge);
+                processGepPts(node_cnt, edges, edge_stream, cg, pag, pts, gepEdge);
             }
             else
             {
