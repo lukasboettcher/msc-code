@@ -241,6 +241,7 @@ int main(int argc, char **argv)
     char **arg_value = new char *[argc];
     std::vector<std::string> moduleNameVec;
     SVFUtil::processArguments(argc, argv, arg_num, arg_value, moduleNameVec);
+    /*
     cl::ParseCommandLineOptions(arg_num, arg_value,
                                 "Whole Program Points-to Analysis\n");
 
@@ -248,6 +249,15 @@ int main(int argc, char **argv)
     {
         LLVMModuleSet::getLLVMModuleSet()->preProcessBCs(moduleNameVec);
     }
+    */
+
+    if (argc != 3)
+    {
+        cout << "./main <rules_path> <bitcode_paths> " << endl;
+        return EXIT_FAILURE;
+    }
+
+    ifstream rules_f(argv[1]);
 
     SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(moduleNameVec);
     svfModule->buildSymbolTableInfo();
