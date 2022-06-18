@@ -94,7 +94,7 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
     }
 }
 
-void storeEdge(size_t &node_ctr, Edges &edges, NodeID src, NodeID dst, s64_t type)
+void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType)
 {
     auto adjForType = edges[to_string(type)];
     adjForType.first.push_back((spbla_Index)src);
@@ -161,7 +161,7 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
     }
 }
 
-bool processGepPts(size_t &node_ctr, Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
+bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
     unordered_set<NodeID> gepNodes;
@@ -228,7 +228,7 @@ bool processGepPts(size_t &node_ctr, Edges &edges, ofstream &edge_stream, Constr
     for (auto &node : gepNodes)
     {
         edge_stream << node << "\t" << edge->getDstID() << "\t" << 0 << endl;
-        storeEdge(node_ctr, edges, node, edge->getDstID(), 0);
+        storeEdge(edges, node, edge->getDstID(), 0);
     }
 
     return true;
@@ -302,13 +302,13 @@ int main(int argc, char **argv)
                 for (auto &addr_in : entry.second->getAddrInEdges())
                     pts.insert(addr_in->getSrcID());
 
-                processGepPts(node_cnt, edges, edge_stream, cg, pag, pts, gepEdge);
+                processGepPts(edges, edge_stream, cg, pag, pts, gepEdge);
             }
             else
             {
                 edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
                 // edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
-                storeEdge(node_cnt, edges, x->getSrcID(), x->getDstID(), x->getEdgeKind());
+                storeEdge(edges, x->getSrcID(), x->getDstID(), x->getEdgeKind());
             }
         }
     }
