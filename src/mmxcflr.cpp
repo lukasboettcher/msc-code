@@ -170,10 +170,15 @@ void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, 
     store_matrix(rule.first, ms, C);
 }
 
-bool alias(spbla_Index *rows, spbla_Index *cols, spbla_Index nvals, spbla_Index a, spbla_Index b, spbla_Matrix m)
+bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b)
 {
     size_t i, first_a_idx, first_b_idx;
     spbla_vec_t ptsA, ptsB, intersect;
+    spbla_Index *rows, *cols, nvals;
+
+    rows = adjm->rows;
+    cols = adjm->cols;
+    nvals = adjm->nvals;
 
     first_a_idx = std::lower_bound(rows, rows + nvals, a) - rows;
     first_b_idx = std::lower_bound(cols, cols + nvals, b) - cols;
