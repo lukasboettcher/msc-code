@@ -94,6 +94,14 @@ std::string getStmtStr(SVF::GenericEdge<SVF::SVFVar>::GEdgeKind type)
     }
 }
 
+void storeEdge(size_t &node_ctr, Edges &edges, NodeID src, NodeID dst, s64_t type)
+{
+    auto adjForType = edges[to_string(type)];
+    adjForType.first.push_back((spbla_Index)src);
+    adjForType.second.push_back((spbla_Index)dst);
+    node_ctr++;
+};
+
 void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
 {
     // check for must alias cases, whether our alias analysis produce the correct results
