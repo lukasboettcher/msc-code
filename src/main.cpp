@@ -404,10 +404,7 @@ int main(int argc, char **argv)
 
     run(rules_f, edges, (size_t)cg->getTotalNodeNum(), ajm);
 
-    ofstream test_stream;
-    test_stream.open("test.txt");
-    validateSuccessTests("MAYALIAS", pag, test_stream, ajm);
-    validateSuccessTests("NOALIAS", pag, test_stream, ajm);
+    validateTests(pag, ajm);
 
     // cg->dump("graph-cg");
 
