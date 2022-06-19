@@ -174,6 +174,64 @@ void validateSuccessTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
     }
 }
 
+void validateExpectedFailureTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
+{
+    if (const SVFFunction *checkFun = SVFUtil::getFunction(fun))
+    {
+        if (!checkFun->getLLVMFun()->use_empty())
+            outs() << "["
+                   << "custom analysis"
+                   << "] Checking " << fun << "\n";
+
+        for (Value::user_iterator i = checkFun->getLLVMFun()->user_begin(), e =
+                                                                                checkFun->getLLVMFun()->user_end();
+             i != e; ++i)
+            if (CallInst *call = SVFUtil::dyn_cast<CallInst>(*i))
+            {
+                assert(call->arg_size() == 2 && "arguments should be two pointers!!");
+                Value *V1 = call->getArgOperand(0);
+                Value *V2 = call->getArgOperand(1);
+                NodeID id1 = pag->getValueNode(V1);
+                NodeID id2 = pag->getValueNode(V2);
+
+                bool aliasRes_intermediate = alias(adj, id1, id2);
+
+                SVF::AliasResult aliasRes;
+                if (aliasRes_intermediate)
+                    aliasRes = SVF::AliasResult::MayAlias;
+                else
+                    aliasRes = SVF::AliasResult::NoAlias;
+
+                bool expectedFailure = false;
+                if (fun == PointerAnalysis::aliasTestFailMayAlias || fun == PointerAnalysis::aliasTestFailMayAliasMangled)
+                {
+                    // change to must alias when our analysis support it
+                    if (aliasRes == SVF::AliasResult::NoAlias)
+                        expectedFailure = true;
+                }
+                else if (fun == PointerAnalysis::aliasTestFailNoAlias || fun == PointerAnalysis::aliasTestFailNoAliasMangled)
+                {
+                    // change to partial alias when our analysis support it
+                    if (aliasRes == SVF::AliasResult::MayAlias || aliasRes == SVF::AliasResult::PartialAlias || aliasRes == SVF::AliasResult::MustAlias)
+                        expectedFailure = true;
+                }
+                else
+                    assert(false && "not supported alias check!!");
+
+                if (expectedFailure)
+                    outs() << SVFUtil::sucMsg("\t EXPECTED-FAILURE :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
+                           << SVFUtil::getSourceLoc(call) << ")\n";
+                else
+                {
+                    SVFUtil::errs() << SVFUtil::errMsg("\t UNEXPECTED FAILURE :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
+                                    << SVFUtil::getSourceLoc(call) << ")\n";
+                    assert(false && "test case failed!");
+                }
+            }
+            else
+                assert(false && "alias check functions not only used at callsite??");
+    }
+}
 bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
