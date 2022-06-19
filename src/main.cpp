@@ -305,8 +305,8 @@ int main(int argc, char **argv)
 
     ofstream test_stream;
     test_stream.open("test.txt");
-    validateSuccessTests("MUSTALIAS", pag, test_stream);
-    validateSuccessTests("NOALIAS", pag, test_stream);
+    validateSuccessTests("MAYALIAS", pag, test_stream, ajm);
+    validateSuccessTests("NOALIAS", pag, test_stream, ajm);
 
     // cg->dump("graph-cg");
 
