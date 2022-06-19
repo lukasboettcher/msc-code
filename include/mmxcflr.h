@@ -41,7 +41,7 @@ typedef struct AdjMatrix AdjMatrix;
 
 
 void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm);
-bool alias(spbla_Index *rows, spbla_Index *cols, spbla_Index nvals, spbla_Index a, spbla_Index b, spbla_Matrix m);
+bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b);
 
 
 #endif
