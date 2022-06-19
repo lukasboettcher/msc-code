@@ -172,7 +172,7 @@ void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, 
 
 bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b)
 {
-    size_t i, first_a_idx, first_b_idx;
+    size_t i;
     spbla_vec_t ptsA, ptsB, intersect;
     spbla_Index *rows, *cols, nvals;
 
@@ -180,24 +180,11 @@ bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b)
     cols = adjm->cols;
     nvals = adjm->nvals;
 
-    first_a_idx = std::lower_bound(rows, rows + nvals, a) - rows;
-    first_b_idx = std::lower_bound(cols, cols + nvals, b) - cols;
-
-    for (i = first_a_idx; i < nvals; i++)
-    {
-        if (rows[i] != a)
-            break;
-        ptsA.push_back(cols[i]);
-        // ptsA.insert(cols[i]);
-    }
-
-    for (i = first_b_idx; i < nvals; i++)
-    {
-        if (rows[i] != b)
-            break;
-        ptsB.push_back(cols[i]);
-        // ptsA.insert(cols[i]);
-    }
+    for (i = 0; i < nvals; i++)
+        if(rows[i] == a)
+            ptsA.push_back(cols[i]);
+        else if (rows[i] == b)
+            ptsB.push_back(cols[i]);
 
     std::set_intersection(ptsA.begin(), ptsA.end(), ptsB.begin(), ptsB.end(), std::back_inserter(intersect));
 
