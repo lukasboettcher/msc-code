@@ -126,33 +126,23 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream, Ad
 
                 bool aliasRes = alias(adj, id1, id2);
 
-                //     SVF::AliasResult aliasRes = AndersenBase::alias(V1, V2);
+                bool checkSuccessful = false;
+                if (fun == "MAYALIAS" && aliasRes)
+                    checkSuccessful = true;
 
-                //     bool checkSuccessful = false;
-                //     if (fun == "MAYALIAS")
-                //     {
-                //         if (aliasRes == AliasResult::MayAlias || aliasRes == AliasResult::MustAlias)
-                //             checkSuccessful = true;
-                //     }
-                //     else if (fun == "NOALIAS" )
-                //     {
-                //         if (aliasRes == AliasResult::NoAlias)
-                //             checkSuccessful = true;
-                //     }
+                else if (fun == "NOALIAS" && !aliasRes)
+                    checkSuccessful = true;
 
-                //     NodeID id1 = pag->getValueNode(V1);
-                //     NodeID id2 = pag->getValueNode(V2);
-
-                //     if (checkSuccessful)
-                //         outs() << SVFUtil::sucMsg("\t SUCCESS :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
-                //                << SVFUtil::getSourceLoc(*i) << ")\n";
-                //     else
-                //     {
-                //         SVFUtil::errs() << SVFUtil::errMsg("\t FAILURE :") << fun
-                //                         << " check <id:" << id1 << ", id:" << id2
-                //                         << "> at (" << SVFUtil::getSourceLoc(*i) << ")\n";
-                //         assert(false && "test case failed!");
-                //     }
+                if (checkSuccessful)
+                    outs() << SVFUtil::sucMsg("\t SUCCESS :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
+                           << SVFUtil::getSourceLoc(*i) << ")\n";
+                else
+                {
+                    SVFUtil::errs() << SVFUtil::errMsg("\t FAILURE :") << fun
+                                    << " check <id:" << id1 << ", id:" << id2
+                                    << "> at (" << SVFUtil::getSourceLoc(*i) << ")\n";
+                    assert(false && "test case failed!");
+                }
             }
             else
                 assert(false && "alias check functions not only used at callsite??");
