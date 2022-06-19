@@ -101,7 +101,7 @@ void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType)
     edges[type].second.push_back((spbla_Index)dst);
 };
 
-void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream, AdjMatrix *adj)
+void validateSuccessTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
 {
     // check for must alias cases, whether our alias analysis produce the correct results
     if (const SVFFunction *checkFun = SVFUtil::getFunction(fun))
