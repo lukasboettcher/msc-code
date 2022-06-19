@@ -101,7 +101,7 @@ void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType)
     edges[type].second.push_back((spbla_Index)dst);
 };
 
-void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
+void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream, AdjMatrix *adj)
 {
     // check for must alias cases, whether our alias analysis produce the correct results
     if (const SVFFunction *checkFun = SVFUtil::getFunction(fun))
@@ -121,11 +121,10 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream)
                 assert(cs.getNumArgOperands() == 2 && "arguments should be two pointers!!");
                 Value *V1 = cs.getArgOperand(0);
                 Value *V2 = cs.getArgOperand(1);
-                NodeID n1 = pag->getValueNode(V1);
-                NodeID n2 = pag->getValueNode(V2);
+                NodeID id1 = pag->getValueNode(V1);
+                NodeID id2 = pag->getValueNode(V2);
 
-                cout << n1 << "\t" << n2 << "\t" << fun << endl;
-                test_stream << n1 << "\t" << n2 << "\t" << fun << endl;
+                bool aliasRes = alias(adj, id1, id2);
 
                 //     SVF::AliasResult aliasRes = AndersenBase::alias(V1, V2);
 
