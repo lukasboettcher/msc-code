@@ -124,14 +124,39 @@ void validateSuccessTests(std::string fun, SVFIR *pag, ofstream &test_stream, Ad
                 NodeID id1 = pag->getValueNode(V1);
                 NodeID id2 = pag->getValueNode(V2);
 
-                bool aliasRes = alias(adj, id1, id2);
+                bool aliasRes_intermediate = alias(adj, id1, id2);
+
+                SVF::AliasResult aliasRes;
+                if (aliasRes_intermediate)
+                    aliasRes = SVF::AliasResult::MayAlias;
+                else
+                    aliasRes = SVF::AliasResult::NoAlias;
 
                 bool checkSuccessful = false;
-                if (fun == "MAYALIAS" && aliasRes)
-                    checkSuccessful = true;
-
-                else if (fun == "NOALIAS" && !aliasRes)
-                    checkSuccessful = true;
+                if (fun == PointerAnalysis::aliasTestMayAlias || fun == PointerAnalysis::aliasTestMayAliasMangled)
+                {
+                    if (aliasRes == SVF::AliasResult::MayAlias || aliasRes == SVF::AliasResult::MustAlias)
+                        checkSuccessful = true;
+                }
+                else if (fun == PointerAnalysis::aliasTestNoAlias || fun == PointerAnalysis::aliasTestNoAliasMangled)
+                {
+                    if (aliasRes == SVF::AliasResult::NoAlias)
+                        checkSuccessful = true;
+                }
+                else if (fun == PointerAnalysis::aliasTestMustAlias || fun == PointerAnalysis::aliasTestMustAliasMangled)
+                {
+                    // change to must alias when our analysis support it
+                    if (aliasRes == SVF::AliasResult::MayAlias || aliasRes == SVF::AliasResult::MustAlias)
+                        checkSuccessful = true;
+                }
+                else if (fun == PointerAnalysis::aliasTestPartialAlias || fun == PointerAnalysis::aliasTestPartialAliasMangled)
+                {
+                    // change to partial alias when our analysis support it
+                    if (aliasRes == SVF::AliasResult::MayAlias)
+                        checkSuccessful = true;
+                }
+                else
+                    assert(false && "not supported alias check!!");
 
                 if (checkSuccessful)
                     outs() << SVFUtil::sucMsg("\t SUCCESS :") << fun << " check <id:" << id1 << ", id:" << id2 << "> at ("
