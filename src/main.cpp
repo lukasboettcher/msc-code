@@ -232,6 +232,24 @@ void validateExpectedFailureTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
                 assert(false && "alias check functions not only used at callsite??");
     }
 }
+
+void validateTests(SVFIR *pag, AdjMatrix *adj)
+{
+    validateSuccessTests(PointerAnalysis::aliasTestMayAlias, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestNoAlias, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestMustAlias, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestPartialAlias, pag, adj);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAlias, pag, adj);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAlias, pag, adj);
+
+    validateSuccessTests(PointerAnalysis::aliasTestMayAliasMangled, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestNoAliasMangled, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestMustAliasMangled, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestPartialAliasMangled, pag, adj);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAliasMangled, pag, adj);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAliasMangled, pag, adj);
+}
+
 bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
 {
 
