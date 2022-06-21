@@ -38,10 +38,11 @@ typedef std::vector<Rule> Rules;
 typedef std::vector<spbla_Index> spbla_vec_t;
 typedef std::unordered_map<std::string, std::pair<spbla_vec_t, spbla_vec_t>> Edges;
 typedef struct AdjMatrix AdjMatrix;
+typedef std::map<spbla_Index, spbla_vec_t> PointsToMap;
 
 
-void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm);
-bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b);
+void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap);
+bool alias(PointsToMap ptsMap, spbla_Index a, spbla_Index b);
 
 
 #endif
