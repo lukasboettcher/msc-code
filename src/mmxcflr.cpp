@@ -170,21 +170,14 @@ void store_matrices(Rule rule, MatrixMap &ms, spbla_Matrix &A, spbla_Matrix &B, 
     store_matrix(rule.first, ms, C);
 }
 
-bool alias(AdjMatrix *adjm, spbla_Index a, spbla_Index b)
+bool alias(PointsToMap ptsMap, spbla_Index a, spbla_Index b)
 {
-    size_t i;
     spbla_vec_t ptsA, ptsB, intersect;
-    spbla_Index *rows, *cols, nvals;
 
-    rows = adjm->rows;
-    cols = adjm->cols;
-    nvals = adjm->nvals;
-
-    for (i = 0; i < nvals; i++)
-        if(rows[i] == a)
-            ptsA.push_back(cols[i]);
-        else if (rows[i] == b)
-            ptsB.push_back(cols[i]);
+    // ptsA = getPts(adjm, a);
+    // ptsB = getPts(adjm, b);
+    ptsA = ptsMap[a];
+    ptsB = ptsMap[b];
 
     std::set_intersection(ptsA.begin(), ptsA.end(), ptsB.begin(), ptsB.end(), std::back_inserter(intersect));
 
