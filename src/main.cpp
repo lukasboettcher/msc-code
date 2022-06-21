@@ -369,18 +369,23 @@ int main(int argc, char **argv)
 
             if (const GepCGEdge *gepEdge = SVFUtil::dyn_cast<GepCGEdge>(x))
             {
-                set<NodeID> pts;
+                spbla_vec_t pts;
                 for (auto &addr_in : entry.second->getAddrInEdges())
-                    pts.insert(addr_in->getSrcID());
+                    pts.push_back(addr_in->getSrcID());
 
-                processGepPts(edges, edge_stream, cg, pag, pts, gepEdge);
+                unordered_set<SVF::NodeID> pts_in = processGepPts(edges, cg, pag, pts, gepEdge);
+                for (auto &node : pts_in)
+                {
+                    storeEdge(edges, node, gepEdge->getDstID(), 0);
+                }
             }
             else
             {
-                edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
+                // edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
                 // edge_stream << x->getDstID() << "\t" << x->getSrcID() << "\t-" << x->getEdgeKind() << endl;
                 storeEdge(edges, x->getSrcID(), x->getDstID(), x->getEdgeKind());
             }
+            edge_stream << x->getSrcID() << "\t" << x->getDstID() << "\t" << x->getEdgeKind() << endl;
         }
     }
 
