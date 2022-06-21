@@ -11,6 +11,8 @@
 
 #include "Graphs/IRGraph.h"
 
+#include "WPA/AndersenCustom.h"
+
 #include <mmxcflr.h>
 
 using namespace llvm;
@@ -312,7 +314,7 @@ int main(int argc, char **argv)
     char **arg_value = new char *[argc];
     std::vector<std::string> moduleNameVec;
     SVFUtil::processArguments(argc, argv, arg_num, arg_value, moduleNameVec);
-    /*
+    // /*
     cl::ParseCommandLineOptions(arg_num, arg_value,
                                 "Whole Program Points-to Analysis\n");
 
@@ -320,13 +322,15 @@ int main(int argc, char **argv)
     {
         LLVMModuleSet::getLLVMModuleSet()->preProcessBCs(moduleNameVec);
     }
-    */
+    // */
 
+    /*
     if (argc != 3)
     {
         cout << "./main <rules_path> <bitcode_paths> " << endl;
         return EXIT_FAILURE;
     }
+     */
 
     ifstream rules_f(argv[1]);
 
@@ -337,6 +341,11 @@ int main(int argc, char **argv)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
     // pag->dump("graph-pag");
+
+    // AndersenCustom *ac = AndersenCustom::createAndersenCustom(pag);
+    AndersenCustom *ac = new AndersenCustom(pag);
+    ac->analyze();
+    return 0;
 
     // Addr, Copy, Store, Load, NormalGep, VariantGep
     ConstraintGraph *cg = new ConstraintGraph(pag);
