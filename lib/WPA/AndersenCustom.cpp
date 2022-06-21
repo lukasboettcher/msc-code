@@ -7,4 +7,12 @@ AndersenCustom *AndersenCustom::customInstance = nullptr;
 
 void AndersenCustom::solveWorklist()
 {
+    // while (!isWorklistEmpty())
+    // {
+    //     NodeID nodeId = popFromWorklist();
+    //     collapsePWCNode(nodeId);
+    //     // Keep solving until workList is empty.
+    //     processNode(nodeId);
+    //     collapseFields();
+    // }
 }
