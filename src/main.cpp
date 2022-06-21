@@ -101,7 +101,7 @@ void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType)
     edges[type].second.push_back((spbla_Index)dst);
 };
 
-void validateSuccessTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
+void validateSuccessTests(std::string fun, SVFIR *pag, PointsToMap &ptsMap)
 {
     // check for must alias cases, whether our alias analysis produce the correct results
     if (const SVFFunction *checkFun = SVFUtil::getFunction(fun))
@@ -124,7 +124,7 @@ void validateSuccessTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
                 NodeID id1 = pag->getValueNode(V1);
                 NodeID id2 = pag->getValueNode(V2);
 
-                bool aliasRes_intermediate = alias(adj, id1, id2);
+                bool aliasRes_intermediate = alias(ptsMap, id1, id2);
 
                 SVF::AliasResult aliasRes;
                 if (aliasRes_intermediate)
@@ -174,7 +174,7 @@ void validateSuccessTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
     }
 }
 
-void validateExpectedFailureTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
+void validateExpectedFailureTests(std::string fun, SVFIR *pag, PointsToMap &ptsMap)
 {
     if (const SVFFunction *checkFun = SVFUtil::getFunction(fun))
     {
@@ -194,7 +194,7 @@ void validateExpectedFailureTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
                 NodeID id1 = pag->getValueNode(V1);
                 NodeID id2 = pag->getValueNode(V2);
 
-                bool aliasRes_intermediate = alias(adj, id1, id2);
+                bool aliasRes_intermediate = alias(ptsMap, id1, id2);
 
                 SVF::AliasResult aliasRes;
                 if (aliasRes_intermediate)
@@ -233,21 +233,21 @@ void validateExpectedFailureTests(std::string fun, SVFIR *pag, AdjMatrix *adj)
     }
 }
 
-void validateTests(SVFIR *pag, AdjMatrix *adj)
+void validateTests(SVFIR *pag, PointsToMap &ptsMap)
 {
-    validateSuccessTests(PointerAnalysis::aliasTestMayAlias, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestNoAlias, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestMustAlias, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestPartialAlias, pag, adj);
-    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAlias, pag, adj);
-    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAlias, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestMayAlias, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestNoAlias, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestMustAlias, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestPartialAlias, pag, ptsMap);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAlias, pag, ptsMap);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAlias, pag, ptsMap);
 
-    validateSuccessTests(PointerAnalysis::aliasTestMayAliasMangled, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestNoAliasMangled, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestMustAliasMangled, pag, adj);
-    validateSuccessTests(PointerAnalysis::aliasTestPartialAliasMangled, pag, adj);
-    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAliasMangled, pag, adj);
-    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAliasMangled, pag, adj);
+    validateSuccessTests(PointerAnalysis::aliasTestMayAliasMangled, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestNoAliasMangled, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestMustAliasMangled, pag, ptsMap);
+    validateSuccessTests(PointerAnalysis::aliasTestPartialAliasMangled, pag, ptsMap);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailMayAliasMangled, pag, ptsMap);
+    validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAliasMangled, pag, ptsMap);
 }
 
 bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
