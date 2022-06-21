@@ -184,13 +184,17 @@ bool alias(PointsToMap ptsMap, spbla_Index a, spbla_Index b)
     return intersect.size();
 }
 
-void extract_adj(spbla_Matrix m, AdjMatrix *adjm)
+void extract_adj(spbla_Matrix m, PointsToMap &ptsMap)
 {
-    spblaCheck(spbla_Matrix_Nvals(m, &adjm->nvals));
+    spbla_Index *rows, *cols, nvals;
+    spblaCheck(spbla_Matrix_Nvals(m, &nvals));
 
-    adjm->rows = (spbla_Index *)malloc(sizeof(spbla_Index) * adjm->nvals);
-    adjm->cols = (spbla_Index *)malloc(sizeof(spbla_Index) * adjm->nvals);
-    spblaCheck(spbla_Matrix_ExtractPairs(m, adjm->rows, adjm->cols, &adjm->nvals));
+    rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    spblaCheck(spbla_Matrix_ExtractPairs(m, rows, cols, &nvals));
+
+    for (size_t i = 0; i < nvals; i++)
+        ptsMap[rows[i]].push_back(cols[i]);   
 }
 
 void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm)
