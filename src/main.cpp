@@ -250,7 +250,7 @@ void validateTests(SVFIR *pag, PointsToMap &ptsMap)
     validateExpectedFailureTests(PointerAnalysis::aliasTestFailNoAliasMangled, pag, ptsMap);
 }
 
-bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG, SVFIR *pag, set<NodeID> &pts, const GepCGEdge *edge)
+unordered_set<NodeID> processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge)
 {
 
     unordered_set<NodeID> gepNodes;
@@ -277,7 +277,6 @@ bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG,
             // Add the field-insensitive node into pts.
             NodeID baseId = consCG->getFIObjVar(o);
             gepNodes.insert(baseId);
-            // add addr edge (inv pts edge)
         }
     }
     else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
@@ -293,34 +292,17 @@ bool processGepPts(Edges &edges, ofstream &edge_stream, ConstraintGraph *consCG,
                 continue;
             }
 
-            // if (!matchType(edge->getSrcID(), o, normalGepEdge)) continue;
-
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
             gepNodes.insert(fieldSrcPtdNode);
-            // add addr edge (inv pts edge)
-            // cout << "\tfield id: " << fieldSrcPtdNode << endl;
-            // addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
         }
     }
-    // else
+
+    // for (auto &node : gepNodes)
     // {
-    //     assert(false && "Andersen::processGepPts: New type GEP edge type?");
+    //     storeEdge(edges, node, edge->getDstID(), 0);
     // }
 
-    // NodeID dstId = edge->getDstID();
-    // if (unionPts(dstId, tmpDstPts))
-    // {
-    //     pushIntoWorklist(dstId);
-    //     return true;
-    // }
-
-    for (auto &node : gepNodes)
-    {
-        edge_stream << node << "\t" << edge->getDstID() << "\t" << 0 << endl;
-        storeEdge(edges, node, edge->getDstID(), 0);
-    }
-
-    return true;
+    return gepNodes;
 }
 
 int main(int argc, char **argv)
