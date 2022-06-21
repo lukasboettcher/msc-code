@@ -350,7 +350,8 @@ int main(int argc, char **argv)
     edge_stream.open("edges.txt");
     meta_stream.open("meta.txt");
 
-    AdjMatrix *ajm = (AdjMatrix *)malloc(sizeof(AdjMatrix));
+    // AdjMatrix *ajm = (AdjMatrix *)malloc(sizeof(AdjMatrix));
+    PointsToMap ptsMap, copyMap;
     Edges edges;
     size_t node_cnt;
 
