@@ -389,9 +389,51 @@ int main(int argc, char **argv)
         }
     }
 
-    run(rules_f, edges, (size_t)cg->getTotalNodeNum(), ajm);
+    run(rules_f, edges, (size_t)cg->getTotalNodeNum(), ptsMap, copyMap);
 
-    validateTests(pag, ajm);
+    /* now go through the gep edges and add back needed pts data */
+    /* TODO wrap in loop / better datastructure */
+
+    for (auto &edge : cg->getDirectCGEdges())
+    {
+        if (const GepCGEdge *gepEdge = SVFUtil::dyn_cast<GepCGEdge>(edge))
+        {
+            // spbla_vec_t pts = getPts(ajm, gepEdge->getSrcID());
+            spbla_vec_t pts = ptsMap[gepEdge->getSrcID()];
+
+            unordered_set<SVF::NodeID> pts_in = processGepPts(edges, cg, pag, pts, gepEdge);
+
+            for (auto &pto : pts_in)
+            {
+                // cout << "pushing " << pto << " into pts set of " << gepEdge->getDstID() << endl;
+                // ptsMap[gepEdge->getDstID()].push_back(pto);
+                storeEdge(edges, pto, gepEdge->getDstID(), 0);
+            }
+        }
+    }
+    ifstream rules_f2(argv[1]);
+    run(rules_f2, edges, (size_t)cg->getTotalNodeNum(), ptsMap, copyMap);
+
+
+    // cout << "ptsMap size: " << ptsMap[70].size() << endl;
+
+    // for (auto &entry : ptsMap)
+    // {
+    //     cout << entry.first << " points to: ";
+    //     for (auto &p : entry.second)
+    //     {
+    //         cout << p << " ";
+    //     }
+    //     cout << endl;
+
+    // }
+
+    // for (auto id : ptsMap[70])
+    //     cout << 70 << " points to: " << id << endl;
+    // for (auto id : ptsMap[73])
+    //     cout << 73 << " points to: " << id << endl;
+
+    validateTests(pag, ptsMap);
 
     // cg->dump("graph-cg");
 
