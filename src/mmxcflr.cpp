@@ -197,7 +197,7 @@ void extract_adj(spbla_Matrix m, PointsToMap &ptsMap)
         ptsMap[rows[i]].push_back(cols[i]);   
 }
 
-void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *adjm)
+void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap)
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
     MatrixMap ms;
@@ -289,8 +289,9 @@ void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, AdjMatrix *
     }
 
     spbla_Matrix pts = create_spbla_transpose(ms["a"]);
-    extract_adj(pts, adjm);
+    extract_adj(pts, ptsMap);
     spbla_Matrix_Free(pts);
+    extract_adj(ms["c"], copyMap);
 
     for (auto &&s : symbols)
     {
