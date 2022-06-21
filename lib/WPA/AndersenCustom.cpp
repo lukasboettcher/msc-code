@@ -5,3 +5,6 @@ using namespace SVFUtil;
 
 AndersenCustom *AndersenCustom::customInstance = nullptr;
 
+void AndersenCustom::solveWorklist()
+{
+}

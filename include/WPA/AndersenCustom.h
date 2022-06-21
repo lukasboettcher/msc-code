@@ -33,6 +33,9 @@ public:
             delete customInstance;
         customInstance = nullptr;
     }
+
+    virtual void solveWorklist();
+
 };
 
 }
