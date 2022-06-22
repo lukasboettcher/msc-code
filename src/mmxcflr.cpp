@@ -194,10 +194,10 @@ void extract_adj(spbla_Matrix m, PointsToMap &ptsMap)
     spblaCheck(spbla_Matrix_ExtractPairs(m, rows, cols, &nvals));
 
     for (size_t i = 0; i < nvals; i++)
-        ptsMap[rows[i]].push_back(cols[i]);   
+        ptsMap[rows[i]].push_back(cols[i]);
 }
 
-void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap)
+void run(std::string grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap)
 {
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
     MatrixMap ms;
@@ -205,8 +205,9 @@ void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap
     unordered_map<string, SymbolSet> terminal_to_nonterminals;
     Rules rules;
     SymbolSet symbols;
+    ifstream rules_f(grammar_f);
 
-    parse_rules(&grammar_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
+    parse_rules(&rules_f, epsilon_nonterminals, terminal_to_nonterminals, rules, symbols);
     cout << "\tPARSING RULES DONE" << endl;
 
     cout << "\tCreating Empty Matrices" << endl;
