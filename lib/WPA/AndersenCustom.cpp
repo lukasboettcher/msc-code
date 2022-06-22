@@ -121,4 +121,6 @@ void AndersenCustom::solveWorklist()
         }
     }
 
+    run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
+
 }
