@@ -36,6 +36,10 @@ public:
 
     virtual void solveWorklist();
 
+protected:
+   virtual void fillEdges(Edges &edges);
+   virtual unordered_set<NodeID> processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge);
+   virtual void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType);
 };
 
 }
