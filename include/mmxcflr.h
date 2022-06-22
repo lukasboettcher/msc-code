@@ -41,7 +41,7 @@ typedef struct AdjMatrix AdjMatrix;
 typedef std::map<spbla_Index, spbla_vec_t> PointsToMap;
 
 
-void run(std::istream &grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap);
+void run(std::string grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap);
 bool alias(PointsToMap ptsMap, spbla_Index a, spbla_Index b);
 
 
