@@ -123,4 +123,20 @@ void AndersenCustom::solveWorklist()
 
     run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
 
+    for (auto &i : ptsMap)
+    {
+        for (auto &j : i.second)
+        {
+            // cout << i.first << " points to: " << j << "\n";
+            addPts(i.first, j);
+        }
+    }
+
+    for (auto &i : copyMap)
+    {
+        for (auto &j : i.second)
+        {
+            addCopyEdge(i.first, j);
+        }
+    }
 }
