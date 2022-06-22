@@ -332,7 +332,7 @@ int main(int argc, char **argv)
     }
      */
 
-    ifstream rules_f(argv[1]);
+    string rules_f = argv[1];
 
     SVFModule *svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(moduleNameVec);
     svfModule->buildSymbolTableInfo();
@@ -421,8 +421,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    ifstream rules_f2(argv[1]);
-    run(rules_f2, edges, (size_t)cg->getTotalNodeNum(), ptsMap, copyMap);
+    run(rules_f, edges, (size_t)cg->getTotalNodeNum(), ptsMap, copyMap);
 
 
     // cout << "ptsMap size: " << ptsMap[70].size() << endl;
