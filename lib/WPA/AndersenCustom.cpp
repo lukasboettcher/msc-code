@@ -102,4 +102,6 @@ void AndersenCustom::solveWorklist()
     fillEdges(edges);
     string grammar_file = "/home/lukas/Documents/msc-test/graspan_rules/custom/pointsto-streamlines.txt";
 
+    run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
+
 }
