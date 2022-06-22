@@ -11,6 +11,56 @@ void AndersenCustom::storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consE
     edges[type].first.push_back((spbla_Index)src);
     edges[type].second.push_back((spbla_Index)dst);
 };
+
+unordered_set<NodeID> AndersenCustom::processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge)
+{
+
+    unordered_set<NodeID> gepNodes;
+    if (SVFUtil::isa<VariantGepCGEdge>(edge))
+    {
+        // If a pointer is connected by a variant gep edge,
+        // then set this memory object to be field insensitive,
+        // unless the object is a black hole/constant.
+        for (NodeID o : pts)
+        {
+            if (consCG->isBlkObjOrConstantObj(o))
+            {
+                gepNodes.insert(o);
+                continue;
+            }
+            const MemObj *mem = pag->getBaseObj(o);
+            if (!mem->isFieldInsensitive())
+            {
+                MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
+                mem->setFieldInsensitive();
+                consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
+            }
+
+            // Add the field-insensitive node into pts.
+            NodeID baseId = consCG->getFIObjVar(o);
+            gepNodes.insert(baseId);
+        }
+    }
+    else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+    {
+        // TODO: after the node is set to field insensitive, handling invariant
+        // gep edge may lose precision because offsets here are ignored, and the
+        // base object is always returned.
+        for (NodeID o : pts)
+        {
+            if (consCG->isBlkObjOrConstantObj(o))
+            {
+                gepNodes.insert(o);
+                continue;
+            }
+
+            NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+            gepNodes.insert(fieldSrcPtdNode);
+        }
+    }
+    return gepNodes;
+}
+
 void AndersenCustom::fillEdges(Edges &edges)
 {
     for (auto &entry : *consCG)
