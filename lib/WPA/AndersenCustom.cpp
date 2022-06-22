@@ -139,4 +139,6 @@ void AndersenCustom::solveWorklist()
             addCopyEdge(i.first, j);
         }
     }
+
+    collapseFields();
 }
