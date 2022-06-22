@@ -104,4 +104,21 @@ void AndersenCustom::solveWorklist()
 
     run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
 
+    for (auto &edge : consCG->getDirectCGEdges())
+    {
+        if (const GepCGEdge *gepEdge = SVFUtil::dyn_cast<GepCGEdge>(edge))
+        {
+            spbla_vec_t pts = ptsMap[gepEdge->getSrcID()];
+            unordered_set<SVF::NodeID> pts_in = processGepPts(edges, consCG, pag, pts, gepEdge);
+            for (auto &pto : pts_in)
+            {
+                storeEdge(edges, pto, gepEdge->getDstID(), 0);
+                if (addPts(edge->getDstID(), pto))
+                {
+                    reanalyze = true;
+                }
+            }
+        }
+    }
+
 }
