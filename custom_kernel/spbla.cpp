@@ -1,3 +1,5 @@
+/* gcc -L../lib spbla.cpp -lspbla -Wl,-rpath,../lib */
+
 #include "spbla.h"
 #include "stdlib.h"
 #include "stdio.h"
