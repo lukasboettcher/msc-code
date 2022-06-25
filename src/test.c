@@ -1,44 +1,36 @@
-#include <stdlib.h>
-int g = 1;
+// #include "aliascheck.h"
+// #include "stdlib.h"
 
-void procedure(int *a)
+void MAYALIAS(void *p, void *q)
 {
-  if (*a > 0)
-  {
-    if (*a == 5)
-    {
-      free(a);
-    }
-    
-    *a = *a - g;
-    procedure(a);
-  }
+	printf("\n");
 }
 
-int main()
-{
-  int *x = malloc(sizeof(int)*1);
-  x[0] = 10;
+// void MUSTALIAS(void *p, void *q)
+// {
+// 	printf("\n");
+// }
 
-  procedure(x);
+// void NOALIAS(void *p, void *q)
+// {
+// 	printf("\n");
+// }
 
-  // int *a, b, c, *d, **e, *f;
-  // a = &b;
-  // d = &c;
-  // d = a;
-  // e = &a;
-  // *e = d;
-  // f = *e;
+struct MyStruct {
+	int * f1;
+	struct MyStruct * next;
+};
 
-  // int *x, *y, v1, v2;
-  // x = &v1;
-  // x = &v2;
-  // y = &v1;
-
-  // int a[10], *x, *y;
-  // x = &a[1];
-  // y = &a[2];
-  // int *a[2], x, y;
-  // a[0] = &x;
-  // a[1] = &y;
+int main() {
+	struct MyStruct * p = (struct MyStruct *) malloc (sizeof(struct MyStruct));
+	int num = 10;
+	while (num) {
+		p->next = (struct MyStruct *) malloc (sizeof(struct MyStruct));
+		p->next->f1 = (int *) malloc (sizeof(int));
+		p = p->next;
+	}
+	struct MyStruct *q = p;
+	MAYALIAS(q->next, p->next->next);
+	MAYALIAS(q->f1, p->next->f1);
+	return 0;
 }
