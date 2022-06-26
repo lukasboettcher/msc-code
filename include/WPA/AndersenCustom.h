@@ -14,6 +14,11 @@ namespace SVF
     private:
         static AndersenCustom *customInstance; // static instance
 
+        spbla_Matrix addr;
+        spbla_Matrix copy;
+        spbla_Matrix load;
+        spbla_Matrix store;
+
     public:
         AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
 
