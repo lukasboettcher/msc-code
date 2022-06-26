@@ -43,6 +43,8 @@ typedef std::map<spbla_Index, spbla_vec_t> PointsToMap;
 
 void run(std::string grammar_f, Edges edge_lists, size_t node_cnt, PointsToMap &ptsMap, PointsToMap &copyMap);
 bool alias(PointsToMap ptsMap, spbla_Index a, spbla_Index b);
-
+spbla_Matrix create_spbla_transpose(spbla_Matrix in);
+spbla_Index get_nnz(spbla_Matrix m);
+void print_matrix(spbla_Matrix &m, std::map<spbla_Index, std::string> *id2node);
 
 #endif
