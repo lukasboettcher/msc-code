@@ -7,41 +7,41 @@
 namespace SVF
 {
 
-class AndersenCustom : public Andersen
-{
-
-private:
-    static AndersenCustom *customInstance; // static instance
-
-public:
-    AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
-
-    // Create an singleton instance directly instead of invoking llvm pass manager
-    static AndersenCustom *createAndersenCustom(SVFIR *_pag)
+    class AndersenCustom : public Andersen
     {
-        if (customInstance == nullptr)
+
+    private:
+        static AndersenCustom *customInstance; // static instance
+
+    public:
+        AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
+
+        // Create an singleton instance directly instead of invoking llvm pass manager
+        static AndersenCustom *createAndersenCustom(SVFIR *_pag)
         {
-            customInstance = new AndersenCustom(_pag, Andersen_WPA, false);
-            customInstance->analyze();
+            if (customInstance == nullptr)
+            {
+                customInstance = new AndersenCustom(_pag, Andersen_WPA, false);
+                customInstance->analyze();
+                return customInstance;
+            }
             return customInstance;
         }
-        return customInstance;
-    }
-    static void releaseAndersenCustom()
-    {
-        if (customInstance)
-            delete customInstance;
-        customInstance = nullptr;
-    }
+        static void releaseAndersenCustom()
+        {
+            if (customInstance)
+                delete customInstance;
+            customInstance = nullptr;
+        }
 
-    virtual void solveWorklist();
+        virtual void solveWorklist();
 
-protected:
-   virtual void fillEdges(Edges &edges);
-   virtual unordered_set<NodeID> processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge);
-   virtual void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType);
-};
+    protected:
+        virtual void fillEdges(Edges &edges);
+        virtual unordered_set<NodeID> processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge);
+        virtual void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType);
+    };
 
 }
 
-#endif 
+#endif
