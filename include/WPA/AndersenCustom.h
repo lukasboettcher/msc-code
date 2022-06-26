@@ -55,6 +55,15 @@ namespace SVF
         virtual void fillEdges(Edges &edges);
         virtual unordered_set<NodeID> processGepPts(Edges &edges, ConstraintGraph *consCG, SVFIR *pag, spbla_vec_t &pts, const GepCGEdge *edge);
         virtual void storeEdge(Edges &edges, NodeID src, NodeID dst, s64_t consEdgeType);
+        virtual inline void setupMatrices()
+        {
+            size_t numNodes;
+            numNodes = consCG->getTotalNodeNum();
+            spbla_Matrix_New(&addr, numNodes, numNodes);
+            spbla_Matrix_New(&copy, numNodes, numNodes);
+            spbla_Matrix_New(&load, numNodes, numNodes);
+            spbla_Matrix_New(&store, numNodes, numNodes);
+        }
     };
 
 }
