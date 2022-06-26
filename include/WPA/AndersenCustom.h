@@ -3,6 +3,7 @@
 
 #include "WPA/Andersen.h"
 #include <mmxcflr.h>
+#include "spbla/spbla.h"
 
 namespace SVF
 {
