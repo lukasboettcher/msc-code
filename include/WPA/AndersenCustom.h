@@ -64,6 +64,7 @@ namespace SVF
             spbla_Matrix_New(&load, numNodes, numNodes);
             spbla_Matrix_New(&store, numNodes, numNodes);
         }
+        virtual void fillMatrices();
     };
 
 }

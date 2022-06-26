@@ -87,6 +87,49 @@ void AndersenCustom::fillEdges(Edges &edges)
     }
 }
 
+void AndersenCustom::fillMatrices()
+{
+    for (auto &node : *consCG)
+    {
+        for (auto &outEdge : node.second->getOutEdges())
+        {
+            size_t src, dst, type;
+            src = outEdge->getSrcID();
+            dst = outEdge->getDstID();
+            type = outEdge->getEdgeKind();
+            switch (type)
+            {
+            case 0:
+                // addr
+                spbla_Matrix_SetElement(addr, src, dst);
+                break;
+            case 1:
+                // copy
+                spbla_Matrix_SetElement(copy, src, dst);
+                break;
+            case 2:
+                // store
+                spbla_Matrix_SetElement(store, src, dst);
+                break;
+            case 3:
+                // load
+                spbla_Matrix_SetElement(load, src, dst);
+                break;
+            case 4:
+                // normal gep
+                break;
+            case 5:
+                // var gep
+                spbla_Matrix_SetElement(copy, src, dst);
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+}
+
 void AndersenCustom::solveWorklist()
 {
     // while (!isWorklistEmpty())
