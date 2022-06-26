@@ -22,6 +22,15 @@ namespace SVF
     public:
         AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
 
+        ~AndersenCustom()
+        {
+            spbla_Matrix_Free(addr);
+            spbla_Matrix_Free(copy);
+            spbla_Matrix_Free(load);
+            spbla_Matrix_Free(store);
+            spbla_Finalize();
+        }
+
         // Create an singleton instance directly instead of invoking llvm pass manager
         static AndersenCustom *createAndersenCustom(SVFIR *_pag)
         {
