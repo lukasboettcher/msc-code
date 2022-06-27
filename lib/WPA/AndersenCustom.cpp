@@ -144,6 +144,16 @@ void fixpointAlgorithm(spbla_Matrix A, spbla_Matrix B, spbla_Matrix C, bool &cha
     }
 };
 
+spbla_Index spbla_GetEntry(spbla_Matrix m, spbla_Index i, spbla_Index j)
+{
+    spbla_Index nvals;
+    spbla_Matrix out;
+    spbla_Matrix_New(&out, 1, 1);
+    spbla_Matrix_ExtractSubMatrix(out, m, i, j, 1, 1, SPBLA_HINT_NO);
+    spbla_Matrix_Nvals(out, &nvals);
+    spbla_Matrix_Free(out);
+    return nvals;
+}
 void AndersenCustom::solveWorklist()
 {
     // while (!isWorklistEmpty())
