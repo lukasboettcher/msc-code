@@ -141,6 +141,7 @@ void AndersenCustom::fillMatrices()
                 break;
             case 4:
                 // normal gep
+                handleNormalGepEdge(outEdge);
                 break;
             case 5:
                 // var gep
@@ -244,8 +245,12 @@ void AndersenCustom::solveWorklist()
             fixpointAlgorithm(addr, copy, addr, change);
         }
     }
-        }
-    }
+    size_t addrEdgesBeforeGeps = get_nnz(addr);
+    for (auto &directEdge : consCG->getDirectCGEdges())
+        handleNormalGepEdge(directEdge);
+
+    if (addrEdgesBeforeGeps != get_nnz(addr))
+        reanalyze = true;
 
     run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
 
