@@ -204,22 +204,22 @@ void AndersenCustom::solveWorklist()
         fillMatrices();
     }
 
-    run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
-
-    for (auto &edge : consCG->getDirectCGEdges())
+    bool change = true;
+    while (change)
     {
-        if (const GepCGEdge *gepEdge = SVFUtil::dyn_cast<GepCGEdge>(edge))
+        change = false;
         {
-            spbla_vec_t pts = ptsMap[gepEdge->getSrcID()];
-            unordered_set<SVF::NodeID> pts_in = processGepPts(edges, consCG, pag, pts, gepEdge);
-            for (auto &pto : pts_in)
-            {
-                storeEdge(edges, pto, gepEdge->getDstID(), 0);
-                if (addPts(edge->getDstID(), pto))
-                {
-                    reanalyze = true;
-                }
-            }
+            spbla_Matrix naddr = create_spbla_transpose(addr);
+            fixpointAlgorithm(store, naddr, copy, change);
+            spbla_Matrix_Free(naddr);
+        }
+        {
+            fixpointAlgorithm(addr, load, copy, change);
+        }
+        {
+            fixpointAlgorithm(addr, copy, addr, change);
+        }
+    }
         }
     }
 
