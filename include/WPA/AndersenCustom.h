@@ -58,7 +58,7 @@ namespace SVF
         virtual inline void setupMatrices()
         {
             size_t numNodes;
-            numNodes = consCG->getTotalNodeNum();
+            numNodes = consCG->getTotalNodeNum()*2;
             spbla_Matrix_New(&addr, numNodes, numNodes);
             spbla_Matrix_New(&copy, numNodes, numNodes);
             spbla_Matrix_New(&load, numNodes, numNodes);
