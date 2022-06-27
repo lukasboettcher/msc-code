@@ -251,25 +251,22 @@ void AndersenCustom::solveWorklist()
 
     if (addrEdgesBeforeGeps != get_nnz(addr))
         reanalyze = true;
+    // */
 
-    run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
+    /* add copy edges to consg for visualization; remove later*/
 
-    for (auto &i : ptsMap)
-    {
-        for (auto &j : i.second)
-        {
-            // cout << i.first << " points to: " << j << "\n";
-            addPts(i.first, j);
-        }
-    }
+    // spbla_Index nvals, *rows, *cols;
+    // spbla_Matrix_Nvals(copy, &nvals);
+    // rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    // cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    // spbla_Matrix_ExtractPairs(copy, rows, cols, &nvals);
 
-    for (auto &i : copyMap)
-    {
-        for (auto &j : i.second)
-        {
-            addCopyEdge(i.first, j);
-        }
-    }
+    // for (size_t i = 0; i < nvals; i++)
+    // {
+    //     addCopyEdge(rows[i], cols[i]);
+    // }
 
-    collapseFields();
+    // print_matrix(addr, 0);
+
+    /* */
 }
