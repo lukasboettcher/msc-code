@@ -154,6 +154,33 @@ spbla_Index spbla_GetEntry(spbla_Matrix m, spbla_Index i, spbla_Index j)
     spbla_Matrix_Free(out);
     return nvals;
 }
+
+spbla_vec_t AndersenCustom::getPtsTo(NodeID a)
+{
+    spbla_Matrix out;
+    spbla_Index nrows, ncols, nvals, *adjarr, *dummy, i;
+    spbla_vec_t ptsList;
+    spbla_Matrix_Nrows(addr, &nrows);
+    spbla_Matrix_Ncols(addr, &ncols);
+
+    // get column for a, this is the transpose of addr out edges, so pts set for a
+    spbla_Matrix_New(&out, nrows, 1);
+    spbla_Matrix_ExtractSubMatrix(out, addr, 0, a, nrows, 1, SPBLA_HINT_NO);
+    spbla_Matrix_Nvals(out, &nvals);
+    adjarr = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    dummy = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    spbla_Matrix_ExtractPairs(out, adjarr, dummy, &nvals);
+
+    for (i = 0; i < nvals; i++)
+        ptsList.push_back(adjarr[i]);
+
+    free(adjarr);
+    free(dummy);
+    spbla_Matrix_Free(out);
+
+    return ptsList;
+}
+
 void AndersenCustom::solveWorklist()
 {
     // while (!isWorklistEmpty())
