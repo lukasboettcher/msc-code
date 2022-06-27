@@ -196,18 +196,13 @@ AliasResult AndersenCustom::alias(NodeID a, NodeID b)
 
 void AndersenCustom::solveWorklist()
 {
-    // while (!isWorklistEmpty())
-    // {
-    //     NodeID nodeId = popFromWorklist();
-    //     collapsePWCNode(nodeId);
-    //     // Keep solving until workList is empty.
-    //     processNode(nodeId);
-    //     collapseFields();
-    // }
-    PointsToMap ptsMap, copyMap;
-    Edges edges;
-    fillEdges(edges);
-    string grammar_file = "/home/lukas/Documents/msc-test/graspan_rules/custom/pointsto-streamlines.txt";
+    // /*
+    if (!addr && consCG)
+    {
+        spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
+        setupMatrices();
+        fillMatrices();
+    }
 
     run(grammar_file, edges, (size_t)consCG->getTotalNodeNum(), ptsMap, copyMap);
 
