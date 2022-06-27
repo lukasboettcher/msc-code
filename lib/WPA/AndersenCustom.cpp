@@ -61,6 +61,30 @@ unordered_set<NodeID> AndersenCustom::processGepPts(Edges &edges, ConstraintGrap
     return gepNodes;
 }
 
+void AndersenCustom::handleNormalGepEdge(ConstraintEdge *edge)
+{
+    if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+    {
+        for (ConstraintEdge *addrInEdge : normalGepEdge->getSrcNode()->getAddrInEdges())
+        {
+            NodeID o = addrInEdge->getSrcID();
+
+            if (consCG->isBlkObjOrConstantObj(o))
+            {
+                spbla_Matrix_SetElement(addr, o, normalGepEdge->getDstID());
+                continue;
+            }
+
+            NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+            auto ret = spbla_Matrix_SetElement(addr, fieldSrcPtdNode, normalGepEdge->getDstID());
+            if (ret)
+            {
+                cout << "ERROR unable to set element, matrix out of space?\n";
+            }
+        }
+    }
+}
+
 void AndersenCustom::fillEdges(Edges &edges)
 {
     for (auto &entry : *consCG)

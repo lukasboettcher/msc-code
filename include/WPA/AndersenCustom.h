@@ -67,6 +67,7 @@ namespace SVF
         virtual void fillMatrices();
         virtual AliasResult alias(NodeID a, NodeID b);
         virtual spbla_vec_t getPtsTo(NodeID a);
+        virtual void AndersenCustom::handleNormalGepEdge(ConstraintEdge *edge);
     };
 
 }
