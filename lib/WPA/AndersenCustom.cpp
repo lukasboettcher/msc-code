@@ -130,6 +130,20 @@ void AndersenCustom::fillMatrices()
     }
 }
 
+void fixpointAlgorithm(spbla_Matrix A, spbla_Matrix B, spbla_Matrix C, bool &change)
+{
+    spbla_Index before;
+    before = get_nnz(C);
+    while (true)
+    {
+        spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE); // C += A x B
+        if (get_nnz(C) == before)
+            break;
+        before = get_nnz(C);
+        change = true;
+    }
+};
+
 void AndersenCustom::solveWorklist()
 {
     // while (!isWorklistEmpty())
