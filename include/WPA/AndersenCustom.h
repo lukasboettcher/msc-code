@@ -65,6 +65,7 @@ namespace SVF
             spbla_Matrix_New(&store, numNodes, numNodes);
         }
         virtual void fillMatrices();
+        virtual AliasResult alias(NodeID a, NodeID b);
         virtual spbla_vec_t getPtsTo(NodeID a);
     };
 

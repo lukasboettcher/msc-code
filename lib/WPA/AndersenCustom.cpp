@@ -181,6 +181,19 @@ spbla_vec_t AndersenCustom::getPtsTo(NodeID a)
     return ptsList;
 }
 
+AliasResult AndersenCustom::alias(NodeID a, NodeID b)
+{
+    // cout << "USING custom alias to check alias between: " << a << " and: " << b << "\n";
+    spbla_vec_t ptsA, ptsB;
+    ptsA = getPtsTo(a);
+    ptsB = getPtsTo(b);
+    for (spbla_Index pta : ptsA)
+        for (spbla_Index ptb : ptsB)
+            if (pta == ptb)
+                return AliasResult::MayAlias;
+    return AliasResult::NoAlias;
+}
+
 void AndersenCustom::solveWorklist()
 {
     // while (!isWorklistEmpty())
