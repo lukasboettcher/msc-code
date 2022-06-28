@@ -220,8 +220,17 @@ void AndersenCustom::solveWorklist()
             fixpointAlgorithm(addr, copy, addr, change);
         }
     }
-    size_t addrEdgesBeforeGeps = get_nnz(addr);
-    for (auto &directEdge : consCG->getDirectCGEdges())
+
+    spbla_Index *rows, *cols, nvals;
+    spbla_Matrix_Nvals(addr, &nvals);
+    rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
+    spbla_Matrix_ExtractPairs(addr, rows, cols, &nvals);
+
+    for (size_t i = 0; i < nvals; i++)
+        ptsMap[cols[i]].insert(rows[i]);
+    free(rows);
+    free(cols);
         handleNormalGepEdge(directEdge);
 
     if (addrEdgesBeforeGeps != get_nnz(addr))
