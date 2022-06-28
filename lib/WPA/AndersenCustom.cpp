@@ -219,15 +219,16 @@ AliasResult AndersenCustom::alias(NodeID a, NodeID b)
     return AliasResult::NoAlias;
 }
 
+void AndersenCustom::initialize(){
+    Andersen::initialize();
+    spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
+    setupMatrices();
+    fillMatrices();
+}
+
 void AndersenCustom::solveWorklist()
 {
     // /*
-    if (!addr && consCG)
-    {
-        spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
-        setupMatrices();
-        fillMatrices();
-    }
 
     bool change = true;
     while (change)
