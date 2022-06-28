@@ -65,9 +65,8 @@ void AndersenCustom::handleNormalGepEdge(ConstraintEdge *edge)
 {
     if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
     {
-        for (ConstraintEdge *addrInEdge : normalGepEdge->getSrcNode()->getAddrInEdges())
+        for (NodeID o : ptsMap[normalGepEdge->getSrcID()])
         {
-            NodeID o = addrInEdge->getSrcID();
 
             if (consCG->isBlkObjOrConstantObj(o))
             {
