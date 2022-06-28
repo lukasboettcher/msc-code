@@ -193,7 +193,8 @@ AliasResult AndersenCustom::alias(NodeID a, NodeID b)
     return AliasResult::NoAlias;
 }
 
-void AndersenCustom::initialize(){
+void AndersenCustom::initialize()
+{
     Andersen::initialize();
     spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
     setupMatrices();
@@ -231,15 +232,19 @@ void AndersenCustom::solveWorklist()
         ptsMap[cols[i]].insert(rows[i]);
     free(rows);
     free(cols);
-        handleNormalGepEdge(directEdge);
 
+    spbla_Index addrEdgesBeforeGeps = get_nnz(addr);
+    for (ConstraintEdge *directEdge : consCG->getDirectCGEdges())
+        handleNormalGepEdge(directEdge);
+    spbla_Index addrEdgesAfterGeps = get_nnz(addr);
+    cout << (addrEdgesAfterGeps - addrEdgesBeforeGeps) << "\t" << addrEdgesBeforeGeps << " -> " << addrEdgesAfterGeps << endl;
     if (addrEdgesBeforeGeps != get_nnz(addr))
         reanalyze = true;
+
     // */
 
     /* add copy edges to consg for visualization; remove later*/
 
-    // spbla_Index nvals, *rows, *cols;
     // spbla_Matrix_Nvals(copy, &nvals);
     // rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
     // cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
