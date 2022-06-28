@@ -19,6 +19,8 @@ namespace SVF
         spbla_Matrix load;
         spbla_Matrix store;
 
+        std::map<spbla_Index, std::set<spbla_Index>> ptsMap;
+
     public:
         AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
 
@@ -67,7 +69,6 @@ namespace SVF
             spbla_Matrix_New(&store, numNodes, numNodes);
         }
         virtual void fillMatrices();
-        virtual spbla_vec_t getPtsTo(NodeID a);
         virtual void handleNormalGepEdge(ConstraintEdge *edge);
     };
 
