@@ -50,6 +50,7 @@ namespace SVF
         }
 
         virtual void solveWorklist();
+        virtual AliasResult alias(NodeID a, NodeID b);
 
     protected:
         virtual void fillEdges(Edges &edges);
@@ -58,7 +59,7 @@ namespace SVF
         virtual inline void setupMatrices()
         {
             size_t numNodes;
-            numNodes = consCG->getTotalNodeNum()*2;
+            numNodes = consCG->getTotalNodeNum() * 2;
             spbla_Matrix_New(&addr, numNodes, numNodes);
             spbla_Matrix_New(&copy, numNodes, numNodes);
             spbla_Matrix_New(&load, numNodes, numNodes);
