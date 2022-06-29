@@ -140,7 +140,8 @@ void AndersenCustom::fillMatrices()
                 break;
             case 4:
                 // normal gep
-                handleNormalGepEdge(outEdge);
+                // handleNormalGepEdge(outEdge);
+                spbla_Matrix_SetElement(copy, src, dst);
                 break;
             case 5:
                 // var gep
@@ -221,6 +222,7 @@ void AndersenCustom::solveWorklist()
         }
     }
 
+    /*
     spbla_Index *rows, *cols, nvals;
     spbla_Matrix_Nvals(addr, &nvals);
     rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
@@ -239,6 +241,7 @@ void AndersenCustom::solveWorklist()
     cout << (addrEdgesAfterGeps - addrEdgesBeforeGeps) << "\t" << addrEdgesBeforeGeps << " -> " << addrEdgesAfterGeps << endl;
     if (addrEdgesBeforeGeps != get_nnz(addr))
         reanalyze = true;
+    */
 
     // */
 
