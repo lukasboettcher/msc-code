@@ -219,12 +219,12 @@ void AndersenCustom::solveWorklist()
         }
     }
 
-    /*
+    // /*
     spbla_Index *rows, *cols, nvals;
-    spbla_Matrix_Nvals(addr, &nvals);
+    spblaCheck(spbla_Matrix_Nvals(addr, &nvals));
     rows = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
     cols = (spbla_Index *)malloc(sizeof(spbla_Index) * nvals);
-    spbla_Matrix_ExtractPairs(addr, rows, cols, &nvals);
+    spblaCheck(spbla_Matrix_ExtractPairs(addr, rows, cols, &nvals));
 
     for (size_t i = 0; i < nvals; i++)
         ptsMap[cols[i]].insert(rows[i]);
@@ -238,7 +238,7 @@ void AndersenCustom::solveWorklist()
     cout << (addrEdgesAfterGeps - addrEdgesBeforeGeps) << "\t" << addrEdgesBeforeGeps << " -> " << addrEdgesAfterGeps << endl;
     if (addrEdgesBeforeGeps != get_nnz(addr))
         reanalyze = true;
-    */
+    // */
 
     // */
 
