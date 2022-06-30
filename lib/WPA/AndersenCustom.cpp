@@ -70,16 +70,12 @@ void AndersenCustom::handleNormalGepEdge(ConstraintEdge *edge)
 
             if (consCG->isBlkObjOrConstantObj(o))
             {
-                spbla_Matrix_SetElement(addr, o, normalGepEdge->getDstID());
+                spblaCheck(spbla_Matrix_SetElement(addr, o, normalGepEdge->getDstID()));
                 continue;
             }
 
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
-            auto ret = spbla_Matrix_SetElement(addr, fieldSrcPtdNode, normalGepEdge->getDstID());
-            if (ret)
-            {
-                cout << "ERROR unable to set element, matrix out of space?\n";
-            }
+            spblaCheck(spbla_Matrix_SetElement(addr, fieldSrcPtdNode, normalGepEdge->getDstID()));
         }
     }
 }
@@ -124,28 +120,28 @@ void AndersenCustom::fillMatrices()
             {
             case 0:
                 // addr
-                spbla_Matrix_SetElement(addr, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(addr, src, dst));
                 break;
             case 1:
                 // copy
-                spbla_Matrix_SetElement(copy, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(copy, src, dst));
                 break;
             case 2:
                 // store
-                spbla_Matrix_SetElement(store, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(store, src, dst));
                 break;
             case 3:
                 // load
-                spbla_Matrix_SetElement(load, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(load, src, dst));
                 break;
             case 4:
                 // normal gep
                 // handleNormalGepEdge(outEdge);
-                spbla_Matrix_SetElement(copy, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(copy, src, dst));
                 break;
             case 5:
                 // var gep
-                spbla_Matrix_SetElement(copy, src, dst);
+                spblaCheck(spbla_Matrix_SetElement(copy, src, dst));
                 break;
 
             default:
@@ -161,7 +157,7 @@ void fixpointAlgorithm(spbla_Matrix A, spbla_Matrix B, spbla_Matrix C, bool &cha
     before = get_nnz(C);
     while (true)
     {
-        spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE); // C += A x B
+        spblaCheck(spbla_MxM(C, A, B, SPBLA_HINT_ACCUMULATE)); // C += A x B
         if (get_nnz(C) == before)
             break;
         before = get_nnz(C);
@@ -173,10 +169,10 @@ spbla_Index spbla_GetEntry(spbla_Matrix m, spbla_Index i, spbla_Index j)
 {
     spbla_Index nvals;
     spbla_Matrix out;
-    spbla_Matrix_New(&out, 1, 1);
-    spbla_Matrix_ExtractSubMatrix(out, m, i, j, 1, 1, SPBLA_HINT_NO);
-    spbla_Matrix_Nvals(out, &nvals);
-    spbla_Matrix_Free(out);
+    spblaCheck(spbla_Matrix_New(&out, 1, 1));
+    spblaCheck(spbla_Matrix_ExtractSubMatrix(out, m, i, j, 1, 1, SPBLA_HINT_NO));
+    spblaCheck(spbla_Matrix_Nvals(out, &nvals));
+    spblaCheck(spbla_Matrix_Free(out));
     return nvals;
 }
 
@@ -196,7 +192,7 @@ AliasResult AndersenCustom::alias(NodeID a, NodeID b)
 void AndersenCustom::initialize()
 {
     Andersen::initialize();
-    spbla_Initialize(SPBLA_HINT_CUDA_BACKEND);
+    spblaCheck(spbla_Initialize(SPBLA_HINT_CUDA_BACKEND));
     setupMatrices();
     fillMatrices();
 }
