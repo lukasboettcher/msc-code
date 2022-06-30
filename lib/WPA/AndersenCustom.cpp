@@ -191,6 +191,7 @@ AliasResult AndersenCustom::alias(NodeID a, NodeID b)
 
 void AndersenCustom::initialize()
 {
+    cout << "pag constructed, initializing AndersenCustom\n";
     Andersen::initialize();
     spblaCheck(spbla_Initialize(SPBLA_HINT_CUDA_BACKEND));
     setupMatrices();
@@ -200,7 +201,7 @@ void AndersenCustom::initialize()
 void AndersenCustom::solveWorklist()
 {
     // /*
-
+    cout << "running solve worklist\n";
     bool change = true;
     while (change)
     {
