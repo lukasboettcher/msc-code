@@ -33,3 +33,6 @@ target_link_libraries(leak Svf ${llvm_libs})
 
 add_library(mmxcflr src/mmxcflr.cpp)
 target_link_libraries(mmxcflr spbla OpenMP::OpenMP_CXX)
+
+add_executable(dump src/dump-andersen.cpp)
+target_link_libraries(dump Svf ${llvm_libs})
