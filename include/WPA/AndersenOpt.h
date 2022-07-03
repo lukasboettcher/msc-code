@@ -21,6 +21,17 @@ namespace SVF
         ~AndersenOpt()
         {
         }
+        virtual inline bool addCopyEdge(NodeID src, NodeID dst)
+        {
+            if (consCG->addCopyCGEdge(src, dst))
+            {
+                changeSet.push(src);
+                changeSet.push(dst);
+                updatePropaPts(src, dst);
+                return true;
+            }
+            return false;
+        }
     };
 
 }
