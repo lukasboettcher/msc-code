@@ -21,6 +21,27 @@ namespace SVF
         ~AndersenOpt()
         {
         }
+
+        virtual inline void solveWorklist()
+        {
+            cout << "running solveWorklist\n";
+            if (runComplete)
+            {
+                while (!changeSet.empty())
+                {
+                    NodeID nodeId = changeSet.top();
+                    changeSet.pop();
+                    collapsePWCNode(nodeId);
+                    // process nodes in nodeStack
+                    processNode(nodeId);
+                    collapseFields();
+                }
+            }
+            else
+                AndersenWaveDiff::solveWorklist();
+            runComplete = true;
+        }
+
         virtual inline bool addCopyEdge(NodeID src, NodeID dst)
         {
             if (consCG->addCopyCGEdge(src, dst))
