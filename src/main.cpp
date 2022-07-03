@@ -12,6 +12,7 @@
 #include "Graphs/IRGraph.h"
 
 #include "WPA/AndersenCustom.h"
+#include "WPA/AndersenOpt.h"
 
 #include <mmxcflr.h>
 
@@ -343,8 +344,10 @@ int main(int argc, char **argv)
     // pag->dump("graph-pag");
 
     // AndersenCustom *ac = AndersenCustom::createAndersenCustom(pag);
-    AndersenCustom *ac = new AndersenCustom(pag);
-    ac->analyze();
+    // AndersenCustom *ac = new AndersenCustom(pag);
+    // ac->analyze();
+    AndersenOpt *andopt = new AndersenOpt(pag);
+    andopt->analyze();
     return 0;
 
     // Addr, Copy, Store, Load, NormalGep, VariantGep
