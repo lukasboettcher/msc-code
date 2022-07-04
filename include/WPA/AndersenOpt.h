@@ -34,6 +34,13 @@ namespace SVF
             return false;
         }
 
+        virtual bool processCopy(NodeID node, const ConstraintEdge *edge)
+        {
+            if (runComplete && reachable.find(node) == reachable.end())
+                return false;
+            return AndersenWaveDiff::processCopy(node, edge);
+        }
+
         virtual inline void solveWorklist()
         {
             cout << "running solveWorklist\n";
