@@ -27,31 +27,37 @@ namespace SVF
             cout << "running solveWorklist\n";
             if (runComplete)
             {
-                while (!changeSet.empty())
-                {
-                    NodeID nodeId = changeSet.top();
-                    changeSet.pop();
-                    collapsePWCNode(nodeId);
-                    // process nodes in nodeStack
-                    processNode(nodeId);
-                    collapseFields();
-                }
-            }
-            else
-                AndersenWaveDiff::solveWorklist();
-            runComplete = true;
-        }
+            // /*
 
-        virtual inline bool addCopyEdge(NodeID src, NodeID dst)
-        {
-            if (consCG->addCopyCGEdge(src, dst))
+            // Initialize the nodeStack via a whole SCC detection
+            // Nodes in nodeStack are in topological order by default.
+            NodeStack &nodeStack = SCCDetect();
+            for (NodeID nodeid : addCopyNodes)
+                consReachableNodes(nodeid);
+
+            cout << "done scc\n";
+            // Process nodeStack and put the changed nodes into workList.
+            while (!nodeStack.empty())
             {
-                changeSet.push(src);
-                changeSet.push(dst);
-                updatePropaPts(src, dst);
-                return true;
+                NodeID nodeId = nodeStack.top();
+                nodeStack.pop();
+                collapsePWCNode(nodeId);
+                // process nodes in nodeStack
+                processNode(nodeId);
+                collapseFields();
             }
-            return false;
+            cout << "simple scc\n";
+
+            // New nodes will be inserted into workList during processing.
+            while (!isWorklistEmpty())
+            {
+                NodeID nodeId = popFromWorklist();
+                // process nodes in worklist
+                postProcessNode(nodeId);
+            }
+            cout << "done complex\n";
+            runComplete = true;
+            // */
         }
     };
 
