@@ -22,6 +22,18 @@ namespace SVF
         {
         }
 
+        virtual inline bool addCopyEdge(NodeID src, NodeID dst)
+        {
+            if (CopyCGEdge *newEdge = consCG->addCopyCGEdge(src, dst))
+            {
+                // Lcopy.push_back(newEdge);
+                addCopyNodes.insert(src);
+                updatePropaPts(src, dst);
+                return true;
+            }
+            return false;
+        }
+
         virtual inline void solveWorklist()
         {
             cout << "running solveWorklist\n";
