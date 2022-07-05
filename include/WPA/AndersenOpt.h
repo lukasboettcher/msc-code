@@ -64,7 +64,7 @@ namespace SVF
 
             cout << "done scc\n";
             auto x = std::chrono::steady_clock::now();
-            sccTime += (x-w);
+            sccTime += (x - w);
             // Process nodeStack and put the changed nodes into workList.
             while (!nodeStack.empty())
             {
@@ -79,13 +79,13 @@ namespace SVF
                 collapseFields();
                 auto d = std::chrono::steady_clock::now();
 
-                processTime += (c-b);
-                pwcTime += (b-a);
-                collapseTime += (d-c);
+                processTime += (c - b);
+                pwcTime += (b - a);
+                collapseTime += (d - c);
             }
             cout << "done simple\n";
             auto y = std::chrono::steady_clock::now();
-            simpleTime += (y-x);
+            simpleTime += (y - x);
             // New nodes will be inserted into workList during processing.
             while (!isWorklistEmpty())
             {
@@ -95,15 +95,15 @@ namespace SVF
             }
             cout << "done complex\n";
             auto z = std::chrono::steady_clock::now();
-            complexTime += (z-y);
+            complexTime += (z - y);
             runComplete = true;
             // */
-            cout << "sccTime: " << sccTime.count()/1e6 <<"ms\n";
-            cout << "simpletime: " << simpleTime.count()/1e6 <<"ms\n";
-            cout << "\tpwctime: " << pwcTime.count()/1e6 <<"ms\n";
-            cout << "\tprocesstime: " << processTime.count()/1e6 <<"ms\n";
-            cout << "\tcollapse: " << collapseTime.count()/1e6 <<"ms\n";
-            cout << "complextime: " << complexTime.count()/1e6 <<"ms\n";
+            cout << "sccTime: " << sccTime.count() / 1e6 << "ms\n";
+            cout << "simpletime: " << simpleTime.count() / 1e6 << "ms\n";
+            cout << "\tpwctime: " << pwcTime.count() / 1e6 << "ms\n";
+            cout << "\tprocesstime: " << processTime.count() / 1e6 << "ms\n";
+            cout << "\tcollapse: " << collapseTime.count() / 1e6 << "ms\n";
+            cout << "complextime: " << complexTime.count() / 1e6 << "ms\n";
         }
     };
 
