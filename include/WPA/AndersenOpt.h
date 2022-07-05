@@ -3,7 +3,8 @@
 
 #include "WPA/Andersen.h"
 #include "MemoryModel/PointsTo.h"
-
+#include <chrono>
+using nanoseconds = std::chrono::duration<long long, std::nano>;
 namespace SVF
 {
 
@@ -12,7 +13,7 @@ namespace SVF
 
     private:
         bool runComplete = false;
-        NodeStack changeSet;
+        nanoseconds processTime;
 
     protected:
     public:
@@ -60,10 +61,16 @@ namespace SVF
             {
                 NodeID nodeId = nodeStack.top();
                 nodeStack.pop();
+                auto a = std::chrono::steady_clock::now();
                 collapsePWCNode(nodeId);
                 // process nodes in nodeStack
+                auto b = std::chrono::steady_clock::now();
                 processNode(nodeId);
+                auto c = std::chrono::steady_clock::now();
                 collapseFields();
+                auto d = std::chrono::steady_clock::now();
+
+                processTime += (c-b);
             }
             cout << "simple scc\n";
 
@@ -77,6 +84,9 @@ namespace SVF
             cout << "done complex\n";
             runComplete = true;
             // */
+
+            cout << "\tprocesstime: " << processTime.count()/1e6 <<"ms\n";
+            
         }
     };
 
