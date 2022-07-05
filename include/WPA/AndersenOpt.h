@@ -14,6 +14,8 @@ namespace SVF
     private:
         bool runComplete = false;
         nanoseconds processTime;
+        nanoseconds pwcTime;
+        nanoseconds collapseTime;
 
     protected:
     public:
@@ -71,6 +73,8 @@ namespace SVF
                 auto d = std::chrono::steady_clock::now();
 
                 processTime += (c-b);
+                pwcTime += (b-a);
+                collapseTime += (d-c);
             }
             cout << "simple scc\n";
 
@@ -85,7 +89,9 @@ namespace SVF
             runComplete = true;
             // */
 
+            cout << "\tpwctime: " << pwcTime.count()/1e6 <<"ms\n";
             cout << "\tprocesstime: " << processTime.count()/1e6 <<"ms\n";
+            cout << "\tcollapse: " << collapseTime.count()/1e6 <<"ms\n";
             
         }
     };
