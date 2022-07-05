@@ -17,6 +17,10 @@ namespace SVF
         nanoseconds pwcTime;
         nanoseconds collapseTime;
 
+        nanoseconds sccTime;
+        nanoseconds simpleTime;
+        nanoseconds complexTime;
+
     protected:
     public:
         AndersenOpt(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : AndersenWaveDiff(_pag, type, alias_check) {}
@@ -53,11 +57,14 @@ namespace SVF
 
             // Initialize the nodeStack via a whole SCC detection
             // Nodes in nodeStack are in topological order by default.
+            auto w = std::chrono::steady_clock::now();
             NodeStack &nodeStack = SCCDetect();
             for (NodeID nodeid : addCopyNodes)
                 consReachableNodes(nodeid);
 
             cout << "done scc\n";
+            auto x = std::chrono::steady_clock::now();
+            sccTime += (x-w);
             // Process nodeStack and put the changed nodes into workList.
             while (!nodeStack.empty())
             {
@@ -76,8 +83,9 @@ namespace SVF
                 pwcTime += (b-a);
                 collapseTime += (d-c);
             }
-            cout << "simple scc\n";
-
+            cout << "done simple\n";
+            auto y = std::chrono::steady_clock::now();
+            simpleTime += (y-x);
             // New nodes will be inserted into workList during processing.
             while (!isWorklistEmpty())
             {
@@ -86,13 +94,16 @@ namespace SVF
                 postProcessNode(nodeId);
             }
             cout << "done complex\n";
+            auto z = std::chrono::steady_clock::now();
+            complexTime += (z-y);
             runComplete = true;
             // */
-
+            cout << "sccTime: " << sccTime.count()/1e6 <<"ms\n";
+            cout << "simpletime: " << simpleTime.count()/1e6 <<"ms\n";
             cout << "\tpwctime: " << pwcTime.count()/1e6 <<"ms\n";
             cout << "\tprocesstime: " << processTime.count()/1e6 <<"ms\n";
             cout << "\tcollapse: " << collapseTime.count()/1e6 <<"ms\n";
-            
+            cout << "complextime: " << complexTime.count()/1e6 <<"ms\n";
         }
     };
 
