@@ -41,18 +41,21 @@ namespace SVF
             return false;
         }
 
-        virtual bool processCopy(NodeID node, const ConstraintEdge *edge)
+
+        void consReachableNodes(NodeID nodeid)
         {
-            if (runComplete && reachable.find(node) == reachable.end())
-                return false;
-            return AndersenWaveDiff::processCopy(node, edge);
+            if (!reachable.insert(nodeid).second)
+                return;
+
+            ConstraintNode *node = consCG->getConstraintNode(nodeid);
+            // for (ConstraintEdge *copyout : node->getCopyOutEdges())
+            for (ConstraintEdge *copyout : node->getDirectOutEdges())
+                consReachableNodes(copyout->getDstID());
         }
 
         virtual inline void solveWorklist()
         {
             cout << "running solveWorklist\n";
-            if (runComplete)
-            {
             // /*
 
             // Initialize the nodeStack via a whole SCC detection
