@@ -13,6 +13,8 @@ namespace SVF
 
     private:
         bool runComplete = false;
+        std::set<NodeID> addCopyNodes;
+        std::set<NodeID> reachable;
         nanoseconds processTime;
         nanoseconds pwcTime;
         nanoseconds collapseTime;
