@@ -75,6 +75,11 @@ namespace SVF
             {
                 NodeID nodeId = nodeStack.top();
                 nodeStack.pop();
+                if (runComplete && reachable.find(nodeId) == reachable.end())
+                {
+                    // cout << "should not handle copy from " << node << "\n";
+                    continue;
+                }
                 auto a = std::chrono::steady_clock::now();
                 collapsePWCNode(nodeId);
                 // process nodes in nodeStack
