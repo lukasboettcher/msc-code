@@ -23,6 +23,9 @@ namespace SVF
         nanoseconds simpleTime;
         nanoseconds complexTime;
 
+        long copyProcessed = 0;
+        long copySpared = 0;
+
     protected:
     public:
         AndersenOpt(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : AndersenWaveDiff(_pag, type, alias_check) {}
@@ -77,9 +80,11 @@ namespace SVF
                 nodeStack.pop();
                 if (runComplete && reachable.find(nodeId) == reachable.end())
                 {
+                    copySpared++;
                     // cout << "should not handle copy from " << node << "\n";
                     continue;
                 }
+                copyProcessed++;
                 auto a = std::chrono::steady_clock::now();
                 collapsePWCNode(nodeId);
                 // process nodes in nodeStack
@@ -114,6 +119,7 @@ namespace SVF
             cout << "\tprocesstime: " << processTime.count() / 1e6 << "ms\n";
             cout << "\tcollapse: " << collapseTime.count() / 1e6 << "ms\n";
             cout << "complextime: " << complexTime.count() / 1e6 << "ms\n";
+            cout << "copies processed: " << copyProcessed << " copies spared: " << copySpared << endl;
         }
     };
 
