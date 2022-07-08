@@ -18,6 +18,7 @@ target_link_libraries(main mmxcflr Svf ${llvm_libs})
 add_subdirectory(lib)
 add_subdirectory(tools)
 add_subdirectory(graspan)
+add_subdirectory(ptagpu)
 
 add_library(spbla SHARED IMPORTED)
 set_target_properties(spbla PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/libspbla.so)
