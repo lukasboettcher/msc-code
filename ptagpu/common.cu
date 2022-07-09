@@ -1,5 +1,20 @@
 #include "common.cuh"
 
+/**
+ * getHeadIndex
+ *
+ * get the index of the first element for a given node
+ * 
+ * \param src the node for which to get the head index
+ * 
+ * \return index of the 
+ *
+ */
+__host__ __device__ size_t getHeadIndex(uint src, uint *graph)
+{
+    return 0;
+}
+
 __global__ void kernel(int n, uint *A, uint *B, uint *C)
 {
 }
@@ -19,6 +34,7 @@ __host__ int run()
     checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
 
+    getHeadIndex(0, pts);
     // initialize x and y arrays on the host
     for (int i = 0; i < N; i++)
     {
