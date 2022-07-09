@@ -1,3 +1,5 @@
+#include "common.cuh"
+
 int main(int argc, char const *argv[])
 {
     /* code */
