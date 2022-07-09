@@ -1,7 +1,6 @@
-#include "common.cuh"
-
+// #include "common.cuh"
+int run();
 int main(int argc, char const *argv[])
 {
-    /* code */
-    return 0;
+    return run();
 }
