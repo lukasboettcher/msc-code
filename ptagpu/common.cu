@@ -15,6 +15,26 @@ __host__ __device__ size_t getHeadIndex(uint src, uint *graph)
     return 0;
 }
 
+/**
+ * Basic function to insert edges into graph
+ * This function is slow and running on the CPU
+ * it is also assumed, that all edges have the same base and fit into the first word.
+ * This is only for testing the kernel.
+ */
+__host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
+{
+    uint index = 1 << 12;
+    while (graph[index] != UINT_MAX)
+        index += ELEMENT_WIDTH;
+    for (size_t i = 0; i < ELEMENT_WIDTH; i++)
+    {
+        graph[index + i] = 0;
+    }
+
+    graph[index] |= 1 << dst;
+    graph[src] = index;
+}
+
 __global__ void kernel(int n, uint *A, uint *B, uint *C)
 {
 }
