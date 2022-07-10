@@ -62,6 +62,11 @@ __host__ int run()
     cudaMemset(invStore, UINT_MAX, N);
     cudaMemset(invLoad, UINT_MAX, N);
 
+    insertEdge(1, 0, pts);
+    insertEdge(2, 1, invLoad);
+    insertEdge(1, 3, invStore);
+    insertEdge(3, 4, pts);
+
     // Launch kernel on 1M elements on the GPU
 
     dim3 numBlocks(1);
