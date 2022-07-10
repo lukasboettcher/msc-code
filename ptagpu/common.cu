@@ -71,7 +71,7 @@ __host__ int run()
 
     dim3 numBlocks(1);
     dim3 threadsPerBlock(warpSize, 1024 / warpSize);
-    kernel<<<numBlocks, threadsPerBlock>>>(N, invCopy, pts, pts);
+    kernel<<<numBlocks, threadsPerBlock>>>(5, invCopy, pts, pts);
 
     // Wait for GPU to finish before accessing on host
     checkCuda(cudaDeviceSynchronize());
