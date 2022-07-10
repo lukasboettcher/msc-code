@@ -43,7 +43,7 @@ __host__ int run()
 {
     // CUDA kernel to add elements of two arrays
 
-    int N = 1 << 8;
+    int N = 1 << 20;
     uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
@@ -54,12 +54,13 @@ __host__ int run()
     checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
 
-    getHeadIndex(0, pts);
-    // initialize x and y arrays on the host
-    for (int i = 0; i < N; i++)
-    {
-        pts[i] = 1;
-    }
+    // set all values to UINT_MAX
+    cudaMemset(pts, UINT_MAX, N);
+    cudaMemset(prevPtsDiff, UINT_MAX, N);
+    cudaMemset(currPtsDiff, UINT_MAX, N);
+    cudaMemset(invCopy, UINT_MAX, N);
+    cudaMemset(invStore, UINT_MAX, N);
+    cudaMemset(invLoad, UINT_MAX, N);
 
     // Launch kernel on 1M elements on the GPU
 
