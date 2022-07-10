@@ -4,10 +4,10 @@
  * getHeadIndex
  *
  * get the index of the first element for a given node
- * 
+ *
  * \param src the node for which to get the head index
- * 
- * \return index of the 
+ *
+ * \return index of the
  *
  */
 __host__ __device__ size_t getHeadIndex(uint src, uint *graph)
