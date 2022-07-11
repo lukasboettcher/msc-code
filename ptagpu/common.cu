@@ -71,6 +71,12 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 // count threads that are looking at dst nodes
                 uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
                 uint numDstNodes = __popc(threadsWithDstNode);
+                // calculate pos in shared mem, by counting prev threads that had a dst node
+                uint pos = 0 + __popc(threadsWithDstNode & myMask);
+                if (bitActive)
+                {
+                    _shared_[pos] = var;
+                }
             }
 
             index = A[index + NEXT];
