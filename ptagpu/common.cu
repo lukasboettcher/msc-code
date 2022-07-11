@@ -41,7 +41,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
     // each warp gets a shared block for one access to global memory
     __shared__ uint _sh_[blockDim.y * 128];
     uint *const _shared_ = &_sh_[threadIdx.y * 128];
-    for (uint src = blockIdx.x * blockDim.x + threadIdx.x; src < n; src += blockDim.x * gridDim.x)
+    for (uint src = blockIdx.x * blockDim.x + threadIdx.y; src < n; src += blockDim.x * gridDim.x)
     {
         uint index = A[src];
         do
