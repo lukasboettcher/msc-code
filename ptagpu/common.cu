@@ -117,8 +117,8 @@ __host__ int run()
     // Launch kernel on 1M elements on the GPU
 
     dim3 numBlocks(16);
-    dim3 threadsPerBlock(warpSize, 1024 / warpSize);
-    kernel<<<numBlocks, threadsPerBlock>>>(5, invCopy, pts, pts);
+    dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+    kernel<<<numBlocks, threadsPerBlock>>>(3, invCopy, pts, pts);
 
     // Wait for GPU to finish before accessing on host
     checkCuda(cudaDeviceSynchronize());
