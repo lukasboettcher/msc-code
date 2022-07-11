@@ -50,6 +50,10 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
             uint base = A[index + BASE];
             if (base == UINT_MAX)
                 break;
+            // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
+            uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
+            const uint threadMask = 1 << threadIdx.x;
+            const uint myMask = threadMask - 1;
             index = A[index + NEXT];
         } while (index != UINT_MAX);
     }
