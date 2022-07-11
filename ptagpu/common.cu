@@ -24,7 +24,7 @@ __host__ __device__ size_t getHeadIndex(uint src, uint *graph)
 __host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
 {
     uint index = 1 << 12;
-    while (graph[index] != UINT_MAX)
+    while (graph[index] != UINT_MAX && graph[index+30] != 0)
         index += ELEMENT_WIDTH;
     for (size_t i = 0; i < ELEMENT_WIDTH - 1; i++)
     {
