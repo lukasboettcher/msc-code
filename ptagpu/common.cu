@@ -62,6 +62,9 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 nonEmptyThreads &= (nonEmptyThreads - 1);
                 // share current bits with all threads in warp
                 uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
+                
+                // use the base and the word of the current thread's bits to calculate the target dst id
+                uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
             }
 
             index = A[index + NEXT];
