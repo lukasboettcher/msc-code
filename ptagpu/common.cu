@@ -65,6 +65,12 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 
                 // use the base and the word of the current thread's bits to calculate the target dst id
                 uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
+                // check if this thread is looking at a dst node
+                // uint bitActive = (var != 1U) && (current_bits & threadMask);
+                uint bitActive = (current_bits & threadMask);
+                // count threads that are looking at dst nodes
+                uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
+                uint numDstNodes = __popc(threadsWithDstNode);
             }
 
             index = A[index + NEXT];
