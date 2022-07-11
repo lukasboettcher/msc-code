@@ -26,7 +26,7 @@ __host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
     uint index = 1 << 12;
     while (graph[index] != UINT_MAX)
         index += ELEMENT_WIDTH;
-    for (size_t i = 0; i < ELEMENT_WIDTH; i++)
+    for (size_t i = 0; i < ELEMENT_WIDTH - 1; i++)
     {
         graph[index + i] = 0;
     }
