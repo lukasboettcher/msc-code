@@ -54,6 +54,16 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
             uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
             const uint threadMask = 1 << threadIdx.x;
             const uint myMask = threadMask - 1;
+            while (nonEmptyThreads)
+            {
+                // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
+                int leastThread = __ffs(nonEmptyThreads) - 1;
+                // remove lsb from nonEmptyThreads (iteration step)
+                nonEmptyThreads &= (nonEmptyThreads - 1);
+                // share current bits with all threads in warp
+                uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
+            }
+
             index = A[index + NEXT];
         } while (index != UINT_MAX);
     }
