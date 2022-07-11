@@ -48,6 +48,8 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
         {
             uint bits = A[index + threadIdx.x];
             uint base = A[index + BASE];
+            if (base == UINT_MAX)
+                break;
             index = A[index + NEXT];
         } while (index != UINT_MAX);
     }
