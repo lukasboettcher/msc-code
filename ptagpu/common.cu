@@ -116,7 +116,7 @@ __host__ int run()
 
     // Launch kernel on 1M elements on the GPU
 
-    dim3 numBlocks(1);
+    dim3 numBlocks(16);
     dim3 threadsPerBlock(warpSize, 1024 / warpSize);
     kernel<<<numBlocks, threadsPerBlock>>>(5, invCopy, pts, pts);
 
