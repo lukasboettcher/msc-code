@@ -83,6 +83,11 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                     {
                         uint fromDstNode = _shared_[i];
                         uint fromIndex = fromDstNode * 32;
+                        // read dst out edges
+                        uint fromBits = B[fromIndex + threadIdx.x];
+                        uint fromBase = B[fromIndex + BASE];
+                        if (fromBase == UINT_MAX)
+                            continue;
                     }
                 }
             }
