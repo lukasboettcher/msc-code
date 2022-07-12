@@ -33,9 +33,7 @@ __host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
     graph[index] |= 1 << dst;
 }
 
-    graph[index] |= 1 << dst;
-    graph[src] = index;
-}
+__device__ uint __ptsFreeList__;
 
 __global__ void kernel(int n, uint *A, uint *B, uint *C)
 {
@@ -115,11 +113,15 @@ __host__ int run()
     insertEdge(0, 1, invCopy);
     insertEdge(1, 2, pts);
 
-    // Launch kernel on 1M elements on the GPU
+    // num of vertices
+    size_t V{3};
+
+    uint numPtsElementsFree = V * ELEMENT_WIDTH;
+    cudaMemcpyToSymbol(__ptsFreeList__, &numPtsElementsFree, sizeof(uint));
 
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
-    kernel<<<numBlocks, threadsPerBlock>>>(3, invCopy, pts, pts);
+    kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts);
 
     // Wait for GPU to finish before accessing on host
     checkCuda(cudaDeviceSynchronize());
