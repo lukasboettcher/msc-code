@@ -44,7 +44,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
     uint *const _shared_ = &_sh_[threadIdx.y * 128];
     for (uint src = blockIdx.x * blockDim.x + threadIdx.y; src < n; src += blockDim.x * gridDim.x)
     {
-        uint index = A[src];
+        uint index = src * 32;
         do
         {
             uint bits = A[index + threadIdx.x];
@@ -63,7 +63,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 nonEmptyThreads &= (nonEmptyThreads - 1);
                 // share current bits with all threads in warp
                 uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
-                
+
                 // use the base and the word of the current thread's bits to calculate the target dst id
                 uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
                 // check if this thread is looking at a dst node
