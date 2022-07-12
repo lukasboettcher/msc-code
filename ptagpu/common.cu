@@ -81,6 +81,8 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
                     for (size_t i = 0; i < numDstNodes; i++)
                     {
+                        uint fromDstNode = _shared_[i];
+                        uint fromIndex = fromDstNode * 32;
                     }
                 }
             }
