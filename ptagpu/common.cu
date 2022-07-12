@@ -88,6 +88,15 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                         uint fromBase = B[fromIndex + BASE];
                         if (fromBase == UINT_MAX)
                             continue;
+
+                        // uint fromNext = C[fromIndex + NEXT];
+                        uint toIndex = index;
+                        uint toBits = C[toIndex + threadIdx.x];
+                        uint toBase = C[toIndex + BASE];
+                        uint toNext = C[toIndex + NEXT];
+
+                        if (toBase == UINT_MAX)
+                            C[toIndex + threadIdx.x] = fromBits;
                     }
                 }
             }
