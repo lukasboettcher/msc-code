@@ -76,6 +76,13 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 {
                     _shared_[pos] = var;
                 }
+                if (numDstNodes)
+                {
+                    // go through all dst nodes, and union the out edges of that node w/ src's out nodes
+                    for (size_t i = 0; i < numDstNodes; i++)
+                    {
+                    }
+                }
             }
 
             index = A[index + NEXT];
