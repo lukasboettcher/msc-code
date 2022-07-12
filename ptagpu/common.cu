@@ -1,4 +1,6 @@
 #include "common.cuh"
+#include <iostream>
+#include <bitset>
 
 /**
  * getHeadIndex
