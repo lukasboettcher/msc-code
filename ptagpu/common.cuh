@@ -9,7 +9,7 @@
 #define WORD_OF(x) (div32((x) % ELEMENT_CARDINALITY))
 #define BIT_OF(x) (mod32(x))
 #define WARP_SIZE 32
-#define THREADS_PER_BLOCK 1024
+#define THREADS_PER_BLOCK 512
 
 __device__ __host__ static inline uint div32(uint num) {
   return num >> 5;
