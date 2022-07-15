@@ -99,7 +99,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                         if (fromBase == UINT_MAX)
                             continue;
 
-                        // uint fromNext = C[fromIndex + NEXT];
+                        uint fromNext = B[fromIndex + NEXT];
                         uint toIndex = index;
                         uint toBits = C[toIndex + threadIdx.x];
                         uint toBase = C[toIndex + BASE];
@@ -107,6 +107,49 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
 
                         if (toBase == UINT_MAX)
                             C[toIndex + threadIdx.x] = fromBits;
+                        while (1)
+                        {
+                            if (toBase == fromBase)
+                            {
+                                // if target next is undefined, create new edge for more edges
+                                uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter() : toNext;
+                                // union the bits, adding the new edge
+                                uint orBits = fromBits | toBits;
+                                uint newBits = threadIdx.x == NEXT ? newToNext : orBits;
+                                if (newBits != toBits)
+                                {
+                                    C[toIndex + threadIdx.x] = newBits;
+                                }
+                                if (fromNext == UINT_MAX)
+                                {
+                                    break;
+                                }
+                                fromBits = C[fromNext + threadIdx.x];
+                                fromBase = C[fromNext + BASE];
+                                fromNext = C[fromNext + NEXT];
+                                if (toNext == UINT_MAX)
+                                {
+                                    while (1)
+                                    {
+                                        uint newIndex = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter();
+                                        uint val = threadIdx.x == NEXT ? newIndex : fromBits;
+                                        C[toIndex + threadIdx.x] = val;
+                                        if (fromNext == UINT_MAX)
+                                        {
+                                            break;
+                                        }
+                                        toIndex = newIndex;
+                                        fromBits = C[fromNext + threadIdx.x];
+                                        fromNext = C[fromNext + NEXT];
+                                    }
+                                    break;
+                                }
+                                toIndex = newToNext;
+                                toBits = C[toNext + threadIdx.x];
+                                toBase = C[toNext + BASE];
+                                toNext = C[toNext + NEXT];
+                            }
+                        }
                     }
                 }
             }
