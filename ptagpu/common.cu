@@ -137,7 +137,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                         uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
                         if (toBase == UINT_MAX)
-                            C[toIndex + threadIdx.x] = fromBits;
+                            insertBitvector(B, C, toIndex, fromBits);
                         while (1)
                         {
                             if (toBase == fromBase)
