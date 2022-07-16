@@ -47,6 +47,14 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
 {
     while (1)
     {
+        uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+        // check if a new bitvector is required
+        // if that is the case, allocate a new index for a new element
+        uint toNext = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter();
+        // handle the special next entry, since we can not reuse the fromNext bits
+        uint val = threadIdx.x == NEXT ? toNext : fromBits;
+        // write new values to target memory location
+        targetMemory[toIndex + threadIdx.x] = val;
     }
 }
 
