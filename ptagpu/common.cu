@@ -95,9 +95,13 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                         uint fromIndex = fromDstNode * 32;
                         // read dst out edges
                         uint fromBits = B[fromIndex + threadIdx.x];
-                        uint fromBase = B[fromIndex + BASE];
+                        // get the base from thread nr 30
+                        uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+                        // terminate if no data in from from bitvector
                         if (fromBase == UINT_MAX)
                             continue;
+                        // get the next index from thread nr 31
+                        uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
 
                         uint fromNext = B[fromIndex + NEXT];
                         uint toIndex = index;
