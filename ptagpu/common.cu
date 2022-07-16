@@ -144,13 +144,16 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                             {
                                 // if target next is undefined, create new edge for more edges
                                 uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter() : toNext;
-                                // union the bits, adding the new edge
+                                // union the bits, adding the new edges
                                 uint orBits = fromBits | toBits;
-                                uint newBits = threadIdx.x == NEXT ? newToNext : orBits;
-                                if (newBits != toBits)
+                                // each thread gets a value that will be written back to memory
+                                uint val = threadIdx.x == NEXT ? newToNext : orBits;
+                                if (val != toBits)
                                 {
-                                    C[toIndex + threadIdx.x] = newBits;
+                                    C[toIndex + threadIdx.x] = val;
                                 }
+
+                                // if no more bitvectors in origin, end loop
                                 if (fromNext == UINT_MAX)
                                 {
                                     break;
