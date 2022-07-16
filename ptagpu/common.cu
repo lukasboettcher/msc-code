@@ -3,6 +3,15 @@
 #include <bitset>
 
 /**
+ * __ptsFreeList__
+ * this is the head of the free list
+ * keeps track of last allocated memory location
+ * access needs to be atomic to prevent collisions
+ * 
+ */
+__device__ uint __ptsFreeList__;
+
+/**
  * getHeadIndex
  *
  * get the index of the first element for a given node
@@ -63,8 +72,6 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
         fromBits = originMemory[fromNext + threadIdx.x];
     }
 }
-
-__device__ uint __ptsFreeList__;
 
 __global__ void kernel(int n, uint *A, uint *B, uint *C)
 {
