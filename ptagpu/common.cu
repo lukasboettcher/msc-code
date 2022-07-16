@@ -84,7 +84,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
         do
         {
             uint bits = A[index + threadIdx.x];
-            uint base = A[index + BASE];
+            uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
             if (base == UINT_MAX)
                 break;
             // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
@@ -119,8 +119,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
                     for (size_t i = 0; i < numDstNodes; i++)
                     {
-                        uint fromDstNode = _shared_[i];
-                        uint fromIndex = fromDstNode * 32;
+                        uint fromIndex = _shared_[i] * 32;
                         // read dst out edges
                         uint fromBits = B[fromIndex + threadIdx.x];
                         // get the base from thread nr 30
@@ -185,8 +184,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                     }
                 }
             }
-
-            index = A[index + NEXT];
+            index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
     }
 }
