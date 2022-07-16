@@ -171,9 +171,22 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                                 toBits = C[toNext + threadIdx.x];
                                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
-                                        uint newIndex = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter();
-                                        uint val = threadIdx.x == NEXT ? newIndex : fromBits;
-                                        C[toIndex + threadIdx.x] = val;
+                            }
+                            else if (toBase < fromBase)
+                            {
+                                // if toNext is undefined, we need to allocate a new element
+                                // after that, we can simply insert teh origin bitvector
+                                if (toNext == UINT_MAX)
+                                {
+                                    toNext = incEdgeCouter();
+                                    insertBitvector(B, C, toNext, fromBits);
+                                    break;
+                                }
+                                // if toNext is defined, load those to bits for the next iteration
+                                toIndex = toNext;
+                                toBits = C[toNext + threadIdx.x];
+                                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+                                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
                                         if (fromNext == UINT_MAX)
                                         {
                                             break;
