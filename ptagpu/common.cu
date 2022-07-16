@@ -42,7 +42,7 @@ __host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
     graph[index] |= 1 << dst;
 }
 
-__host__ __device__ uint incEdgeCouter()
+__device__ uint incEdgeCouter()
 {
     __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
     if (threadIdx.x == 0)
