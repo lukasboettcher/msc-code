@@ -190,6 +190,15 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                             }
                             else if (toBase > fromBase)
                             {
+                                // if toBase is greater than frombase
+                                // we need to insert enother bitvector element before toindex
+                                // and shift the current element back (ref. linked lists)
+                                uint newIndex = incEdgeCouter();
+                                // write the current bits from the target element to a new location
+                                C[newIndex + threadIdx.x] = toBits;
+                                // then overwrite the current bits with fromBits (insert before node)
+                                uint val = threadIdx.x == NEXT ? newIndex : fromBits;
+                                C[toIndex + threadIdx.x] = val;
 
                                 // if next from element is defined, update the bits
                                 if (fromNext == UINT_MAX)
