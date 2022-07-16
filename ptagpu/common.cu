@@ -103,11 +103,11 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                         // get the next index from thread nr 31
                         uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
 
-                        uint fromNext = B[fromIndex + NEXT];
+                        // share needed data for to indices
                         uint toIndex = index;
                         uint toBits = C[toIndex + threadIdx.x];
-                        uint toBase = C[toIndex + BASE];
-                        uint toNext = C[toIndex + NEXT];
+                        uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+                        uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
                         if (toBase == UINT_MAX)
                             C[toIndex + threadIdx.x] = fromBits;
