@@ -187,20 +187,19 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                                 toBits = C[toNext + threadIdx.x];
                                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
-                                        if (fromNext == UINT_MAX)
-                                        {
-                                            break;
-                                        }
-                                        toIndex = newIndex;
-                                        fromBits = C[fromNext + threadIdx.x];
-                                        fromNext = C[fromNext + NEXT];
-                                    }
-                                    break;
-                                }
-                                toIndex = newToNext;
-                                toBits = C[toNext + threadIdx.x];
-                                toBase = C[toNext + BASE];
-                                toNext = C[toNext + NEXT];
+                            }
+                            else if (toBase > fromBase)
+                            {
+
+                                // if next from element is defined, update the bits
+                                if (fromNext == UINT_MAX)
+                                    return;
+
+                                toIndex = newIndex;
+
+                                fromBits = C[fromNext + threadIdx.x];
+                                fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+                                fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
                             }
                         }
                     }
