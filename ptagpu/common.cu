@@ -43,6 +43,13 @@ __host__ __device__ uint incEdgeCouter()
     return _shared_[threadIdx.y];
 }
 
+__device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits)
+{
+    while (1)
+    {
+    }
+}
+
 __device__ uint __ptsFreeList__;
 
 __global__ void kernel(int n, uint *A, uint *B, uint *C)
