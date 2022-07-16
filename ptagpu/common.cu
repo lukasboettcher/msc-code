@@ -158,13 +158,19 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                                 {
                                     break;
                                 }
+                                // else load next bits
                                 fromBits = C[fromNext + threadIdx.x];
-                                fromBase = C[fromNext + BASE];
-                                fromNext = C[fromNext + NEXT];
+                                fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+                                fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
                                 if (toNext == UINT_MAX)
                                 {
-                                    while (1)
-                                    {
+                                    insertBitvector(B, C, toIndex, fromBits);
+                                    break;
+                                }
+                                toIndex = newToNext;
+                                toBits = C[toNext + threadIdx.x];
+                                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+                                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
                                         uint newIndex = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter();
                                         uint val = threadIdx.x == NEXT ? newIndex : fromBits;
                                         C[toIndex + threadIdx.x] = val;
