@@ -47,6 +47,7 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
 {
     while (1)
     {
+        // use warp intrinsics to get next index in from memory
         uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         // check if a new bitvector is required
         // if that is the case, allocate a new index for a new element
@@ -55,6 +56,11 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
         uint val = threadIdx.x == NEXT ? toNext : fromBits;
         // write new values to target memory location
         targetMemory[toIndex + threadIdx.x] = val;
+        // exit if no more elements in from bitvector
+        if (fromNext == UINT_MAX)
+            return;
+        toIndex = toNext;
+        fromBits = originMemory[fromNext + threadIdx.x];
     }
 }
 
