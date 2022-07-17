@@ -7,7 +7,7 @@
  * this is the head of the free list
  * keeps track of last allocated memory location
  * access needs to be atomic to prevent collisions
- * 
+ *
  */
 __device__ uint __ptsFreeList__;
 
@@ -26,22 +26,6 @@ __host__ __device__ size_t getHeadIndex(uint src, uint *graph)
     return 0;
 }
 
-/**
- * Basic function to insert edges into graph
- * This function is slow and running on the CPU
- * it is also assumed, that all edges have the same base and fit into the first word.
- * This is only for testing the kernel.
- */
-__host__ __device__ void insertEdge(uint src, uint dst, uint *graph)
-{
-    uint index = src * 32;
-    if (graph[index + BASE] == UINT_MAX)
-        for (size_t i = 0; i < ELEMENT_WIDTH - 1; i++)
-            graph[index + i] = 0;
-
-    graph[index] |= 1 << dst;
-}
-
 __device__ uint incEdgeCouter()
 {
     __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
@@ -50,6 +34,22 @@ __device__ uint incEdgeCouter()
         _shared_[threadIdx.y] = atomicAdd(&__ptsFreeList__, 32);
     }
     return _shared_[threadIdx.y];
+}
+
+/**
+ * Basic function to insert edges into graph
+ * This function is slow and running on the CPU
+ * it is also assumed, that all edges have the same base and fit into the first word.
+ * This is only for testing the kernel.
+ */
+__host__ void insertEdge(uint src, uint dst, uint *graph)
+{
+    uint index = src * 32;
+    if (graph[index + BASE] == UINT_MAX)
+        for (size_t i = 0; i < ELEMENT_WIDTH - 1; i++)
+            graph[index + i] = 0;
+
+    graph[index] |= 1 << dst;
 }
 
 __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits)
