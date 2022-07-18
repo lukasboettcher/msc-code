@@ -206,7 +206,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
 
                         if (toBase == UINT_MAX)
                             insertBitvector(B, C, toIndex, fromBits);
-                            break;
+                        break;
                         while (1)
                         {
                             if (toBase == fromBase)
@@ -311,15 +311,16 @@ __host__ int run()
     cudaMemset(invStore, UINT_MAX, N);
     cudaMemset(invLoad, UINT_MAX, N);
 
+    // num of vertices
+    size_t V{3};
+
     // insertEdge(1, 0, pts);
     // insertEdge(2, 1, invLoad);
     // insertEdge(1, 3, invStore);
     // insertEdge(3, 4, pts);
+    numElements = V;
     insertEdge(0, 1, invCopy);
     insertEdge(1, 2, pts);
-
-    // num of vertices
-    size_t V{3};
 
     uint numPtsElementsFree = V * ELEMENT_WIDTH;
     cudaMemcpyToSymbol(__ptsFreeList__, &numPtsElementsFree, sizeof(uint));
