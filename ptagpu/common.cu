@@ -36,6 +36,61 @@ __device__ uint incEdgeCouter()
     return _shared_[threadIdx.y];
 }
 
+__device__ uint insertEdgeDevice(uint src, uint dst, uint *graph)
+{
+    uint index = src * 32;
+    uint base = BASE_OF(dst);
+    uint word = WORD_OF(dst);
+    uint bit = BIT_OF(dst);
+    uint myBits = 0;
+
+    if (threadIdx.x == word)
+        myBits = 1 << bit;
+    else if (threadIdx.x == BASE)
+        myBits = base;
+    else if (threadIdx.x == NEXT)
+        myBits = UINT_MAX;
+
+    while (1)
+    {
+        uint toBits = graph[index + threadIdx.x];
+        uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+        if (toBase == UINT_MAX)
+        {
+            graph[index + threadIdx.x] = myBits;
+            return index;
+        }
+        if (toBase == base)
+        {
+            uint orBits = toBits | myBits;
+            if (orBits != toBits && threadIdx.x < NEXT)
+                graph[index + threadIdx.x] = orBits;
+
+            return index;
+        }
+        if (toBase < base)
+        {
+            uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+            if (toNext == UINT_MAX)
+            {
+                uint newIndex = incEdgeCouter();
+                uint val = threadIdx.x == NEXT ? newIndex : myBits;
+                graph[newIndex + threadIdx.x] = val;
+                return newIndex;
+            }
+            index = toNext;
+        }
+        else
+        {
+            uint newIndex = incEdgeCouter();
+            graph[newIndex + threadIdx.x] = myBits;
+            uint val = threadIdx.x == NEXT ? newIndex : myBits;
+            graph[index + threadIdx.x] = val;
+            return index;
+        }
+    }
+}
+
 /**
  * Basic function to insert edges into graph
  * This function is slow and running on the CPU
