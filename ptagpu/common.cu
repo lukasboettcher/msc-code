@@ -103,6 +103,14 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
     uint base = BASE_OF(dst);
     uint word = WORD_OF(dst);
     uint bit = BIT_OF(dst);
+
+    while (1)
+    {
+
+        uint toBits = graph[index + word];
+        uint toBase = graph[index + BASE];
+        uint toNext = graph[index + NEXT];
+    }
     if (graph[index + BASE] == UINT_MAX){
         for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
             graph[index + i] = 0;
