@@ -100,11 +100,16 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph)
 __host__ void insertEdge(uint src, uint dst, uint *graph)
 {
     uint index = src * 32;
-    if (graph[index + BASE] == UINT_MAX)
-        for (size_t i = 0; i < ELEMENT_WIDTH - 1; i++)
+    uint base = BASE_OF(dst);
+    uint word = WORD_OF(dst);
+    uint bit = BIT_OF(dst);
+    if (graph[index + BASE] == UINT_MAX){
+        for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
             graph[index + i] = 0;
+        graph[index + BASE] = base;
+    }
 
-    graph[index] |= 1 << dst;
+    graph[index + word] |= 1 << bit;
 }
 
 __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits)
