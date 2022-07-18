@@ -198,6 +198,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
 
                         if (toBase == UINT_MAX)
                             insertBitvector(B, C, toIndex, fromBits);
+                            break;
                         while (1)
                         {
                             if (toBase == fromBase)
