@@ -114,17 +114,28 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
         return;
     }
 
-        uint toBits = graph[index + word];
+    while (1)
+    {
         uint toBase = graph[index + BASE];
         uint toNext = graph[index + NEXT];
+
+        if (toBase == UINT_MAX)
+        {
     }
     if (graph[index + BASE] == UINT_MAX){
         for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
             graph[index + i] = 0;
         graph[index + BASE] = base;
-    }
+            for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+                graph[index + i] = 0;
+            graph[index + BASE] = base;
+            graph[index + word] |= 1 << bit;
+            return;
+        }
 
     graph[index + word] |= 1 << bit;
+}
+    }
 }
 
 __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits)
