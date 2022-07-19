@@ -273,8 +273,9 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                                 C[toIndex + threadIdx.x] = val;
 
                                 // if next from element is defined, update the bits
+                                // if not, break for this element
                                 if (fromNext == UINT_MAX)
-                                    return;
+                                    break;
 
                                 toIndex = newIndex;
 
