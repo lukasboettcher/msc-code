@@ -124,11 +124,6 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
 
         if (toBase == UINT_MAX)
         {
-    }
-    if (graph[index + BASE] == UINT_MAX){
-        for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
-            graph[index + i] = 0;
-        graph[index + BASE] = base;
             for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
                 graph[index + i] = 0;
             graph[index + BASE] = base;
