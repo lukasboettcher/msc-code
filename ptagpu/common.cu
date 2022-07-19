@@ -1,6 +1,9 @@
 #include "common.cuh"
 #include <iostream>
 #include <bitset>
+#include <map>
+
+std::map<unsigned int *, unsigned int> testMap;
 
 /**
  * __ptsFreeList__
