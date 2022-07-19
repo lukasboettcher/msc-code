@@ -135,9 +135,18 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
             graph[index + word] |= 1 << bit;
             return;
         }
+        else if (toBase > base)
+        {
 
-    graph[index + word] |= 1 << bit;
-}
+            uint nextIndex = ++testMap[graph] * 32;
+            for (size_t i = 0; i < ELEMENT_WIDTH; i++)
+                graph[nextIndex + i] = graph[index + i];
+            for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+                graph[nextIndex + i] = 0;
+            graph[index + BASE] = base;
+            graph[index + NEXT] = nextIndex;
+            graph[index + word] |= 1 << bit;
+        }
     }
 }
 
