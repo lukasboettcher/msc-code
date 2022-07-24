@@ -345,6 +345,16 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
     }
 }
 
+/**
+ * Kernel for store edges,
+ * here we need to collect all store edges that share a pts edge
+ * and selectively assign them to the same warps
+ * so that we save on synchronization between warps
+ */
+__global__ void kernel_store(int n, uint *A, uint *B, uint *C)
+{
+}
+
 __host__ int run()
 {
     // CUDA kernel to add elements of two arrays
