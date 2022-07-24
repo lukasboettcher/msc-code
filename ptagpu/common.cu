@@ -2,6 +2,7 @@
 #include <iostream>
 #include <bitset>
 #include <map>
+#include <math.h>
 
 std::map<unsigned int *, unsigned int> testMap;
 
@@ -378,7 +379,9 @@ __host__ int run()
     insertEdge(0, 1, invCopy);
     insertEdge(1, 2, pts);
 
-    uint numPtsElementsFree = V * ELEMENT_WIDTH;
+
+    // reserve 20% for new edges added by gep offsets
+    uint numPtsElementsFree = std::ceil(1.2 * V) * ELEMENT_WIDTH;
     cudaMemcpyToSymbol(__ptsFreeList__, &numPtsElementsFree, sizeof(uint));
 
     dim3 numBlocks(16);
