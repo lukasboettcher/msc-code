@@ -357,6 +357,14 @@ __device__ uint store_map_src[1 << 20];
  */
 __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
 {
+    for (uint src = blockIdx.x * blockDim.x + threadIdx.y; src < n; src += blockDim.x * gridDim.x)
+    {
+        uint index = src * 32;
+        do
+        {
+            index = __shfl_sync(0xFFFFFFFF, bits, 31);
+        } while (index != UINT_MAX);
+    }
 }
 
 __host__ int run()
