@@ -345,6 +345,10 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
     }
 }
 
+__device__ uint store_map_head = 0;
+__device__ uint store_map_pts[1 << 20];
+__device__ uint store_map_src[1 << 20];
+
 /**
  * Kernel for store edges,
  * here we need to collect all store edges that share a pts edge
