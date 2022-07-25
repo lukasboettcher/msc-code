@@ -346,10 +346,8 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
 }
 
 __device__ uint store_map_head = 0;
-__device__ uint store_map_pts[1 << 20];
-__device__ uint store_map_src[1 << 20];
 
-__device__ void insert_store_map(const uint src_index, const uint n, uint *const list)
+__device__ void insert_store_map(const uint src_index, const uint n, uint *const list, uint *store_map_pts, uint *store_map_src)
 {
     for (int i = 0; i < n; i += 32)
     {
@@ -438,7 +436,7 @@ __host__ int run()
     // CUDA kernel to add elements of two arrays
 
     int N = 1 << 20;
-    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad;
+    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&pts, N * sizeof(uint1)));
@@ -447,6 +445,8 @@ __host__ int run()
     checkCuda(cudaMallocManaged(&invCopy, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint1)));
 
     // set all values to UINT_MAX
     cudaMemset(pts, UINT_MAX, N);
@@ -455,6 +455,8 @@ __host__ int run()
     cudaMemset(invCopy, UINT_MAX, N);
     cudaMemset(invStore, UINT_MAX, N);
     cudaMemset(invLoad, UINT_MAX, N);
+    cudaMemset(store_map_pts, UINT_MAX, N);
+    cudaMemset(store_map_src, UINT_MAX, N);
 
     // num of vertices
     size_t V{3};
