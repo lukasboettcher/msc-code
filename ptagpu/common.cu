@@ -392,6 +392,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
             uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
             const uint threadMask = 1 << threadIdx.x;
             const uint myMask = threadMask - 1;
+            uint usedShared = 0;
             while (nonEmptyThreads)
             {
                 // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
@@ -409,12 +410,18 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
                 // count threads that are looking at dst nodes
                 uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
                 uint numDstNodes = __popc(threadsWithDstNode);
+                if (usedShared + numDstNodes > 128)
+                {
+                    insert_store_map(index, usedShared, _shared_);
+                    usedShared = 0;
+                }
                 // calculate pos in shared mem, by counting prev threads that had a dst node
                 uint pos = usedShared + __popc(threadsWithDstNode & myMask);
                 if (bitActive)
                 {
                     _shared_[pos] = var;
                 }
+                insert_store_map(index, usedShared, _shared_);
             }
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
