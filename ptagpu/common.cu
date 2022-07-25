@@ -382,6 +382,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
     for (uint src = blockIdx.x * blockDim.x + threadIdx.y; src < n; src += blockDim.x * gridDim.x)
     {
         uint index = src * 32;
+        uint usedShared = 0;
         do
         {
             uint bits = A[index + threadIdx.x];
@@ -392,7 +393,6 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
             uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
             const uint threadMask = 1 << threadIdx.x;
             const uint myMask = threadMask - 1;
-            uint usedShared = 0;
             while (nonEmptyThreads)
             {
                 // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
