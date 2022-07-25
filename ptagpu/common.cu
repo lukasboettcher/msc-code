@@ -349,6 +349,25 @@ __device__ uint store_map_head = 0;
 __device__ uint store_map_pts[1 << 20];
 __device__ uint store_map_src[1 << 20];
 
+__device__ void insert_store_map(const uint src_index, const uint n, uint *const list)
+{
+    for (int i = 0; i < n; i += 32)
+    {
+        uint size = min(n - i, 32);
+        uint next;
+        if (!threadIdx.x)
+        {
+            next = atomicAdd(&store_map_head, size);
+        }
+        next = __shfl_sync(0xFFFFFFFF, next, 0);
+        if (threadIdx.x < size)
+        {
+            store_map_pts[next + threadIdx.x] = list[i + threadIdx.x];
+            store_map_src[next + threadIdx.x] = src_index;
+        }
+    }
+}
+
 /**
  * Kernel for store edges,
  * here we need to collect all store edges that share a pts edge
