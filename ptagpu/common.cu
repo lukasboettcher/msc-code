@@ -485,6 +485,10 @@ __host__ int run()
     // Wait for GPU to finish before accessing on host
     checkCuda(cudaDeviceSynchronize());
 
+    uint store_map_idx[N];
+    thrust::detail::host_t expol = thrust::host;
+    thrust::sequence(expol, store_map_idx, store_map_idx + N);
+    thrust::sort_by_key(expol, store_map_pts, store_map_pts + N, store_map_idx);
     // Free memory
     checkCuda(cudaFree(pts));
     checkCuda(cudaFree(prevPtsDiff));
