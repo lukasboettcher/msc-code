@@ -426,9 +426,8 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
         } while (index != UINT_MAX);
         if (usedShared)
         {
-            insert_store_map(index, usedShared, _shared_, B, C);
+            insert_store_map(src, usedShared, _shared_, B, C);
         }
-        
     }
 }
 
