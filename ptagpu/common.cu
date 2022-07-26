@@ -347,8 +347,9 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
 
 __device__ uint store_map_head = 0;
 
-__device__ void insert_store_map(const uint src_index, const uint n, uint *const list, uint *store_map_pts, uint *store_map_src)
+__device__ void insert_store_map(const uint src, const uint n, uint *const list, uint *store_map_pts, uint *store_map_src)
 {
+    uint src_index = src * 32;
     for (int i = 0; i < n; i += 32)
     {
         uint size = min(n - i, 32);
