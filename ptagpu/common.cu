@@ -449,14 +449,14 @@ __host__ int run()
     checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint1)));
 
     // set all values to UINT_MAX
-    cudaMemset(pts, UINT_MAX, N);
-    cudaMemset(prevPtsDiff, UINT_MAX, N);
-    cudaMemset(currPtsDiff, UINT_MAX, N);
-    cudaMemset(invCopy, UINT_MAX, N);
-    cudaMemset(invStore, UINT_MAX, N);
-    cudaMemset(invLoad, UINT_MAX, N);
-    cudaMemset(store_map_pts, UINT_MAX, N);
-    cudaMemset(store_map_src, UINT_MAX, N);
+    cudaMemset(pts, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(prevPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(currPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(invCopy, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(invStore, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(invLoad, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(store_map_pts, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(store_map_src, UCHAR_MAX, N * sizeof(unsigned int));
 
     // num of vertices
     size_t V{3};
