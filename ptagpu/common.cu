@@ -362,7 +362,8 @@ __device__ void insert_store_map(const uint src, const uint n, uint *const list,
         if (threadIdx.x < size)
         {
             store_map_pts[next + threadIdx.x] = list[i + threadIdx.x];
-            store_map_src[next + threadIdx.x] = src_index;
+            // store_map_src[next + threadIdx.x] = src_index;
+            store_map_src[next + threadIdx.x] = src;
         }
     }
 }
