@@ -499,6 +499,9 @@ __host__ int run()
     checkCuda(cudaFree(invCopy));
     checkCuda(cudaFree(invStore));
     checkCuda(cudaFree(invLoad));
+    checkCuda(cudaFree(store_map_pts));
+    checkCuda(cudaFree(store_map_src));
+    checkCuda(cudaFree(store_map_idx));
 
     return 0;
 }
