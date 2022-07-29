@@ -519,6 +519,10 @@ __host__ int run()
     thrust::sort_by_key(store_map_pts, store_map_pts + N, store_map_src);
     auto res = thrust::unique_by_key_copy(store_map_pts, store_map_pts + N, store_map_idx, dummy, store_map_idx);
     free(dummy);
+
+    checkCuda(cudaDeviceSynchronize());
+    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy);
+    checkCuda(cudaDeviceSynchronize());
     // Free memory
     checkCuda(cudaFree(pts));
     checkCuda(cudaFree(prevPtsDiff));
