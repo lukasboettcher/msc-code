@@ -437,7 +437,7 @@ __host__ int run()
     // CUDA kernel to add elements of two arrays
 
     int N = 1 << 20;
-    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src;
+    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&pts, N * sizeof(uint1)));
@@ -448,6 +448,7 @@ __host__ int run()
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&store_map_idx, N * sizeof(uint1)));
 
     // set all values to UINT_MAX
     cudaMemset(pts, UCHAR_MAX, N * sizeof(unsigned int));
@@ -458,6 +459,7 @@ __host__ int run()
     cudaMemset(invLoad, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_pts, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_src, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(store_map_idx, UCHAR_MAX, N * sizeof(unsigned int));
 
     // num of vertices
     size_t V{3};
