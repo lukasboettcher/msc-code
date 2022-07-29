@@ -432,6 +432,31 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
     }
 }
 
+__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *pts, uint *store, uint *invCopy)
+{
+    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
+    uint *const _shared_ = &_sh_[threadIdx.y * 128];
+    for (uint i = blockIdx.x * blockDim.x + threadIdx.y; i < n-1; i += blockDim.x * gridDim.x)
+    {
+        uint idx = store_map_idx[i];
+        uint idx_next = store_map_idx[i + 1];
+        uint totalDstNodes = idx_next - idx;
+
+        // load the pts target, this should no change for the next totalDstNodes
+        uint pts_target = store_map_pts[idx];
+
+        for (uint j = idx; j < idx_next; j += 32)
+        {
+            uint numDstNodes = min(idx_next - j, 32U);
+            if (j + threadIdx.x < idx_next)
+            {
+                _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
+            }
+            mergeBitvectors(pts, store, invCopy, pts_target * 32, numDstNodes, _shared_);
+        }
+    }
+}
+
 __host__ int run()
 {
     // CUDA kernel to add elements of two arrays
