@@ -22,6 +22,7 @@ __device__ __host__ static inline uint mod32(uint num) {
 #include <cstdio>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#include <thrust/sort.h>
 
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
