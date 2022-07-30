@@ -40,7 +40,7 @@ __device__ uint incEdgeCouter(int type)
     return _shared_[threadIdx.y];
 }
 
-__device__ uint insertEdgeDevice(uint src, uint dst, uint *graph)
+__device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
 {
     uint index = src * 32;
     uint base = BASE_OF(dst);
@@ -77,7 +77,7 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph)
             uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             if (toNext == UINT_MAX)
             {
-                uint newIndex = incEdgeCouter();
+                uint newIndex = incEdgeCouter(toRel);
                 uint val = threadIdx.x == NEXT ? newIndex : myBits;
                 graph[newIndex + threadIdx.x] = val;
                 return newIndex;
@@ -86,7 +86,7 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph)
         }
         else
         {
-            uint newIndex = incEdgeCouter();
+            uint newIndex = incEdgeCouter(toRel);
             graph[newIndex + threadIdx.x] = myBits;
             uint val = threadIdx.x == NEXT ? newIndex : myBits;
             graph[index + threadIdx.x] = val;
@@ -168,7 +168,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
     }
 }
 
-__device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits)
+__device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits, uint toRel)
 {
     while (1)
     {
@@ -176,7 +176,7 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
         uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         // check if a new bitvector is required
         // if that is the case, allocate a new index for a new element
-        uint toNext = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter();
+        uint toNext = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(toRel);
         // handle the special next entry, since we can not reuse the fromNext bits
         uint val = threadIdx.x == NEXT ? toNext : fromBits;
         // write new values to target memory location
@@ -189,7 +189,7 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
     }
 }
 
-__device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numDstNodes, uint *const _shared_)
+__device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numDstNodes, uint *const _shared_, uint toRel)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
@@ -213,7 +213,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
 
         if (toBase == UINT_MAX)
         {
-            insertBitvector(B, C, toIndex, fromBits);
+            insertBitvector(B, C, toIndex, fromBits, toRel);
             continue;
         }
 
@@ -222,7 +222,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
             if (toBase == fromBase)
             {
                 // if target next is undefined, create new edge for more edges
-                uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter() : toNext;
+                uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter(toRel) : toNext;
                 // union the bits, adding the new edges
                 uint orBits = fromBits | toBits;
                 // each thread gets a value that will be written back to memory
@@ -243,7 +243,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                 fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
                 if (toNext == UINT_MAX)
                 {
-                    insertBitvector(B, C, toIndex, fromBits);
+                    insertBitvector(B, C, toIndex, fromBits, toRel);
                     break;
                 }
                 toIndex = newToNext;
@@ -257,8 +257,8 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                 // after that, we can simply insert teh origin bitvector
                 if (toNext == UINT_MAX)
                 {
-                    toNext = incEdgeCouter();
-                    insertBitvector(B, C, toNext, fromBits);
+                    toNext = incEdgeCouter(toRel);
+                    insertBitvector(B, C, toNext, fromBits, toRel);
                     break;
                 }
                 // if toNext is defined, load those to bits for the next iteration
@@ -272,7 +272,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                 // if toBase is greater than frombase
                 // we need to insert enother bitvector element before toindex
                 // and shift the current element back (ref. linked lists)
-                uint newIndex = incEdgeCouter();
+                uint newIndex = incEdgeCouter(toRel);
                 // write the current bits from the target element to a new location
                 C[newIndex + threadIdx.x] = toBits;
                 // then overwrite the current bits with fromBits (insert before node)
@@ -294,7 +294,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
     }
 }
 
-__global__ void kernel(int n, uint *A, uint *B, uint *C)
+__global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
 {
     // each warp gets a shared block for one access to global memory
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
@@ -337,7 +337,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
                 }
                 if (numDstNodes)
                 {
-                    mergeBitvectors(A, B, C, index, numDstNodes, _shared_);
+                    mergeBitvectors(A, B, C, index, numDstNodes, _shared_, toRel);
                 }
             }
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
@@ -432,7 +432,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
     }
 }
 
-__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *pts, uint *store, uint *invCopy)
+__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *pts, uint *store, uint *invCopy, uint toRel)
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
     uint *const _shared_ = &_sh_[threadIdx.y * 128];
@@ -452,7 +452,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
             {
                 _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
             }
-            mergeBitvectors(pts, store, invCopy, pts_target * 32, numDstNodes, _shared_);
+            mergeBitvectors(pts, store, invCopy, pts_target * 32, numDstNodes, _shared_, toRel);
         }
     }
 }
@@ -504,7 +504,7 @@ __host__ int run()
 
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
-    kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts);
+    kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
 
     checkCuda(cudaDeviceSynchronize());
     
@@ -521,7 +521,7 @@ __host__ int run()
     free(dummy);
 
     checkCuda(cudaDeviceSynchronize());
-    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy);
+    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy, COPY);
     checkCuda(cudaDeviceSynchronize());
     // Free memory
     checkCuda(cudaFree(pts));
