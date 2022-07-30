@@ -30,12 +30,12 @@ __host__ __device__ size_t getHeadIndex(uint src, uint *graph)
     return 0;
 }
 
-__device__ uint incEdgeCouter()
+__device__ uint incEdgeCouter(int type)
 {
     __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
     if (threadIdx.x == 0)
     {
-        _shared_[threadIdx.y] = atomicAdd(&__ptsFreeList__, 32);
+        _shared_[threadIdx.y] = atomicAdd(&__freeList__[type], 32);
     }
     return _shared_[threadIdx.y];
 }
