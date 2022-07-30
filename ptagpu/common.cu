@@ -497,8 +497,9 @@ __host__ int run()
 
 
     // reserve 20% for new edges added by gep offsets
-    uint numPtsElementsFree = std::ceil(1.2 * V) * ELEMENT_WIDTH;
-    cudaMemcpyToSymbol(__ptsFreeList__, &numPtsElementsFree, sizeof(uint));
+    uint initNum = std::ceil(1.2 * V) * ELEMENT_WIDTH;
+    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum};
+    checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
 
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
