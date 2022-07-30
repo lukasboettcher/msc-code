@@ -13,7 +13,7 @@ std::map<unsigned int *, unsigned int> testMap;
  * access needs to be atomic to prevent collisions
  *
  */
-__device__ uint __ptsFreeList__;
+__device__ uint __freeList__[N_TYPES];
 
 /**
  * getHeadIndex
