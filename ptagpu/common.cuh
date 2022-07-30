@@ -11,6 +11,13 @@
 #define WARP_SIZE 32
 #define THREADS_PER_BLOCK 512
 
+#define PTS 0
+#define COPY 1
+#define LOAD 2
+#define STORE 3
+#define GEP 4
+#define N_TYPES 5
+
 __device__ __host__ static inline uint div32(uint num) {
   return num >> 5;
 }
