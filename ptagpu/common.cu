@@ -349,7 +349,6 @@ __device__ uint store_map_head = 0;
 
 __device__ void insert_store_map(const uint src, const uint n, uint *const list, uint *store_map_pts, uint *store_map_src)
 {
-    uint src_index = src * 32;
     for (int i = 0; i < n; i += 32)
     {
         uint size = min(n - i, 32);
@@ -436,11 +435,10 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
     uint *const _shared_ = &_sh_[threadIdx.y * 128];
-    for (uint i = blockIdx.x * blockDim.x + threadIdx.y; i < n-1; i += blockDim.x * gridDim.x)
+    for (uint i = blockIdx.x * blockDim.x + threadIdx.y; i < n - 1; i += blockDim.x * gridDim.x)
     {
         uint idx = store_map_idx[i];
         uint idx_next = store_map_idx[i + 1];
-        uint totalDstNodes = idx_next - idx;
 
         // load the pts target, this should no change for the next totalDstNodes
         uint pts_target = store_map_pts[idx];
