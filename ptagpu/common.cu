@@ -456,7 +456,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
     }
 }
 
-__host__ int run()
+__host__ int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
 {
     // CUDA kernel to add elements of two arrays
 
@@ -495,6 +495,37 @@ __host__ int run()
     numElements = V;
     insertEdge(0, 1, invCopy);
     insertEdge(1, 2, pts);
+    if (edges)
+    {
+        uint src, dst, type, offset, ctr = 0;
+        for (auto entry : *edges)
+        {
+            src = std::get<0>(entry);
+            dst = std::get<1>(entry);
+            type = std::get<2>(entry);
+            offset = std::get<3>(entry);
+            switch (type)
+            {
+            case PTS:
+                insertEdge(src, dst, pts);
+                break;
+            case COPY:
+                insertEdge(src, dst, invCopy);
+                break;
+            case LOAD:
+                insertEdge(src, dst, invLoad);
+                break;
+            case STORE:
+                insertEdge(src, dst, invStore);
+                break;
+            case GEP:
+                insertEdge(src, dst, invCopy);
+                break;
+            default:
+                break;
+            }
+        }
+    }
 
 
     // reserve 20% for new edges added by gep offsets
