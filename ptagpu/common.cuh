@@ -13,8 +13,8 @@
 
 #define PTS 0
 #define COPY 1
-#define LOAD 2
-#define STORE 3
+#define STORE 2
+#define LOAD 3
 #define GEP 4
 #define N_TYPES 5
 
