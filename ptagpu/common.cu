@@ -494,7 +494,6 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum};
     checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
 
-    std::cout << "inserting!\n";
     if (edges)
     {
         uint numEdges, src, dst, type, offset, ctr = 0;
@@ -512,7 +511,6 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
             dst = std::get<1>(entry);
             type = std::get<2>(entry);
             offset = std::get<3>(entry);
-            std::cout << ++ctr << "/" << numEdges << "\tinserting src: " << src << " dst: " << dst << " type: " << type << "\n";
             srcs[i] = src;
             dsts[i] = dst;
             typs[i] = type;
@@ -534,10 +532,7 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
 
     checkCuda(cudaDeviceSynchronize());
-    
     kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
-
-    // Wait for GPU to finish before accessing on host
     checkCuda(cudaDeviceSynchronize());
 
     // create a dummy
