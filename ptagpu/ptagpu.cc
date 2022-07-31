@@ -42,7 +42,20 @@ int main(int argc, char **argv)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
     ConstraintGraph *cg = new ConstraintGraph(pag);
+    std::vector<std::tuple<uint, uint, uint, uint>> edges;
+    for (auto &entry : *cg)
+        for (auto &x : entry.second->getOutEdges())
+        {
+            std::tuple<uint, uint, uint, uint> entry;
+            if (const NormalGepCGEdge *gepedge = SVFUtil::dyn_cast<NormalGepCGEdge>(x))
+                entry = make_tuple(gepedge->getSrcID(), gepedge->getDstID(), gepedge->getEdgeKind(), gepedge->getConstantFieldIdx());
+            else
+                entry = make_tuple(x->getSrcID(), x->getDstID(), x->getEdgeKind(), 0);
+            edges.push_back(entry);
+        }
 
+    run(&edges);
+    
     SVFIR::releaseSVFIR();
 
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
