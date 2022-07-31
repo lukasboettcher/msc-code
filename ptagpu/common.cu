@@ -462,14 +462,14 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     // CUDA kernel to add elements of two arrays
 
     int N = 1 << 28;
-    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
+    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *store, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&pts, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&prevPtsDiff, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&currPtsDiff, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invCopy, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&store, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint1)));
@@ -480,7 +480,7 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     cudaMemset(prevPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(currPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(invCopy, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(invStore, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(store, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(invLoad, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_pts, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_src, UCHAR_MAX, N * sizeof(unsigned int));
@@ -553,14 +553,14 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     auto res = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, store_map_idx, dummy.begin(), store_map_idx);
 
     checkCuda(cudaDeviceSynchronize());
-    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy, COPY);
+    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, store, invCopy, COPY);
     checkCuda(cudaDeviceSynchronize());
     // Free memory
     checkCuda(cudaFree(pts));
     checkCuda(cudaFree(prevPtsDiff));
     checkCuda(cudaFree(currPtsDiff));
     checkCuda(cudaFree(invCopy));
-    checkCuda(cudaFree(invStore));
+    checkCuda(cudaFree(store));
     checkCuda(cudaFree(invLoad));
     checkCuda(cudaFree(store_map_pts));
     checkCuda(cudaFree(store_map_src));
