@@ -460,7 +460,7 @@ __host__ int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
 {
     // CUDA kernel to add elements of two arrays
 
-    int N = 1 << 20;
+    int N = 1 << 28;
     uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
