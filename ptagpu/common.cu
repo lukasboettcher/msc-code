@@ -79,8 +79,8 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
             if (toNext == UINT_MAX)
             {
                 uint newIndex = incEdgeCouter(toRel);
-                uint val = threadIdx.x == NEXT ? newIndex : myBits;
-                graph[newIndex + threadIdx.x] = val;
+                graph[index + NEXT] = newIndex;
+                graph[newIndex + threadIdx.x] = myBits;
                 return newIndex;
             }
             index = toNext;
@@ -88,7 +88,7 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
         else
         {
             uint newIndex = incEdgeCouter(toRel);
-            graph[newIndex + threadIdx.x] = myBits;
+            graph[newIndex + threadIdx.x] = toBits;
             uint val = threadIdx.x == NEXT ? newIndex : myBits;
             graph[index + threadIdx.x] = val;
             return index;
