@@ -3,6 +3,7 @@
 #include <bitset>
 #include <map>
 #include <math.h>
+#include <thrust/device_vector.h>
 
 std::map<unsigned int *, unsigned int> testMap;
 
