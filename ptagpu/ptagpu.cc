@@ -24,7 +24,7 @@ using namespace SVF;
 
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
-int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges);
+int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint, uint>> *edges);
 
 int main(int argc, char **argv)
 {
@@ -54,7 +54,8 @@ int main(int argc, char **argv)
             edges.push_back(entry);
         }
 
-    run(&edges);
+    std::cout << "starting ptagpu w/ " << cg->getTotalNodeNum() << " nodes and " << cg->getTotalEdgeNum() << " Edges!\n";
+    run(cg->getTotalNodeNum(), &edges);
     
     SVFIR::releaseSVFIR();
 

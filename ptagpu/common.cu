@@ -456,7 +456,8 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
     }
 }
 
-__host__ int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
+
+__host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
 {
     // CUDA kernel to add elements of two arrays
 
@@ -486,7 +487,8 @@ __host__ int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
     cudaMemset(store_map_idx, UCHAR_MAX, N * sizeof(unsigned int));
 
     // num of vertices
-    size_t V{3};
+    size_t V{numNodes};
+
 
     // insertEdge(1, 0, pts);
     // insertEdge(2, 1, invLoad);
