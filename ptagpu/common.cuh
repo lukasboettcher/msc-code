@@ -36,7 +36,7 @@ void check(cudaError_t err, const char *const func, const char *const file, cons
 {
     if (err != cudaSuccess)
     {
-        fprintf(stderr, "CUDA Runtime Error at: '%s':%i\n\t%s %s\n", __FILE__, __LINE__, cudaGetErrorString(err), func);
+        fprintf(stderr, "CUDA Runtime Error at: '%s':%i\n\t%s %s\n", file, line, cudaGetErrorString(err), func);
         exit(EXIT_FAILURE);
     }
 }
