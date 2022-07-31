@@ -489,51 +489,45 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     // num of vertices
     size_t V{numNodes};
 
-
-    // insertEdge(1, 0, pts);
-    // insertEdge(2, 1, invLoad);
-    // insertEdge(1, 3, invStore);
-    // insertEdge(3, 4, pts);
-    numElements = V;
-    insertEdge(0, 1, invCopy);
-    insertEdge(1, 2, pts);
-    if (edges)
-    {
-        uint src, dst, type, offset, ctr = 0;
-        for (auto entry : *edges)
-        {
-            src = std::get<0>(entry);
-            dst = std::get<1>(entry);
-            type = std::get<2>(entry);
-            offset = std::get<3>(entry);
-            switch (type)
-            {
-            case PTS:
-                insertEdge(src, dst, pts);
-                break;
-            case COPY:
-                insertEdge(src, dst, invCopy);
-                break;
-            case LOAD:
-                insertEdge(src, dst, invLoad);
-                break;
-            case STORE:
-                insertEdge(src, dst, invStore);
-                break;
-            case GEP:
-                insertEdge(src, dst, invCopy);
-                break;
-            default:
-                break;
-            }
-        }
-    }
-
-
     // reserve 20% for new edges added by gep offsets
     uint initNum = std::ceil(1.2 * V) * ELEMENT_WIDTH;
     uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum};
     checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
+
+    std::cout << "inserting!\n";
+    if (edges)
+    {
+        uint numEdges, src, dst, type, offset, ctr = 0;
+        uint *srcs, *dsts, *typs, *ofst;
+        numEdges = edges->size();
+        checkCuda(cudaMallocManaged(&srcs, numEdges * sizeof(unsigned int)));
+        checkCuda(cudaMallocManaged(&dsts, numEdges * sizeof(unsigned int)));
+        checkCuda(cudaMallocManaged(&typs, numEdges * sizeof(unsigned int)));
+        checkCuda(cudaMallocManaged(&ofst, numEdges * sizeof(unsigned int)));
+
+        for (size_t i = 0; i < numEdges; i++)
+        {
+            auto entry = (*edges)[i];
+            src = std::get<0>(entry);
+            dst = std::get<1>(entry);
+            type = std::get<2>(entry);
+            offset = std::get<3>(entry);
+            std::cout << ++ctr << "/" << numEdges << "\tinserting src: " << src << " dst: " << dst << " type: " << type << "\n";
+            srcs[i] = src;
+            dsts[i] = dst;
+            typs[i] = type;
+            ofst[i] = offset;
+        }
+
+        checkCuda(cudaDeviceSynchronize());
+        kernel_insert_edges<<<1, 32>>>(numEdges, srcs, dsts, typs, ofst, pts, invCopy, invLoad, store);
+        checkCuda(cudaDeviceSynchronize());
+
+        checkCuda(cudaFree(srcs));
+        checkCuda(cudaFree(dsts));
+        checkCuda(cudaFree(typs));
+        checkCuda(cudaFree(ofst));
+    }
 
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
