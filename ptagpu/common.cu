@@ -470,10 +470,46 @@ __global__ void kernel_insert_edges(const uint n, uint *from, uint *to, uint *of
     }
 }
 
-__host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint, uint>> *edges = 0)
+__host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
 {
+    uint *from, *to, *ofst, N;
+
+    N = edges->second.size();
+
+    checkCuda(cudaMallocManaged(&from, N * sizeof(unsigned int)));
+    checkCuda(cudaMallocManaged(&to, N * sizeof(unsigned int)));
+    checkCuda(cudaMallocManaged(&ofst, N * sizeof(unsigned int)));
+
+    if (inv)
+    {
+        memcpy(from, edges->second.data(), N * sizeof(unsigned int));
+        memcpy(to, edges->first.first.data(), N * sizeof(unsigned int));
+    }
+    else
+    {
+        memcpy(from, edges->first.first.data(), N * sizeof(unsigned int));
+        memcpy(to, edges->second.data(), N * sizeof(unsigned int));
+    }
+
+    thrust::sort_by_key(thrust::device, from, from + N, to);
+    long numUnique = thrust::unique_by_key_copy(thrust::device, from, from + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), ofst).second - ofst;
+
     // CUDA kernel to add elements of two arrays
 
+    dim3 numBlocks(16);
+    dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+
+    checkCuda(cudaDeviceSynchronize());
+    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(numUnique, from, to, ofst, memory, rel);
+    checkCuda(cudaDeviceSynchronize());
+
+    checkCuda(cudaFree(from));
+    checkCuda(cudaFree(to));
+    checkCuda(cudaFree(ofst));
+}
+
+__host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges)
+{
     int N = 1 << 28;
     uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *store, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
 
