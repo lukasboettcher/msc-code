@@ -4,6 +4,8 @@
 #include <map>
 #include <math.h>
 #include <thrust/device_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 
 std::map<unsigned int *, unsigned int> testMap;
 
@@ -567,14 +569,12 @@ __host__ int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint,
     kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
     checkCuda(cudaDeviceSynchronize());
 
-    // create a dummy
-    thrust::sequence(thrust::device, store_map_idx, store_map_idx + N);
     thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
-    thrust::device_vector<int> dummy(N);
-    auto res = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, store_map_idx, dummy.begin(), store_map_idx);
+    auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
+
 
     checkCuda(cudaDeviceSynchronize());
-    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(*res.second, store_map_pts, store_map_src, store_map_idx, pts, store, invCopy, COPY);
+    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, pts, store, invCopy, COPY);
     checkCuda(cudaDeviceSynchronize());
     // Free memory
     checkCuda(cudaFree(pts));
