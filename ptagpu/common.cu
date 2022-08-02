@@ -451,35 +451,21 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
     }
 }
 
-__global__ void kernel_insert_edges(const uint n, uint *srcs, uint *dsts, uint *typs, uint *ofst, uint *pts, uint *invCopy, uint *invLoad, uint *store)
+__global__ void kernel_insert_edges(const uint n, uint *from, uint *to, uint *ofst, uint *memory, int rel)
 {
-    // int index = blockIdx.x * blockDim.x + threadIdx.x;
-    // int stride = blockDim.x * gridDim.x;
-    // for (int i = index; i < n; i += stride)
-    for (size_t i = 0; i < n; i++)
+    int index = blockIdx.x * blockDim.x + threadIdx.y;
+    int stride = blockDim.x * gridDim.x;
+    for (int i = index; i < n; i += stride)
     {
-        // insertEdgeDevice(0, 960, pts, PTS);
-        // pts[10000 + threadIdx.x] = i;
-        switch (typs[i])
-        { // Addr, Copy, Store, Load, NormalGep, VariantGep
-        case PTS:
-            insertEdgeDevice(srcs[i], dsts[i], pts, PTS);
-            break;
-        case COPY:
-            insertEdgeDevice(dsts[i], srcs[i], invCopy, COPY);
-            break;
-        case STORE:
-            insertEdgeDevice(srcs[i], dsts[i], store, STORE);
-            break;
-        case LOAD:
-            insertEdgeDevice(dsts[i], srcs[i], invLoad, LOAD);
-            break;
-        // case GEP:
-        //     insertEdge(src, dst, invCopy);
-        //     break;
-        default:
-            insertEdgeDevice(dsts[i], srcs[i], invCopy, COPY);
-            break;
+
+        uint offset = ofst[i];
+        uint offset_next = ofst[i + 1];
+        uint src = from[offset];
+
+        for (size_t j = offset; j < offset_next; j++)
+        {
+            uint dst = to[j];
+            insertEdgeDevice(src, dst, memory, rel);
         }
     }
 }
