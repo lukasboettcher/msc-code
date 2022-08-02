@@ -1,11 +1,4 @@
 #include "common.cuh"
-#include <iostream>
-#include <bitset>
-#include <map>
-#include <math.h>
-#include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 
 std::map<unsigned int *, unsigned int> testMap;
 

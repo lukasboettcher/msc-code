@@ -16,7 +16,7 @@
 #include "WPA/Andersen.h"
 #include "SVF-FE/SVFIRBuilder.h"
 #include "Util/Options.h"
-#include <tuple>
+#include "shared.h"
 
 using namespace llvm;
 using namespace std;
@@ -24,7 +24,6 @@ using namespace SVF;
 
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
-int run(unsigned int numNodes, std::vector<std::tuple<uint, uint, uint, uint>> *edges);
 
 int main(int argc, char **argv)
 {

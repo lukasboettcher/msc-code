@@ -26,10 +26,15 @@ __device__ __host__ static inline uint mod32(uint num) {
   return num & 31;
 }
 
-#include <cstdio>
+#include "shared.h"
+#include <bitset>
+#include <map>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <thrust/sort.h>
+#include <thrust/device_vector.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
 
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
@@ -40,7 +45,5 @@ void check(cudaError_t err, const char *const func, const char *const file, cons
         exit(EXIT_FAILURE);
     }
 }
-
-int run();
 
 #endif
