@@ -543,38 +543,10 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum};
     checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
 
-    if (edges)
-    {
-        uint numEdges, src, dst, type, offset, ctr = 0;
-        uint *srcs, *dsts, *typs, *ofst;
-        numEdges = edges->size();
-        checkCuda(cudaMallocManaged(&srcs, numEdges * sizeof(unsigned int)));
-        checkCuda(cudaMallocManaged(&dsts, numEdges * sizeof(unsigned int)));
-        checkCuda(cudaMallocManaged(&typs, numEdges * sizeof(unsigned int)));
-        checkCuda(cudaMallocManaged(&ofst, numEdges * sizeof(unsigned int)));
-
-        for (size_t i = 0; i < numEdges; i++)
-        {
-            auto entry = (*edges)[i];
-            src = std::get<0>(entry);
-            dst = std::get<1>(entry);
-            type = std::get<2>(entry);
-            offset = std::get<3>(entry);
-            srcs[i] = src;
-            dsts[i] = dst;
-            typs[i] = type;
-            ofst[i] = offset;
-        }
-
-        checkCuda(cudaDeviceSynchronize());
-        kernel_insert_edges<<<1, 32>>>(numEdges, srcs, dsts, typs, ofst, pts, invCopy, invLoad, store);
-        checkCuda(cudaDeviceSynchronize());
-
-        checkCuda(cudaFree(srcs));
-        checkCuda(cudaFree(dsts));
-        checkCuda(cudaFree(typs));
-        checkCuda(cudaFree(ofst));
-    }
+    insertEdges(addrEdges, pts, 1, PTS);
+    insertEdges(directEdges, invCopy, 1, COPY);
+    insertEdges(loadEdges, invLoad, 1, LOAD);
+    insertEdges(storeEdges, store, 0, STORE);
 
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
