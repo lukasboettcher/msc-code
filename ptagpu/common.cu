@@ -551,6 +551,8 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     dim3 numBlocks(16);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
     kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
+    checkCuda(cudaDeviceSynchronize());
+    kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, pts, invCopy, COPY);
 
     checkCuda(cudaDeviceSynchronize());
     kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
