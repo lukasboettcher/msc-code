@@ -548,23 +548,26 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     insertEdges(loadEdges, invLoad, 1, LOAD);
     insertEdges(storeEdges, invStore, 1, STORE);
 
-    dim3 numBlocks(16);
-    dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
-    kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
-    checkCuda(cudaDeviceSynchronize());
-    kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, pts, invCopy, COPY);
+    for (size_t i = 0; i < 10; i++)
+    {
+        dim3 numBlocks(16);
+        dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+        kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
+        checkCuda(cudaDeviceSynchronize());
+        kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, pts, invCopy, COPY);
 
-    checkCuda(cudaDeviceSynchronize());
-    kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
-    checkCuda(cudaDeviceSynchronize());
+        checkCuda(cudaDeviceSynchronize());
+        kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
+        checkCuda(cudaDeviceSynchronize());
 
-    thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
-    auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
+        thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
+        auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
 
 
-    checkCuda(cudaDeviceSynchronize());
-    kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy, COPY);
-    checkCuda(cudaDeviceSynchronize());
+        checkCuda(cudaDeviceSynchronize());
+        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy, COPY);
+        checkCuda(cudaDeviceSynchronize());
+    }
     // Free memory
     checkCuda(cudaFree(pts));
     checkCuda(cudaFree(prevPtsDiff));
