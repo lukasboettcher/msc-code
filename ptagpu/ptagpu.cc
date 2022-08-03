@@ -24,7 +24,6 @@ using namespace SVF;
 
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
-
 int main(int argc, char **argv)
 {
     int arg_num = 0;
@@ -41,21 +40,60 @@ int main(int argc, char **argv)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
     ConstraintGraph *cg = new ConstraintGraph(pag);
-    std::vector<std::tuple<uint, uint, uint, uint>> edges;
-    for (auto &entry : *cg)
-        for (auto &x : entry.second->getOutEdges())
+
+    edgeSet addrEdges;
+    ConstraintEdge::ConstraintEdgeSetTy &addrs = cg->getAddrCGEdges();
+    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = addrs.begin(), eiter = addrs.end(); iter != eiter; ++iter)
+    {
+        addrEdges.first.first.push_back((*iter)->getSrcID());
+        addrEdges.first.second.push_back(0);
+        addrEdges.second.push_back((*iter)->getDstID());
+    }
+
+    ConstraintEdge::ConstraintEdgeSetTy &directs = cg->getDirectCGEdges();
+    edgeSet directEdges;
+    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = directs.begin(), eiter = directs.end(); iter != eiter; ++iter)
+    {
+        if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(*iter))
         {
-            std::tuple<uint, uint, uint, uint> entry;
-            if (const NormalGepCGEdge *gepedge = SVFUtil::dyn_cast<NormalGepCGEdge>(x))
-                entry = make_tuple(gepedge->getSrcID(), gepedge->getDstID(), gepedge->getEdgeKind(), gepedge->getConstantFieldIdx());
-            else
-                entry = make_tuple(x->getSrcID(), x->getDstID(), x->getEdgeKind(), 0);
-            edges.push_back(entry);
+            directEdges.first.first.push_back(copy->getSrcID());
+            directEdges.first.second.push_back(0);
+            directEdges.second.push_back(copy->getDstID());
         }
+        else if (NormalGepCGEdge *ngep = SVFUtil::dyn_cast<NormalGepCGEdge>(*iter))
+        {
+            directEdges.first.first.push_back(ngep->getSrcID());
+            directEdges.first.second.push_back(ngep->getConstantFieldIdx());
+            directEdges.second.push_back(ngep->getDstID());
+        }
+        else if (VariantGepCGEdge *vgep = SVFUtil::dyn_cast<VariantGepCGEdge>(*iter))
+        {
+            directEdges.first.first.push_back(vgep->getSrcID());
+            directEdges.first.second.push_back(0);
+            directEdges.second.push_back(vgep->getDstID());
+        }
+    }
+
+    ConstraintEdge::ConstraintEdgeSetTy &loads = cg->getLoadCGEdges();
+    edgeSet loadEdges;
+    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = loads.begin(), eiter = loads.end(); iter != eiter; ++iter)
+    {
+        loadEdges.first.first.push_back((*iter)->getSrcID());
+        loadEdges.first.second.push_back(0);
+        loadEdges.second.push_back((*iter)->getDstID());
+    }
+
+    ConstraintEdge::ConstraintEdgeSetTy &stores = cg->getStoreCGEdges();
+    edgeSet storeEdges;
+    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = stores.begin(), eiter = stores.end(); iter != eiter; ++iter)
+    {
+        storeEdges.first.first.push_back((*iter)->getSrcID());
+        storeEdges.first.second.push_back(0);
+        storeEdges.second.push_back((*iter)->getDstID());
+    }
 
     std::cout << "starting ptagpu w/ " << cg->getTotalNodeNum() << " nodes and " << cg->getTotalEdgeNum() << " Edges!\n";
-    run(cg->getTotalNodeNum(), &edges);
-    
+    run(cg->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges);
     SVFIR::releaseSVFIR();
 
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
