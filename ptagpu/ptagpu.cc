@@ -61,9 +61,9 @@ int main(int argc, char **argv)
         }
         else if (NormalGepCGEdge *ngep = SVFUtil::dyn_cast<NormalGepCGEdge>(*iter))
         {
-            directEdges.first.first.push_back(ngep->getSrcID());
-            directEdges.first.second.push_back(ngep->getConstantFieldIdx());
-            directEdges.second.push_back(ngep->getDstID());
+            gepEdges.first.first.push_back(ngep->getSrcID());
+            gepEdges.first.second.push_back(ngep->getConstantFieldIdx());
+            gepEdges.second.push_back(ngep->getDstID());
         }
         else if (VariantGepCGEdge *vgep = SVFUtil::dyn_cast<VariantGepCGEdge>(*iter))
         {
