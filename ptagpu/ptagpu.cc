@@ -45,19 +45,18 @@ int main(int argc, char **argv)
     ConstraintEdge::ConstraintEdgeSetTy &addrs = cg->getAddrCGEdges();
     for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = addrs.begin(), eiter = addrs.end(); iter != eiter; ++iter)
     {
-        addrEdges.first.first.push_back((*iter)->getSrcID());
-        addrEdges.first.second.push_back(0);
+        addrEdges.first.push_back((*iter)->getSrcID());
         addrEdges.second.push_back((*iter)->getDstID());
     }
 
     ConstraintEdge::ConstraintEdgeSetTy &directs = cg->getDirectCGEdges();
     edgeSet directEdges;
+    edgeSetOffset gepEdges;
     for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = directs.begin(), eiter = directs.end(); iter != eiter; ++iter)
     {
         if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(*iter))
         {
-            directEdges.first.first.push_back(copy->getSrcID());
-            directEdges.first.second.push_back(0);
+            directEdges.first.push_back(copy->getSrcID());
             directEdges.second.push_back(copy->getDstID());
         }
         else if (NormalGepCGEdge *ngep = SVFUtil::dyn_cast<NormalGepCGEdge>(*iter))
@@ -68,8 +67,7 @@ int main(int argc, char **argv)
         }
         else if (VariantGepCGEdge *vgep = SVFUtil::dyn_cast<VariantGepCGEdge>(*iter))
         {
-            directEdges.first.first.push_back(vgep->getSrcID());
-            directEdges.first.second.push_back(0);
+            directEdges.first.push_back(vgep->getSrcID());
             directEdges.second.push_back(vgep->getDstID());
         }
     }
@@ -78,8 +76,7 @@ int main(int argc, char **argv)
     edgeSet loadEdges;
     for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = loads.begin(), eiter = loads.end(); iter != eiter; ++iter)
     {
-        loadEdges.first.first.push_back((*iter)->getSrcID());
-        loadEdges.first.second.push_back(0);
+        loadEdges.first.push_back((*iter)->getSrcID());
         loadEdges.second.push_back((*iter)->getDstID());
     }
 
@@ -87,8 +84,7 @@ int main(int argc, char **argv)
     edgeSet storeEdges;
     for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = stores.begin(), eiter = stores.end(); iter != eiter; ++iter)
     {
-        storeEdges.first.first.push_back((*iter)->getSrcID());
-        storeEdges.first.second.push_back(0);
+        storeEdges.first.push_back((*iter)->getSrcID());
         storeEdges.second.push_back((*iter)->getDstID());
     }
 
