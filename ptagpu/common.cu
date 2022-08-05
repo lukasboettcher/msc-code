@@ -483,11 +483,11 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     if (inv)
     {
         memcpy(from, edges->second.data(), N * sizeof(unsigned int));
-        memcpy(to, edges->first.first.data(), N * sizeof(unsigned int));
+        memcpy(to, edges->first.data(), N * sizeof(unsigned int));
     }
     else
     {
-        memcpy(from, edges->first.first.data(), N * sizeof(unsigned int));
+        memcpy(from, edges->first.data(), N * sizeof(unsigned int));
         memcpy(to, edges->second.data(), N * sizeof(unsigned int));
     }
 
