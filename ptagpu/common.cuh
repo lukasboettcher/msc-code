@@ -27,6 +27,7 @@ __device__ __host__ static inline uint mod32(uint num) {
 }
 
 #include "shared.h"
+#include "svfhook.h"
 #include <bitset>
 #include <map>
 #include <cuda.h>
