@@ -551,6 +551,9 @@ __host__ void handleGepEdges(edgeSetOffset *gepEdges, uint *memory, void *consG)
         src = gepEdges->first.first[i];
         offset = gepEdges->first.second[i];
         dst = gepEdges->second[i];
+
+        std::vector<uint> targets;
+        collectFromBitvector(src, memory, targets);
     }
 }
 
