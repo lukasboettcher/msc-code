@@ -525,6 +525,20 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
         {
             break;
         }
+
+        for (size_t j = 0; j < BASE; j++)
+        {
+            bits = memory[index + j];
+            for (size_t k = 0; k < 32; k++)
+            {
+                if (1 << k & bits)
+                {
+                    // calculate target from bitvector
+                    ptsTarget = 960 * base + 32 * j + k;
+                    pts.push_back(ptsTarget);
+                }
+            }
+        }
         index = next;
     }
 }
