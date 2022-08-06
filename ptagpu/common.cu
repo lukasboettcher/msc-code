@@ -515,6 +515,18 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
 {
     uint index = src * 32;
     uint base, next, bits, ptsTarget;
+
+    while (index != UINT_MAX)
+    {
+        base = memory[index + BASE];
+        next = memory[index + NEXT];
+
+        if (base == UINT_MAX)
+        {
+            break;
+        }
+        index = next;
+    }
 }
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG)
 {
