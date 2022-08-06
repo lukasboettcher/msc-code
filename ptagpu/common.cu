@@ -508,7 +508,7 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     checkCuda(cudaFree(ofst));
 }
 
-__host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges)
+__host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG)
 {
     int N = 1 << 28;
     uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
