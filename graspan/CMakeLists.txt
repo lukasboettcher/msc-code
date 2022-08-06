@@ -1,4 +1,5 @@
 enable_language(CUDA)
+include_directories("${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}")
 find_package(Boost REQUIRED COMPONENTS system thread)
 add_executable(graspan main.cpp kernel.cu)
 target_link_libraries(graspan pthread ${CUDA_LIBRARIES} ${Boost_LIBRARIES})
