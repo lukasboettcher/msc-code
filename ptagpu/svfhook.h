@@ -1,6 +1,6 @@
 #ifndef SVFHOOK_HEADER
 #define SVFHOOK_HEADER
 
-uint handleGep(void *consG, uint id, uint offset);
+unsigned int handleGep(void *consG, unsigned int id, unsigned int offset);
 
 #endif
