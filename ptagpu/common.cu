@@ -508,6 +508,14 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     checkCuda(cudaFree(ofst));
 }
 
+/**
+ * collect pts targets for src
+ */
+__host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts)
+{
+    uint index = src * 32;
+    uint base, next, bits, ptsTarget;
+}
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG)
 {
     int N = 1 << 28;
