@@ -552,7 +552,6 @@ __host__ void handleGepEdges(edgeSetOffset *gepEdges, uint *memory, void *consG)
         offset = gepEdges->first.second[i];
         dst = gepEdges->second[i];
 
-
         std::vector<uint> targets;
         collectFromBitvector(src, memory, targets);
         for (uint target : targets)
@@ -561,6 +560,20 @@ __host__ void handleGepEdges(edgeSetOffset *gepEdges, uint *memory, void *consG)
             insertEdge(gepElement, dst, memory);
         }
     }
+}
+
+__host__ bool alias(uint a, uint b, uint *memory)
+{
+    std::vector<uint> ptsA, ptsB;
+
+    collectFromBitvector(a, memory, ptsA);
+    collectFromBitvector(b, memory, ptsB);
+
+    for (uint target : ptsA)
+        if (std::find(ptsB.begin(), ptsB.end(), target) != ptsB.end())
+            return true;
+
+    return false;
 }
 
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG)
