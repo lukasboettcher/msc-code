@@ -556,7 +556,7 @@ __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *memory, void *consG,
         collectFromBitvector(src, memory, targets);
         for (uint target : targets)
         {
-            gepElement = handleGep(consG, target, offset);
+            gepElement = handleGep(consG, pag, target, offset);
             insertEdge(gepElement, dst, memory);
         }
     }
