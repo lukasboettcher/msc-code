@@ -192,7 +192,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
     {
         uint fromIndex = _shared_[i] * 32;
         // read dst out edges
-        uint fromBits = B[fromIndex + threadIdx.x];
+        uint fromBits = origin[fromIndex + threadIdx.x];
         // get the base from thread nr 30
         uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
         // terminate if no data in from from bitvector
@@ -203,13 +203,13 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
 
         // share needed data for to indices
         uint toIndex = index;
-        uint toBits = C[toIndex + threadIdx.x];
+        uint toBits = target[toIndex + threadIdx.x];
         uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
         uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
         if (toBase == UINT_MAX)
         {
-            insertBitvector(B, C, toIndex, fromBits, toRel);
+            insertBitvector(origin, target, toIndex, fromBits, toRel);
             continue;
         }
 
@@ -225,7 +225,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                 uint val = threadIdx.x == NEXT ? newToNext : orBits;
                 if (val != toBits)
                 {
-                    C[toIndex + threadIdx.x] = val;
+                    target[toIndex + threadIdx.x] = val;
                 }
 
                 // if no more bitvectors in origin, end loop
@@ -234,16 +234,16 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                     break;
                 }
                 // else load next bits
-                fromBits = C[fromNext + threadIdx.x];
+                fromBits = origin[fromNext + threadIdx.x];
                 fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
                 fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
                 if (toNext == UINT_MAX)
                 {
-                    insertBitvector(B, C, toIndex, fromBits, toRel);
+                    insertBitvector(origin, target, toIndex, fromBits, toRel);
                     break;
                 }
                 toIndex = newToNext;
-                toBits = C[toNext + threadIdx.x];
+                toBits = target[toNext + threadIdx.x];
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             }
@@ -254,26 +254,26 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
                 if (toNext == UINT_MAX)
                 {
                     toNext = incEdgeCouter(toRel);
-                    insertBitvector(B, C, toNext, fromBits, toRel);
+                    insertBitvector(origin, target, toNext, fromBits, toRel);
                     break;
                 }
                 // if toNext is defined, load those to bits for the next iteration
                 toIndex = toNext;
-                toBits = C[toNext + threadIdx.x];
+                toBits = target[toNext + threadIdx.x];
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             }
             else if (toBase > fromBase)
             {
                 // if toBase is greater than frombase
-                // we need to insert enother bitvector element before toindex
+                // we need to insert another bitvector element before toindex
                 // and shift the current element back (ref. linked lists)
                 uint newIndex = incEdgeCouter(toRel);
                 // write the current bits from the target element to a new location
-                C[newIndex + threadIdx.x] = toBits;
+                target[newIndex + threadIdx.x] = toBits;
                 // then overwrite the current bits with fromBits (insert before node)
                 uint val = threadIdx.x == NEXT ? newIndex : fromBits;
-                C[toIndex + threadIdx.x] = val;
+                target[toIndex + threadIdx.x] = val;
 
                 // if next from element is defined, update the bits
                 // if not, break for this element
@@ -282,7 +282,7 @@ __device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numD
 
                 toIndex = newIndex;
 
-                fromBits = C[fromNext + threadIdx.x];
+                fromBits = origin[fromNext + threadIdx.x];
                 fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
                 fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
             }
