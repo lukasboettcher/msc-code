@@ -610,7 +610,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
     // reserve 20% for new edges added by gep offsets
     uint initNum = std::ceil(1.2 * V) * ELEMENT_WIDTH;
-    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum};
+    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum, initNum, initNum};
     checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
 
     insertEdges(addrEdges, pts, 1, PTS);
