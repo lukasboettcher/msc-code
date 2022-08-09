@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     }
 
     std::cout << "starting ptagpu w/ " << cg->getTotalNodeNum() << " nodes and " << cg->getTotalEdgeNum() << " Edges!\n";
-    run(cg->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, &gepEdges, cg);
+    run(cg->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, &gepEdges, cg, pag);
     SVFIR::releaseSVFIR();
 
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
