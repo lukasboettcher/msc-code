@@ -431,7 +431,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
     uint *const _shared_ = &_sh_[threadIdx.y * 128];
-    for (uint i = blockIdx.x * blockDim.x + threadIdx.y; i < n - 1; i += blockDim.x * gridDim.x)
+    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
     {
         uint idx = store_map_idx[i];
         uint idx_next = store_map_idx[i + 1];
