@@ -11,3 +11,10 @@ uint handleGep(void *consG, uint id, uint offset)
 
     return fieldSrcPtdNode;
 }
+
+unsigned int getNodeCount(void *consG)
+{
+    SVF::ConstraintGraph *cg = (SVF::ConstraintGraph *)consG;
+    unsigned int numNodes = cg->getTotalNodeNum();
+    return numNodes;
+}
