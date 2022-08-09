@@ -453,8 +453,8 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
 
 __global__ void kernel_insert_edges(const uint n, uint *from, uint *to, uint *ofst, uint *memory, int rel)
 {
-    int index = blockIdx.x * blockDim.x + threadIdx.y;
-    int stride = blockDim.x * gridDim.x;
+    int index = blockIdx.x * blockDim.y + threadIdx.y;
+    int stride = blockDim.y * gridDim.x;
     for (int i = index; i < n; i += stride)
     {
 
