@@ -164,7 +164,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
     }
 }
 
-__device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits, uint toRel)
+__device__ void insertBitvector(const uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits, uint toRel)
 {
     while (1)
     {
@@ -185,7 +185,7 @@ __device__ void insertBitvector(uint *originMemory, uint *targetMemory, uint toI
     }
 }
 
-__device__ void mergeBitvectors(uint *A, uint *B, uint *C, uint index, uint numDstNodes, uint *const _shared_, uint toRel)
+__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, const uint *_shared_, const uint toRel)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
@@ -333,7 +333,7 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
                 }
                 if (numDstNodes)
                 {
-                    mergeBitvectors(A, B, C, index, numDstNodes, _shared_, toRel);
+                    mergeBitvectors(B, C, index, numDstNodes, _shared_, toRel);
                 }
             }
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
@@ -446,7 +446,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
             {
                 _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
             }
-            mergeBitvectors(pts, store, invCopy, pts_target * 32, numDstNodes, _shared_, toRel);
+            mergeBitvectors(store, invCopy, pts_target * 32, numDstNodes, _shared_, toRel);
         }
     }
 }
