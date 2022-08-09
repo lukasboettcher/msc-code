@@ -496,7 +496,7 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
 
     // CUDA kernel to add elements of two arrays
 
-    dim3 numBlocks(16);
+    dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
     checkCuda(cudaDeviceSynchronize());
@@ -618,7 +618,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
     for (size_t i = 0; i < 10; i++)
     {
-        dim3 numBlocks(16);
+        dim3 numBlocks(N_BLOCKS);
         dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
         handleGepEdges(gepEdges, pts, consG);
         kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);

@@ -10,6 +10,7 @@
 #define BIT_OF(x) (mod32(x))
 #define WARP_SIZE 32
 #define THREADS_PER_BLOCK 512
+#define N_BLOCKS 16
 
 #define PTS 0
 #define COPY 1
