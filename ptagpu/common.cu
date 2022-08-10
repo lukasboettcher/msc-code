@@ -12,6 +12,13 @@ std::map<unsigned int *, unsigned int> testMap;
 __device__ uint __freeList__[N_TYPES];
 
 /**
+ * flag that keeps track of remaining work
+ * if true, no next iteration needed
+ *
+ */
+__device__ bool __done__ = true;
+
+/**
  * getHeadIndex
  *
  * get the index of the first element for a given node
