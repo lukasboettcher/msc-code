@@ -808,6 +808,13 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
         kernel_updatePts<<<numBlocks, threadsPerBlock>>>(V, pts, currPtsDiff, nextPtsDiff);
         checkCuda(cudaDeviceSynchronize());
 
+        bool done = true;
+        checkCuda(cudaMemcpyFromSymbol(&done, __done__, sizeof(bool)));
+
+        if (done)
+        {
+            break;
+        }
         kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff, PTS_NEXT);
         checkCuda(cudaDeviceSynchronize());
         kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy, COPY);
