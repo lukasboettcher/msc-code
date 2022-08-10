@@ -585,6 +585,157 @@ __host__ bool alias(uint a, uint b, uint *memory)
     return false;
 }
 
+__device__ void cloneAndLink(const uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext, uint *pts, uint *curr_pts, uint *next_pts)
+{
+    // clone(ptsIndex, diffPtsBits, diffPtsNext, PTS);
+    insertBitvector(next_pts, pts, ptsIndex, diffPtsBits, PTS);
+    if (currDiffPtsIndex != UINT_MAX)
+    {
+        curr_pts[currDiffPtsIndex + NEXT] = ptsIndex;
+    }
+    else
+    {
+        currDiffPtsIndex = 32 * var;
+        uint ptsBits = pts[ptsIndex + threadIdx.x];
+        curr_pts[currDiffPtsIndex + threadIdx.x] = ptsBits;
+    }
+}
+
+/**
+ * Update the current, next and total PTS sets of a variable. In the last iteration of the main
+ * loop, points-to edges have been added to NEXT_DIFF_PTS. However, many of them might already be
+ * present in PTS. The purpose of this function is to update PTS as PTS U NEXT_DIFF_PTS, and set
+ * CURR_DIFF_PTS as the difference between the old and new PTS for the given variable.
+ *
+ * @param var ID of the variable
+ * @param pts memory for all points to bitvectors
+ * @param curr_pts memory for previous iterations points to bitvectors in working set
+ * @param next_pts memory for all newly added pts bitvectors
+ * @return true if new pts edges have been added to this variable
+ */
+__device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, uint *next_pts)
+{
+    // next next index
+    const uint diffPtsHeadIndex = var * 32;
+
+    uint diffPtsBits = next_pts[diffPtsHeadIndex + threadIdx.x];
+    uint diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
+
+    if (diffPtsBase == UINT_MAX)
+    {
+        return false;
+    }
+
+    uint diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+    next_pts[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
+
+    uint ptsIndex = var * 32;
+    uint ptsBits = pts[ptsIndex + threadIdx.x];
+    uint ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
+
+    if (ptsBase == UINT_MAX)
+    {
+        // we pass ptsBase instead of UINT_MAX because it's also UINT_MAX but it can be modified
+        cloneAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+        return true;
+    }
+    uint ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+    uint currDiffPtsIndex = UINT_MAX;
+    while (1)
+    {
+        if (ptsBase > diffPtsBase)
+        {
+            uint newIndex = incEdgeCouter(PTS);
+            pts[newIndex + threadIdx.x] = ptsBits;
+            uint val = threadIdx.x == NEXT ? newIndex : diffPtsBits;
+            pts[ptsIndex + threadIdx.x] = val;
+
+            ptsIndex = newIndex;
+            // update CURR_DIFF_PTS
+            newIndex = currDiffPtsIndex == UINT_MAX ? 32 * var : incEdgeCouter(PTS_CURR);
+            val = threadIdx.x == NEXT ? UINT_MAX : diffPtsBits;
+            curr_pts[newIndex + threadIdx.x] = val;
+            if (currDiffPtsIndex != UINT_MAX)
+            {
+                curr_pts[currDiffPtsIndex + NEXT] = newIndex;
+            }
+            if (diffPtsNext == UINT_MAX)
+            {
+                return true;
+            }
+            currDiffPtsIndex = newIndex;
+
+            diffPtsBits = next_pts[diffPtsNext + threadIdx.x];
+            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
+            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+        }
+        else if (ptsBase == diffPtsBase)
+        {
+            uint newPtsNext = (ptsNext == UINT_MAX && diffPtsNext != UINT_MAX) ? incEdgeCouter(PTS) : ptsNext;
+            uint orBits = threadIdx.x == NEXT ? newPtsNext : ptsBits | diffPtsBits;
+            uint ballot = __ballot_sync(0x3FFFFFFF, orBits != ptsBits);
+            pts[ptsIndex + threadIdx.x] = orBits;
+            if (ballot)
+            {
+                // update CURR_DIFF_PTS
+                orBits = diffPtsBits & ~ptsBits;
+                if (threadIdx.x == BASE)
+                {
+                    orBits = ptsBase;
+                }
+                else if (threadIdx.x == NEXT)
+                {
+                    orBits = UINT_MAX;
+                }
+                uint newIndex;
+                if (currDiffPtsIndex != UINT_MAX)
+                {
+
+                    newIndex = incEdgeCouter(PTS_CURR);
+                    curr_pts[currDiffPtsIndex + NEXT] = newIndex;
+                }
+                else
+                {
+                    newIndex = var * 32;
+                }
+                curr_pts[newIndex + threadIdx.x] = orBits;
+                currDiffPtsIndex = newIndex;
+            }
+            if (diffPtsNext == UINT_MAX)
+            {
+                return (currDiffPtsIndex != UINT_MAX);
+            }
+            diffPtsBits = next_pts[diffPtsNext + threadIdx.x];
+            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
+            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+
+            if (ptsNext == UINT_MAX)
+            {
+                cloneAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+                return true;
+            }
+            ptsIndex = ptsNext;
+
+            ptsBits = pts[ptsIndex + threadIdx.x];
+            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
+            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+        }
+        else
+        { // ptsBase > diffPtsBase
+            if (ptsNext == UINT_MAX)
+            {
+                uint newPtsIndex = incEdgeCouter(PTS);
+                pts[ptsIndex + NEXT] = newPtsIndex;
+                cloneAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+                return true;
+            }
+            ptsIndex = ptsNext;
+            ptsBits = pts[ptsIndex + threadIdx.x];
+            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
+            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+        }
+    }
+}
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG, void *pag)
 {
     int N = 1 << 28;
