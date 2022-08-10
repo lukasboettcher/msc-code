@@ -736,6 +736,30 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
         }
     }
 }
+
+__global__ void kernel_updatePts(const uint n, uint *pts, uint *curr_pts, uint *next_pts)
+{
+    __done__ = true;
+    bool newWork = false;
+    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
+    {
+        bool newStuff = updatePtsAndDiffPts(i, pts, curr_pts, next_pts);
+        newWork |= newStuff;
+        if (!newStuff)
+        {
+            const uint currPtsHeadIndex = 32 * i;
+            curr_pts[currPtsHeadIndex + threadIdx.x] = UINT_MAX;
+        }
+    }
+    if (newWork)
+    {
+        __done__ = false;
+    }
+    __syncthreads();
+    __freeList__[PTS_CURR] = n * 32;
+    __freeList__[PTS_NEXT] = n * 32;
+}
+
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG, void *pag)
 {
     int N = 1 << 28;
