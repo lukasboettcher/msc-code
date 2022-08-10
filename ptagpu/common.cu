@@ -588,12 +588,12 @@ __host__ bool alias(uint a, uint b, uint *memory)
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG, void *pag)
 {
     int N = 1 << 28;
-    uint *pts, *prevPtsDiff, *currPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
+    uint *pts, *currPtsDiff, *nextPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&pts, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&prevPtsDiff, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&currPtsDiff, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&nextPtsDiff, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invCopy, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
     checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
@@ -603,8 +603,8 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
     // set all values to UINT_MAX
     cudaMemset(pts, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(prevPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(currPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(nextPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(invCopy, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(invStore, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(invLoad, UCHAR_MAX, N * sizeof(unsigned int));
@@ -620,7 +620,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum, initNum, initNum};
     checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
 
-    insertEdges(addrEdges, pts, 1, PTS);
+    insertEdges(addrEdges, nextPtsDiff, 1, PTS_NEXT);
     insertEdges(directEdges, invCopy, 1, COPY);
     insertEdges(loadEdges, invLoad, 1, LOAD);
     insertEdges(storeEdges, invStore, 1, STORE);
@@ -629,13 +629,12 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     {
         dim3 numBlocks(N_BLOCKS);
         dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
-        V = handleGepEdges(gepEdges, pts, consG, pag);
-        kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, pts, pts, PTS);
+        kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff, PTS_NEXT);
         checkCuda(cudaDeviceSynchronize());
-        kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, pts, invCopy, COPY);
+        kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy, COPY);
 
         checkCuda(cudaDeviceSynchronize());
-        kernel_store<<<numBlocks, threadsPerBlock>>>(V, pts, store_map_pts, store_map_src);
+        kernel_store<<<numBlocks, threadsPerBlock>>>(V, currPtsDiff, store_map_pts, store_map_src);
         checkCuda(cudaDeviceSynchronize());
 
         thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
@@ -648,8 +647,8 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     }
     // Free memory
     checkCuda(cudaFree(pts));
-    checkCuda(cudaFree(prevPtsDiff));
     checkCuda(cudaFree(currPtsDiff));
+    checkCuda(cudaFree(nextPtsDiff));
     checkCuda(cudaFree(invCopy));
     checkCuda(cudaFree(invStore));
     checkCuda(cudaFree(invLoad));
