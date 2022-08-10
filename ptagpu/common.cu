@@ -804,6 +804,10 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     {
         dim3 numBlocks(N_BLOCKS);
         dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+
+        kernel_updatePts<<<numBlocks, threadsPerBlock>>>(V, pts, currPtsDiff, nextPtsDiff);
+        checkCuda(cudaDeviceSynchronize());
+
         kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff, PTS_NEXT);
         checkCuda(cudaDeviceSynchronize());
         kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy, COPY);
