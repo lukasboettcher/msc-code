@@ -800,7 +800,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     insertEdges(loadEdges, invLoad, 1, LOAD);
     insertEdges(storeEdges, invStore, 1, STORE);
 
-    for (size_t i = 0; i < 10; i++)
+    while (0)
     {
         dim3 numBlocks(N_BLOCKS);
         dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
