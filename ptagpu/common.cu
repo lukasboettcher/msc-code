@@ -297,52 +297,45 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
     }
 }
 
-__global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
+__device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory, const uint toRel)
 {
-    // each warp gets a shared block for one access to global memory
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
-    uint *const _shared_ = &_sh_[threadIdx.y * 128];
-    for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
+    // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
+    uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
+    const uint threadMask = 1 << threadIdx.x;
+    const uint myMask = threadMask - 1;
+    while (nonEmptyThreads)
     {
-        uint index = src * 32;
-        do
-        {
-            uint bits = A[index + threadIdx.x];
-            uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
-            if (base == UINT_MAX)
-                break;
-            // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
-            uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
-            const uint threadMask = 1 << threadIdx.x;
-            const uint myMask = threadMask - 1;
-            while (nonEmptyThreads)
-            {
-                // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
-                int leastThread = __ffs(nonEmptyThreads) - 1;
-                // remove lsb from nonEmptyThreads (iteration step)
-                nonEmptyThreads &= (nonEmptyThreads - 1);
-                // share current bits with all threads in warp
-                uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
+        // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
+        int leastThread = __ffs(nonEmptyThreads) - 1;
+        // remove lsb from nonEmptyThreads (iteration step)
+        nonEmptyThreads &= (nonEmptyThreads - 1);
+        // share current bits with all threads in warp
+        uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
 
-                // use the base and the word of the current thread's bits to calculate the target dst id
-                uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
-                // check if this thread is looking at a dst node
-                // uint bitActive = (var != 1U) && (current_bits & threadMask);
-                uint bitActive = (current_bits & threadMask);
-                // count threads that are looking at dst nodes
-                uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
-                uint numDstNodes = __popc(threadsWithDstNode);
-                // calculate pos in shared mem, by counting prev threads that had a dst node
-                uint pos = 0 + __popc(threadsWithDstNode & myMask);
-                if (bitActive)
-                {
-                    _shared_[pos] = var;
-                }
-                if (numDstNodes)
-                {
-                    mergeBitvectors(B, C, index, numDstNodes, _shared_, toRel);
-                }
-            }
+        // use the base and the word of the current thread's bits to calculate the target dst id
+        uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
+        // check if this thread is looking at a dst node
+        // uint bitActive = (var != 1U) && (current_bits & threadMask);
+        uint bitActive = (current_bits & threadMask);
+        // count threads that are looking at dst nodes
+        uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
+        uint numDstNodes = __popc(threadsWithDstNode);
+        if (usedStorage + numDstNodes > 128)
+        {
+            // insert_store_map(index, usedStorage, storage, originMemory, targetMemory);
+            mergeBitvectors(originMemory, targetMemory, index, numDstNodes, storage, toRel);
+            usedStorage = 0;
+        }
+        // calculate pos in shared mem, by counting prev threads that had a dst node
+        uint pos = usedStorage + __popc(threadsWithDstNode & myMask);
+        if (bitActive)
+        {
+            storage[pos] = var;
+        }
+        usedStorage += numDstNodes;
+    }
+}
+
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
     }
