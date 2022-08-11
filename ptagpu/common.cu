@@ -336,8 +336,29 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
     }
 }
 
+__global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
+{
+    // each warp gets a shared block for one access to global memory
+    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
+    uint *const _shared_ = &_sh_[threadIdx.y * 128];
+    uint usedShared = 0;
+    for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
+    {
+        uint index = src * 32;
+        do
+        {
+            uint bits = A[index + threadIdx.x];
+            uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            if (base == UINT_MAX)
+                break;
+
+            collectBitvectorTargets(src * 32, bits, base, _shared_, usedShared, B, C, toRel);
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
+        if (usedShared)
+        {
+            mergeBitvectors(B, C, src * 32, usedShared, _shared_, toRel);
+        }
     }
 }
 
