@@ -233,6 +233,7 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
         uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
         uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
+        uint sharedCopyUsed = 0;
         uint runloop = 1;
 
         if (toBase == UINT_MAX)
@@ -254,6 +255,14 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
                 if (val != toBits)
                 {
                     target[toIndex + threadIdx.x] = val;
+                }
+
+                int diffs = __any_sync(0x3FFFFFFF, orBits != toBits);
+
+                if (toRel == COPY && diffs)
+                {
+                    uint diffBits = fromBits & ~toBits;
+                    collectBitvectorTargets(index, diffBits, fromBase, _shared_ + 128, sharedCopyUsed, __pts__, __ptsNext__, PTS_NEXT);
                 }
 
                 // if no more bitvectors in origin, end loop
@@ -303,6 +312,11 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
                 uint val = threadIdx.x == NEXT ? newIndex : fromBits;
                 target[toIndex + threadIdx.x] = val;
 
+                if (toRel == COPY)
+                {
+                    collectBitvectorTargets(index, fromBits, fromBase, _shared_ + 128, sharedCopyUsed, __pts__, __ptsNext__, PTS_NEXT);
+                }
+
                 // if next from element is defined, update the bits
                 // if not, break for this element
                 if (fromNext == UINT_MAX)
@@ -314,6 +328,10 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
                 fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
                 fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
             }
+        }
+        if (toRel == COPY && sharedCopyUsed)
+        {
+            mergeBitvectors(__pts__, __ptsNext__, index, sharedCopyUsed, _shared_ + 128, PTS_NEXT);
         }
     }
 }
