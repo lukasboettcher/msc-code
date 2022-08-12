@@ -182,6 +182,8 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
 }
 
 __device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory, const uint toRel);
+
+__device__ void insertBitvector(const uint index, const uint *originMemory, uint *targetMemory, uint *storage, uint &usedStorage, uint toIndex, uint fromBits, uint toRel)
 {
     while (1)
     {
@@ -194,6 +196,13 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
         uint val = threadIdx.x == NEXT ? toNext : fromBits;
         // write new values to target memory location
         targetMemory[toIndex + threadIdx.x] = val;
+
+        if (toRel == COPY)
+        {
+            uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+            collectBitvectorTargets(index, fromBits, fromBase, storage + 128, usedStorage, __pts__, __ptsNext__, PTS_NEXT);
+        }
+
         // exit if no more elements in from bitvector
         if (fromNext == UINT_MAX)
             return;
