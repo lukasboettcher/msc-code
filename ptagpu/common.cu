@@ -181,7 +181,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
     }
 }
 
-__device__ void insertBitvector(const uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits, uint toRel)
+__device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory, const uint toRel);
 {
     while (1)
     {
