@@ -237,7 +237,7 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
 
         if (toBase == UINT_MAX)
         {
-            insertBitvector(origin, target, toIndex, fromBits, toRel);
+            insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toIndex, fromBits, toRel);
             runloop = 0;
         }
 
@@ -267,7 +267,7 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
                 fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
                 if (toNext == UINT_MAX)
                 {
-                    insertBitvector(origin, target, toIndex, fromBits, toRel);
+                    insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toIndex, fromBits, toRel);
                     break;
                 }
                 toIndex = newToNext;
@@ -282,7 +282,7 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
                 if (toNext == UINT_MAX)
                 {
                     toNext = incEdgeCouter(toRel);
-                    insertBitvector(origin, target, toNext, fromBits, toRel);
+                    insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toNext, fromBits, toRel);
                     break;
                 }
                 // if toNext is defined, load those to bits for the next iteration
