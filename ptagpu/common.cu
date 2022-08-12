@@ -858,7 +858,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     insertEdges(loadEdges, invLoad, 1, LOAD);
     insertEdges(storeEdges, invStore, 1, STORE);
 
-    while (0)
+    while (1)
     {
         dim3 numBlocks(N_BLOCKS);
         dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
