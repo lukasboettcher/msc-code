@@ -211,7 +211,7 @@ __device__ void insertBitvector(const uint index, const uint *originMemory, uint
     }
 }
 
-__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, const uint *_shared_, const uint toRel)
+__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, uint *_shared_, const uint toRel)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
