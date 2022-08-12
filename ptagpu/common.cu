@@ -19,6 +19,16 @@ __device__ uint __freeList__[N_TYPES];
 __device__ bool __done__ = true;
 
 /**
+ * device pointers for the pts bitvectors
+ * these need to be accesses adhoc
+ * so are written to device symbols permanently
+ *
+ */
+__device__ uint *__pts__;
+__device__ uint *__ptsCurr__;
+__device__ uint *__ptsNext__;
+
+/**
  * getHeadIndex
  *
  * get the index of the first element for a given node
@@ -515,8 +525,6 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     thrust::sort_by_key(thrust::device, from, from + N, to);
     long numUnique = thrust::unique_by_key_copy(thrust::device, from, from + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), ofst).second - ofst;
 
-    // CUDA kernel to add elements of two arrays
-
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
@@ -753,6 +761,13 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
 
 __global__ void kernel_updatePts(const uint n, uint *pts, uint *curr_pts, uint *next_pts)
 {
+    if (__pts__ != pts)
+    {
+        __pts__ = pts;
+        __ptsCurr__ = curr_pts;
+        __ptsNext__ = next_pts;
+    }
+
     __done__ = true;
     bool newWork = false;
     for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
