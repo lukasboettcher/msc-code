@@ -487,7 +487,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
     }
 }
 
-__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *pts, uint *store, uint *invCopy, uint toRel)
+__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *store, uint *invCopy, uint toRel)
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
@@ -886,7 +886,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
 
         checkCuda(cudaDeviceSynchronize());
-        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, pts, invStore, invCopy, COPY);
+        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, invStore, invCopy, COPY);
         checkCuda(cudaDeviceSynchronize());
     }
     // Free memory
