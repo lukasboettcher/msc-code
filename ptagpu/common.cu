@@ -349,8 +349,8 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
 __global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
 {
     // each warp gets a shared block for one access to global memory
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
-    uint *const _shared_ = &_sh_[threadIdx.y * 128];
+    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
+    uint *const _shared_ = &_sh_[threadIdx.y * 256];
     uint usedShared = 0;
     for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
     {
@@ -460,8 +460,8 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
 
 __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *pts, uint *store, uint *invCopy, uint toRel)
 {
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
-    uint *const _shared_ = &_sh_[threadIdx.y * 128];
+    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
+    uint *const _shared_ = &_sh_[threadIdx.y * 256];
     for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
     {
         uint idx = store_map_idx[i];
