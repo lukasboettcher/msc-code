@@ -618,10 +618,10 @@ __host__ bool alias(uint a, uint b, uint *memory)
     return false;
 }
 
-__device__ void cloneAndLink(const uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext, uint *pts, uint *curr_pts, uint *next_pts)
+__device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext, uint *pts, uint *curr_pts, uint *next_pts)
 {
     // clone(ptsIndex, diffPtsBits, diffPtsNext, PTS);
-    insertBitvector(next_pts, pts, ptsIndex, diffPtsBits, PTS);
+    insertBitvector(0, next_pts, pts, nullptr, var, ptsIndex, diffPtsBits, PTS);
     if (currDiffPtsIndex != UINT_MAX)
     {
         curr_pts[currDiffPtsIndex + NEXT] = ptsIndex;
