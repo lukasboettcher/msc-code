@@ -233,13 +233,15 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
         uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
         uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
+        uint runloop = 1;
+
         if (toBase == UINT_MAX)
         {
             insertBitvector(origin, target, toIndex, fromBits, toRel);
-            continue;
+            runloop = 0;
         }
 
-        while (1)
+        while (runloop)
         {
             if (toBase == fromBase)
             {
