@@ -380,9 +380,9 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
     // each warp gets a shared block for one access to global memory
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
-    uint usedShared = 0;
     for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
     {
+        uint usedShared = 0;
         uint index = src * 32;
         do
         {
