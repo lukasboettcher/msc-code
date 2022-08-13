@@ -818,6 +818,17 @@ __global__ void kernel_updatePts(const uint n, uint *pts, uint *curr_pts, uint *
     __freeList__[PTS_NEXT] = n * 32;
 }
 
+__host__ void printWord(uint *memory, uint start)
+{
+    for (size_t i = 0; i < 32; i++)
+    {
+        uint checkpoint = memory[start + i];
+        std::cout << checkpoint << "\n";
+        std::bitset<sizeof(uint) * 8> x(checkpoint);
+        std::cout << x << '\n';
+    }
+}
+
 __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG, void *pag)
 {
     int N = 1 << 28;
