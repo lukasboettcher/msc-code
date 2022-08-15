@@ -210,7 +210,7 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
     uint fromBits = origin[fromIndex + threadIdx.x];
     // get the base from thread nr 30
     uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-    // terminate if no data in from from bitvector
+    // terminate if no data in from bitvector
     if (fromBase == UINT_MAX)
         return;
     // get the next index from thread nr 31
@@ -261,7 +261,7 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
         else if (toBase < fromBase)
         {
             // if toNext is undefined, we need to allocate a new element
-            // after that, we can simply insert teh origin bitvector
+            // after that, we can simply insert the origin bitvector
             if (toNext == UINT_MAX)
             {
                 toNext = incEdgeCouter(toRel);
