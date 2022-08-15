@@ -486,7 +486,7 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
         uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
 
         // use the base and the word of the current thread's bits to calculate the target dst id
-        uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
+        uint var = getDstNode(base, leastThread, threadIdx.x);
         // check if this thread is looking at a dst node
         // uint bitActive = (var != 1U) && (current_bits & threadMask);
         uint bitActive = (current_bits & threadMask);
@@ -593,7 +593,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
                 uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
 
                 // use the base and the word of the current thread's bits to calculate the target dst id
-                uint var = base * 30 * 32 + 32 * leastThread + threadIdx.x;
+                uint var = getDstNode(base, leastThread, threadIdx.x);
                 // check if this thread is looking at a dst node
                 // uint bitActive = (var != 1U) && (current_bits & threadMask);
                 uint bitActive = (current_bits & threadMask);

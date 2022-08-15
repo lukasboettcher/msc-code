@@ -21,12 +21,19 @@
 #define PTS_NEXT 6
 #define N_TYPES 7
 
-__device__ __host__ static inline uint div32(uint num) {
+__device__ __host__ static inline uint div32(uint num)
+{
   return num >> 5;
 }
 
-__device__ __host__ static inline uint mod32(uint num) {
+__device__ __host__ static inline uint mod32(uint num)
+{
   return num & 31;
+}
+
+__device__ __host__ static inline uint getDstNode(uint base, uint word, uint bit)
+{
+  return base * ELEMENT_CARDINALITY + word * WARP_SIZE + bit;
 }
 
 #include "shared.h"
@@ -43,11 +50,11 @@ __device__ __host__ static inline uint mod32(uint num) {
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
 {
-    if (err != cudaSuccess)
-    {
-        fprintf(stderr, "CUDA Runtime Error at: '%s:%i'\n\t%s %s\n", file, line, cudaGetErrorString(err), func);
-        exit(EXIT_FAILURE);
-    }
+  if (err != cudaSuccess)
+  {
+    fprintf(stderr, "CUDA Runtime Error at: '%s:%i'\n\t%s %s\n", file, line, cudaGetErrorString(err), func);
+    exit(EXIT_FAILURE);
+  }
 }
 
 #endif
