@@ -952,8 +952,10 @@ __global__ void kernel_updatePts(const uint n, uint *pts, uint *curr_pts, uint *
     __freeList__[PTS_NEXT] = n * 32;
 }
 
-__host__ void printWord(uint *memory, uint start)
+__host__ void printWord(uint *memory, uint start, bool isNodeId = true)
 {
+    if (isNodeId)
+        start *= 32;
     for (size_t i = 0; i < 32; i++)
     {
         uint checkpoint = memory[start + i];
