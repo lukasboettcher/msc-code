@@ -451,26 +451,26 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
 }
 
 template <uint fromRel, uint toRel>
-__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, uint *_shared_)
+__device__ void mergeBitvectors(const uint *origin, uint *target, const uint to, const uint numDstNodes, uint *_shared_)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
     {
         uint fromIndex = _shared_[i] * 32;
 
-        if (toRel == COPY && false)
+        if (toRel == COPY)
         {
-            // mergeBitvectorCopy(origin, target, index, fromIndex, _shared_ + 128, toRel);
+            mergeBitvectorCopy(origin, target, to, fromIndex, _shared_ + 128, toRel);
         }
         else
         {
-            mergeBitvectorPts(origin, target, index, fromIndex, toRel);
+            mergeBitvectorPts(origin, target, to, fromIndex, toRel);
         }
     }
 }
 
 template <uint fromRel, uint toRel>
-__device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory)
+__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory)
 {
     // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
     uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
@@ -496,7 +496,7 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
         if (usedStorage + numDstNodes > 128)
         {
             // insert_store_map(index, usedStorage, storage, originMemory, targetMemory);
-            mergeBitvectors<fromRel, toRel>(originMemory, targetMemory, index, numDstNodes, storage);
+            mergeBitvectors<fromRel, toRel>(originMemory, targetMemory, to, numDstNodes, storage);
             usedStorage = 0;
         }
         // calculate pos in shared mem, by counting prev threads that had a dst node
@@ -526,12 +526,12 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C)
             if (base == UINT_MAX)
                 break;
 
-            collectBitvectorTargets<fromRel, toRel>(src * 32, bits, base, _shared_, usedShared, B, C);
+            collectBitvectorTargets<fromRel, toRel>(src, bits, base, _shared_, usedShared, B, C);
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
         if (usedShared)
         {
-            mergeBitvectors<fromRel, toRel>(B, C, src * 32, usedShared, _shared_);
+            mergeBitvectors<fromRel, toRel>(B, C, src, usedShared, _shared_);
         }
     }
 }
@@ -641,7 +641,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
             {
                 _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
             }
-            mergeBitvectors<STORE, COPY>(store, invCopy, pts_target * 32, numDstNodes, _shared_);
+            mergeBitvectors<STORE, COPY>(store, invCopy, pts_target, numDstNodes, _shared_);
         }
     }
 }
