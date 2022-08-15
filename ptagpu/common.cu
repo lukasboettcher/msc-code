@@ -203,8 +203,9 @@ __device__ void insertBitvector(const uint *originMemory, uint *targetMemory, ui
     }
 }
 
-__device__ void mergeBitvectorPts(const uint *origin, uint *target, uint toIndex, uint fromIndex, const uint toRel)
+__device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uint fromIndex, const uint toRel)
 {
+    uint toIndex = to * 32;
     // read dst out edges
     uint fromBits = origin[fromIndex + threadIdx.x];
     // get the base from thread nr 30
