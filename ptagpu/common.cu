@@ -203,127 +203,117 @@ __device__ void insertBitvector(const uint *originMemory, uint *targetMemory, ui
     }
 }
 
-__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, uint *_shared_, const uint toRel)
+__device__ void mergeBitvectorPts(const uint *origin, uint *target, uint toIndex, uint fromIndex, const uint toRel)
+{
+    // read dst out edges
+    uint fromBits = origin[fromIndex + threadIdx.x];
+    // get the base from thread nr 30
+    uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+    // terminate if no data in from from bitvector
+    if (fromBase == UINT_MAX)
+        return;
+    // get the next index from thread nr 31
+    uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+
+    // share needed data for to indices
+    uint toBits = target[toIndex + threadIdx.x];
+    uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+    uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+
+    if (toBase == UINT_MAX)
+    {
+        insertBitvector(origin, target, toIndex, fromBits, toRel);
+        return;
+    }
+
+    while (1)
+    {
+        if (toBase == fromBase)
+        {
+            // if target next is undefined, create new edge for more edges
+            uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter(toRel) : toNext;
+            // union the bits, adding the new edges
+            uint orBits = fromBits | toBits;
+            // each thread gets a value that will be written back to memory
+            uint val = threadIdx.x == NEXT ? newToNext : orBits;
+            if (val != toBits)
+                target[toIndex + threadIdx.x] = val;
+
+            // if no more bitvectors in origin, end loop
+            if (fromNext == UINT_MAX)
+                return;
+
+            // else load next bits
+            fromBits = origin[fromNext + threadIdx.x];
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+            if (toNext == UINT_MAX)
+            {
+                insertBitvector(origin, target, toIndex, fromBits, toRel);
+                return;
+            }
+            toIndex = newToNext;
+            toBits = target[toNext + threadIdx.x];
+            toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+            toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+        }
+        else if (toBase < fromBase)
+        {
+            // if toNext is undefined, we need to allocate a new element
+            // after that, we can simply insert teh origin bitvector
+            if (toNext == UINT_MAX)
+            {
+                toNext = incEdgeCouter(toRel);
+                insertBitvector(origin, target, toNext, fromBits, toRel);
+                return;
+            }
+            // if toNext is defined, load those to bits for the next iteration
+            toIndex = toNext;
+            toBits = target[toNext + threadIdx.x];
+            toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+            toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+        }
+        else if (toBase > fromBase)
+        {
+            // if toBase is greater than frombase
+            // we need to insert another bitvector element before toindex
+            // and shift the current element back (ref. linked lists)
+            uint newIndex = incEdgeCouter(toRel);
+            // write the current bits from the target element to a new location
+            target[newIndex + threadIdx.x] = toBits;
+            // then overwrite the current bits with fromBits (insert before node)
+            uint val = threadIdx.x == NEXT ? newIndex : fromBits;
+            target[toIndex + threadIdx.x] = val;
+
+            // if next from element is defined, update the bits
+            // if not, break for this element
+            if (fromNext == UINT_MAX)
+                return;
+
+            toIndex = newIndex;
+
+            fromBits = origin[fromNext + threadIdx.x];
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+        }
+    }
+}
+
+template <uint fromRel, uint toRel>
+__device__ void mergeBitvectors(const uint *origin, uint *target, const uint index, const uint numDstNodes, uint *_shared_)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
     {
         uint fromIndex = _shared_[i] * 32;
-        // read dst out edges
-        uint fromBits = origin[fromIndex + threadIdx.x];
-        // get the base from thread nr 30
-        uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-        // terminate if no data in from from bitvector
-        if (fromBase == UINT_MAX)
-            continue;
-        // get the next index from thread nr 31
-        uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
 
-        // share needed data for to indices
-        uint toIndex = index;
-        uint toBits = target[toIndex + threadIdx.x];
-        uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-        uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
-
-        uint sharedCopyUsed = 0;
-        uint runloop = 1;
-
-        if (toBase == UINT_MAX)
+        if (toRel == COPY && false)
         {
-            insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toIndex, fromBits, toRel);
-            runloop = 0;
+            // mergeBitvectorCopy(origin, target, index, fromIndex, _shared_ + 128, toRel);
         }
-
-        while (runloop)
+        else
         {
-            if (toBase == fromBase)
-            {
-                // if target next is undefined, create new edge for more edges
-                uint newToNext = (toNext == UINT_MAX && fromNext != UINT_MAX) ? incEdgeCouter(toRel) : toNext;
-                // union the bits, adding the new edges
-                uint orBits = fromBits | toBits;
-                // each thread gets a value that will be written back to memory
-                uint val = threadIdx.x == NEXT ? newToNext : orBits;
-                if (val != toBits)
-                {
-                    target[toIndex + threadIdx.x] = val;
-                }
-
-                int diffs = __any_sync(0x3FFFFFFF, orBits != toBits);
-
-                if (toRel == COPY && diffs)
-                {
-                    uint diffBits = fromBits & ~toBits;
-                    collectBitvectorTargets(index, diffBits, fromBase, _shared_ + 128, sharedCopyUsed, __pts__, __ptsNext__, PTS_NEXT);
-                }
-
-                // if no more bitvectors in origin, end loop
-                if (fromNext == UINT_MAX)
-                {
-                    break;
-                }
-                // else load next bits
-                fromBits = origin[fromNext + threadIdx.x];
-                fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-                fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
-                if (toNext == UINT_MAX)
-                {
-                    insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toIndex, fromBits, toRel);
-                    break;
-                }
-                toIndex = newToNext;
-                toBits = target[toNext + threadIdx.x];
-                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
-            }
-            else if (toBase < fromBase)
-            {
-                // if toNext is undefined, we need to allocate a new element
-                // after that, we can simply insert teh origin bitvector
-                if (toNext == UINT_MAX)
-                {
-                    toNext = incEdgeCouter(toRel);
-                    insertBitvector(index, origin, target, _shared_, sharedCopyUsed, toNext, fromBits, toRel);
-                    break;
-                }
-                // if toNext is defined, load those to bits for the next iteration
-                toIndex = toNext;
-                toBits = target[toNext + threadIdx.x];
-                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
-            }
-            else if (toBase > fromBase)
-            {
-                // if toBase is greater than frombase
-                // we need to insert another bitvector element before toindex
-                // and shift the current element back (ref. linked lists)
-                uint newIndex = incEdgeCouter(toRel);
-                // write the current bits from the target element to a new location
-                target[newIndex + threadIdx.x] = toBits;
-                // then overwrite the current bits with fromBits (insert before node)
-                uint val = threadIdx.x == NEXT ? newIndex : fromBits;
-                target[toIndex + threadIdx.x] = val;
-
-                if (toRel == COPY)
-                {
-                    collectBitvectorTargets(index, fromBits, fromBase, _shared_ + 128, sharedCopyUsed, __pts__, __ptsNext__, PTS_NEXT);
-                }
-
-                // if next from element is defined, update the bits
-                // if not, break for this element
-                if (fromNext == UINT_MAX)
-                    break;
-
-                toIndex = newIndex;
-
-                fromBits = origin[fromNext + threadIdx.x];
-                fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-                fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
-            }
-        }
-        if (toRel == COPY && sharedCopyUsed)
-        {
-            mergeBitvectors(__pts__, __ptsNext__, index, sharedCopyUsed, _shared_ + 128, PTS_NEXT);
+            mergeBitvectorPts(origin, target, index, fromIndex, toRel);
         }
     }
 }
