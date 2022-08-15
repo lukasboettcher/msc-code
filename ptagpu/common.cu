@@ -181,6 +181,12 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
     }
 }
 
+template <uint fromRel, uint toRel>
+__device__ void mergeBitvectors(const uint *origin, uint *target, const uint to, const uint numDstNodes, uint *_shared_);
+
+template <uint fromRel, uint toRel>
+__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory);
+
 __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, uint fromIndex, uint *storage, const uint toRel)
 {
     uint toIndex = to * 32;
