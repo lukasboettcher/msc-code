@@ -318,7 +318,8 @@ __device__ void mergeBitvectors(const uint *origin, uint *target, const uint ind
     }
 }
 
-__device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory, const uint toRel)
+template <uint fromRel, uint toRel>
+__device__ void collectBitvectorTargets(const uint index, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory)
 {
     // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
     uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
@@ -344,7 +345,7 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
         if (usedStorage + numDstNodes > 128)
         {
             // insert_store_map(index, usedStorage, storage, originMemory, targetMemory);
-            mergeBitvectors(originMemory, targetMemory, index, numDstNodes, storage, toRel);
+            mergeBitvectors<fromRel, toRel>(originMemory, targetMemory, index, numDstNodes, storage);
             usedStorage = 0;
         }
         // calculate pos in shared mem, by counting prev threads that had a dst node
@@ -357,7 +358,8 @@ __device__ void collectBitvectorTargets(const uint index, const uint bits, const
     }
 }
 
-__global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
+template <uint fromRel, uint toRel>
+__global__ void kernel(int n, uint *A, uint *B, uint *C)
 {
     // each warp gets a shared block for one access to global memory
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
@@ -373,12 +375,12 @@ __global__ void kernel(int n, uint *A, uint *B, uint *C, uint toRel)
             if (base == UINT_MAX)
                 break;
 
-            collectBitvectorTargets(src * 32, bits, base, _shared_, usedShared, B, C, toRel);
+            collectBitvectorTargets<fromRel, toRel>(src * 32, bits, base, _shared_, usedShared, B, C);
             index = __shfl_sync(0xFFFFFFFF, bits, 31);
         } while (index != UINT_MAX);
         if (usedShared)
         {
-            mergeBitvectors(B, C, src * 32, usedShared, _shared_, toRel);
+            mergeBitvectors<fromRel, toRel>(B, C, src * 32, usedShared, _shared_);
         }
     }
 }
@@ -469,7 +471,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
     }
 }
 
-__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *store, uint *invCopy, uint toRel)
+__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *store, uint *invCopy)
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
@@ -488,7 +490,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
             {
                 _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
             }
-            mergeBitvectors(store, invCopy, pts_target * 32, numDstNodes, _shared_, toRel);
+            mergeBitvectors<STORE, COPY>(store, invCopy, pts_target * 32, numDstNodes, _shared_);
         }
     }
 }
@@ -865,9 +867,9 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
         {
             break;
         }
-        kernel<<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff, PTS_NEXT);
+        kernel<PTS_CURR, PTS_NEXT><<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff);
         checkCuda(cudaDeviceSynchronize());
-        kernel<<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy, COPY);
+        kernel<PTS_CURR, COPY><<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy);
 
         checkCuda(cudaDeviceSynchronize());
         kernel_store<<<numBlocks, threadsPerBlock>>>(V, currPtsDiff, store_map_pts, store_map_src);
@@ -878,7 +880,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
 
         checkCuda(cudaDeviceSynchronize());
-        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, invStore, invCopy, COPY);
+        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, invStore, invCopy);
         checkCuda(cudaDeviceSynchronize());
     }
     // Free memory
