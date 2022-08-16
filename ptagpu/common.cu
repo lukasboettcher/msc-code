@@ -1020,6 +1020,9 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
         {
             break;
         }
+        checkCuda(cudaDeviceSynchronize());
+        V = handleGepEdges(gepEdges, currPtsDiff, consG, pag);
+        checkCuda(cudaDeviceSynchronize());
         kernel<PTS_CURR, PTS_NEXT><<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff);
         checkCuda(cudaDeviceSynchronize());
         kernel<PTS_CURR, COPY><<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy);
