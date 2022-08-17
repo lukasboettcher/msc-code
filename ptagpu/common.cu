@@ -755,6 +755,7 @@ __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextP
             newPts.second.push_back(gepElement);
         }
     }
+    insertEdges(&newPts, nextPts, 0, PTS_NEXT);
     uint nodeCount = getNodeCount(consG);
     return nodeCount;
 }
