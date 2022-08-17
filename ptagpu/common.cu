@@ -738,6 +738,7 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
 
 __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextPts, void *consG, void *pag)
 {
+    edgeSet newPts;
     for (size_t i = 0; i < gepEdges->second.size(); i++)
     {
         uint src, dst, offset, gepElement;
@@ -750,7 +751,8 @@ __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextP
         for (uint target : targets)
         {
             gepElement = handleGep(consG, pag, target, offset);
-            insertEdge(gepElement, dst, memory);
+            newPts.first.push_back(dst);
+            newPts.second.push_back(gepElement);
         }
     }
     uint nodeCount = getNodeCount(consG);
