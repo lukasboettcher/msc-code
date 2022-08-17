@@ -736,7 +736,7 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     }
 }
 
-__host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *memory, void *consG, void *pag)
+__host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextPts, void *consG, void *pag)
 {
     for (size_t i = 0; i < gepEdges->second.size(); i++)
     {
@@ -1021,7 +1021,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
             break;
         }
         checkCuda(cudaDeviceSynchronize());
-        V = handleGepEdges(gepEdges, currPtsDiff, consG, pag);
+        V = handleGepEdges(gepEdges, currPtsDiff, nextPtsDiff, consG, pag);
         checkCuda(cudaDeviceSynchronize());
         kernel<PTS_CURR, PTS_NEXT><<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff);
         checkCuda(cudaDeviceSynchronize());
