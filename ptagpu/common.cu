@@ -747,9 +747,10 @@ __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextP
         dst = gepEdges->second[i];
 
         std::vector<uint> targets;
-        collectFromBitvector(src, memory, targets);
-        for (uint target : targets)
+        collectFromBitvector(src, currPts, targets);
+        for (size_t j = 0; j < targets.size(); j++)
         {
+            const uint target = targets[j];
             gepElement = handleGep(consG, pag, target, offset);
             newPts.first.push_back(dst);
             newPts.second.push_back(gepElement);
