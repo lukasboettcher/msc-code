@@ -10,7 +10,7 @@ add_definitions(${LLVM_DEFINITIONS})
 
 set(llvm_libs LLVM)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR}/SVF/include ${LLVM_INCLUDE_DIRS})
 
 add_executable(main src/main.cpp)
 target_link_libraries(main mmxcflr Svf ${llvm_libs})
