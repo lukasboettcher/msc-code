@@ -12,28 +12,10 @@ set(llvm_libs LLVM)
 
 include_directories(${CMAKE_SOURCE_DIR}/SVF/include ${LLVM_INCLUDE_DIRS})
 
-add_executable(main src/main.cpp)
-target_link_libraries(main mmxcflr Svf ${llvm_libs})
+find_library(Z3_LIBRARIES NAMES libz3.so)
 
-add_subdirectory(lib)
-add_subdirectory(tools)
+add_subdirectory(SVF)
 add_subdirectory(graspan)
 add_subdirectory(ptagpu)
-
-add_library(spbla SHARED IMPORTED)
-set_target_properties(spbla PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/libspbla.so)
-add_executable(spbla_main src/spbla.cpp)
-target_link_libraries(spbla_main spbla OpenMP::OpenMP_CXX)
-
-# add_executable(inline src/inlining.cpp)
-# target_link_libraries(inline ${llvm_libs})
-add_library(inline MODULE src/inlining.cpp)
-
-add_executable(leak src/leaktest.cpp)
-target_link_libraries(leak Svf ${llvm_libs})
-
-add_library(mmxcflr src/mmxcflr.cpp)
-target_link_libraries(mmxcflr spbla OpenMP::OpenMP_CXX)
-
-add_executable(dump src/dump-andersen.cpp)
-target_link_libraries(dump Svf ${llvm_libs})
+add_subdirectory(mmxcflr)
+add_subdirectory(svf-experiments)
