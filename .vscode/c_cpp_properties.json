@@ -5,8 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/include/llvm-13",
-                "/usr/include/llvm-c-13",
-                "${workspaceFolder}/include"
+                "/usr/include/llvm-c-13"
             ],
             "configurationProvider": "ms-vscode.cmake-tools"
         }
