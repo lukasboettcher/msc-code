@@ -22,6 +22,22 @@ using namespace llvm;
 using namespace std;
 using namespace SVF;
 
+class AndersenCustom : public Andersen
+{
+public:
+    AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
+    virtual inline void solveWorklist()
+    {
+        while (!isWorklistEmpty())
+        {
+            NodeID nodeId = popFromWorklist();
+            // collapsePWCNode(nodeId);
+            processNode(nodeId);
+            collapseFields();
+        }
+    }
+};
+
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
 
 int main(int argc, char **argv)
