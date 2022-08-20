@@ -66,7 +66,7 @@ void collectFromBitvectorHook(uint src, uint *memory, std::vector<uint> &pts)
     }
 }
 
-uint handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
+void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
 {
     using namespace SVF;
 
@@ -146,19 +146,7 @@ uint handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
                     newPtsEdges.first.push_back(dstId);
                     newPtsEdges.second.push_back(pt);
                 }
-
-                // std::cout << newPtsEdges.first.size() << "\n";
-
-                // union pts
-
-                // if (unionPts(dstId, tmpDstPts))
-                // {
-                //     pushIntoWorklist(dstId);
-                //     return true;
-                // }
             }
         }
     }
-
-    return consCG->getTotalNodeNum();
 }
