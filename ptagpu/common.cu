@@ -631,7 +631,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
         uint idx = store_map_idx[i];
         uint idx_next = store_map_idx[i + 1];
 
-        // load the pts target, this should no change for the next totalDstNodes
+        // load the pts target, this should not change for the next totalDstNodes
         uint pts_target = store_map_pts[idx];
 
         for (uint j = idx; j < idx_next; j += 32)
