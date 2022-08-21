@@ -648,18 +648,19 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
 
 __global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *from, uint *to, uint *ofst, uint *memory, int rel)
 {
-    int index = blockIdx.x * blockDim.y + threadIdx.y;
-    int stride = blockDim.y * gridDim.x;
-    for (int i = index; i < n; i += stride)
+    uint index = blockIdx.x * blockDim.y + threadIdx.y;
+    uint stride = blockDim.y * gridDim.x;
+    uint src, dst, offset, offset_next, j;
+    for (int i = index; i < n_unique; i += stride)
     {
 
-        uint offset = ofst[i];
-        uint offset_next = ofst[i + 1];
-        uint src = from[offset];
+        offset = ofst[i];
+        offset_next = i == (n_unique - 1) ? n : ofst[i + 1];
+        src = from[offset];
 
-        for (size_t j = offset; j < offset_next; j++)
+        for (j = offset; j < offset_next; j++)
         {
-            uint dst = to[j];
+            dst = to[j];
             insertEdgeDevice(src, dst, memory, rel);
         }
     }
