@@ -954,7 +954,7 @@ __host__ void printWord(uint *memory, uint start, bool isNodeId = true)
     }
 }
 
-__host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, edgeSetOffset *gepEdges, void *consG, void *pag)
+__host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag)
 {
     int N = 1 << 28;
     uint *pts, *currPtsDiff, *nextPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
@@ -1030,7 +1030,7 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
         checkCuda(cudaDeviceSynchronize());
     }
     // Free memory
-    checkCuda(cudaFree(pts));
+    // checkCuda(cudaFree(pts));
     checkCuda(cudaFree(currPtsDiff));
     checkCuda(cudaFree(nextPtsDiff));
     checkCuda(cudaFree(invCopy));
@@ -1040,5 +1040,5 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
     checkCuda(cudaFree(store_map_src));
     checkCuda(cudaFree(store_map_idx));
 
-    return 0;
+    return pts;
 }
