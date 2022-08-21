@@ -746,7 +746,7 @@ __host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextP
     return nodeCount;
 }
 
-__host__ bool alias(uint a, uint b, uint *memory)
+__host__ bool aliasBV(uint a, uint b, uint *memory)
 {
     std::vector<uint> ptsA, ptsB;
 
