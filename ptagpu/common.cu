@@ -646,7 +646,7 @@ __global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store
     }
 }
 
-__global__ void kernel_insert_edges(const uint n, uint *from, uint *to, uint *ofst, uint *memory, int rel)
+__global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *from, uint *to, uint *ofst, uint *memory, int rel)
 {
     int index = blockIdx.x * blockDim.y + threadIdx.y;
     int stride = blockDim.y * gridDim.x;
@@ -693,7 +693,7 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
     checkCuda(cudaDeviceSynchronize());
-    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(numUnique, from, to, ofst, memory, rel);
+    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, from, to, ofst, memory, rel);
     checkCuda(cudaDeviceSynchronize());
 
     checkCuda(cudaFree(from));
