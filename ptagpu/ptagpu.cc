@@ -1,15 +1,3 @@
-// #include "SVF-FE/LLVMUtil.h"
-// #include "Graphs/SVFG.h"
-// #include "WPA/Andersen.h"
-// #include "SVF-FE/SVFIRBuilder.h"
-// #include "Util/Options.h"
-// #include <tuple>
-// // #include "common.cuh"
-// int run(std::vector<std::tuple<uint, uint, uint, uint>> *edges);
-// int main(int argc, char const *argv[])
-// {
-//     return run(0);
-// }
 
 #include "SVF-FE/LLVMUtil.h"
 #include "Graphs/SVFG.h"
@@ -25,16 +13,80 @@ using namespace SVF;
 class AndersenCustom : public Andersen
 {
 public:
+    uint *pts;
+    edgeSet addrEdges, directEdges, storeEdges, loadEdges;
     AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
+    SVF::AliasResult alias(NodeID node1, NodeID node2)
+    {
+        if (!pts)
+        {
+            return AndersenBase::alias(node1, node2);
+        }
+
+        if (aliasBV(node1, node2, pts))
+        {
+            return SVF::AliasResult::MayAlias;
+        }
+        return SVF::AliasResult::NoAlias;
+    }
+
+    void initEdgeSets()
+    {
+        ConstraintEdge::ConstraintEdgeSetTy &addrs = consCG->getAddrCGEdges();
+        for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = addrs.begin(), eiter = addrs.end(); iter != eiter; ++iter)
+        {
+            std::cout << "src: " << (*iter)->getSrcID() << " dst: " << (*iter)->getDstID() << "\t addr\n";
+            addrEdges.first.push_back((*iter)->getSrcID());
+            addrEdges.second.push_back((*iter)->getDstID());
+        }
+
+        ConstraintEdge::ConstraintEdgeSetTy &directs = consCG->getDirectCGEdges();
+        for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = directs.begin(), eiter = directs.end(); iter != eiter; ++iter)
+        {
+            std::cout << "src: " << (*iter)->getSrcID() << " dst: " << (*iter)->getDstID() << "\t copy\n";
+            if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(*iter))
+            {
+                directEdges.first.push_back(copy->getSrcID());
+                directEdges.second.push_back(copy->getDstID());
+            }
+        }
+
+        ConstraintEdge::ConstraintEdgeSetTy &loads = consCG->getLoadCGEdges();
+        for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = loads.begin(), eiter = loads.end(); iter != eiter; ++iter)
+        {
+            std::cout << "src: " << (*iter)->getSrcID() << " dst: " << (*iter)->getDstID() << "\t load\n";
+            loadEdges.first.push_back((*iter)->getSrcID());
+            loadEdges.second.push_back((*iter)->getDstID());
+        }
+
+        ConstraintEdge::ConstraintEdgeSetTy &stores = consCG->getStoreCGEdges();
+        for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = stores.begin(), eiter = stores.end(); iter != eiter; ++iter)
+        {
+            std::cout << "src: " << (*iter)->getSrcID() << " dst: " << (*iter)->getDstID() << "\t store\n";
+            storeEdges.first.push_back((*iter)->getSrcID());
+            storeEdges.second.push_back((*iter)->getDstID());
+        }
+    }
+
+    void analyze()
+    {
+        initialize();
+        initWorklist();
+        initEdgeSets();
+        do
+        {
+            reanalyze = false;
+            solveWorklist();
+            if (updateCallGraph(getIndirectCallsites()))
+                reanalyze = true;
+        } while (reanalyze);
+        finalize();
+    }
+
     virtual inline void solveWorklist()
     {
-        while (!isWorklistEmpty())
-        {
-            NodeID nodeId = popFromWorklist();
-            // collapsePWCNode(nodeId);
-            processNode(nodeId);
-            collapseFields();
-        }
+        std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << consCG->getTotalEdgeNum() << " Edges!\n";
+        pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, consCG, pag);
     }
 };
 
@@ -55,57 +107,11 @@ int main(int argc, char **argv)
     /// Build Program Assignment Graph (SVFIR)
     SVFIRBuilder builder;
     SVFIR *pag = builder.build(svfModule);
-    ConstraintGraph *cg = new ConstraintGraph(pag);
 
-    edgeSet addrEdges;
-    ConstraintEdge::ConstraintEdgeSetTy &addrs = cg->getAddrCGEdges();
-    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = addrs.begin(), eiter = addrs.end(); iter != eiter; ++iter)
-    {
-        addrEdges.first.push_back((*iter)->getSrcID());
-        addrEdges.second.push_back((*iter)->getDstID());
-    }
+    AndersenCustom *ander = new AndersenCustom(pag);
 
-    ConstraintEdge::ConstraintEdgeSetTy &directs = cg->getDirectCGEdges();
-    edgeSet directEdges;
-    edgeSetOffset gepEdges;
-    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = directs.begin(), eiter = directs.end(); iter != eiter; ++iter)
-    {
-        if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(*iter))
-        {
-            directEdges.first.push_back(copy->getSrcID());
-            directEdges.second.push_back(copy->getDstID());
-        }
-        else if (NormalGepCGEdge *ngep = SVFUtil::dyn_cast<NormalGepCGEdge>(*iter))
-        {
-            gepEdges.first.first.push_back(ngep->getSrcID());
-            gepEdges.first.second.push_back(ngep->getConstantFieldIdx());
-            gepEdges.second.push_back(ngep->getDstID());
-        }
-        else if (VariantGepCGEdge *vgep = SVFUtil::dyn_cast<VariantGepCGEdge>(*iter))
-        {
-            directEdges.first.push_back(vgep->getSrcID());
-            directEdges.second.push_back(vgep->getDstID());
-        }
-    }
+    ander->analyze();
 
-    ConstraintEdge::ConstraintEdgeSetTy &loads = cg->getLoadCGEdges();
-    edgeSet loadEdges;
-    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = loads.begin(), eiter = loads.end(); iter != eiter; ++iter)
-    {
-        loadEdges.first.push_back((*iter)->getSrcID());
-        loadEdges.second.push_back((*iter)->getDstID());
-    }
-
-    ConstraintEdge::ConstraintEdgeSetTy &stores = cg->getStoreCGEdges();
-    edgeSet storeEdges;
-    for (ConstraintEdge::ConstraintEdgeSetTy::iterator iter = stores.begin(), eiter = stores.end(); iter != eiter; ++iter)
-    {
-        storeEdges.first.push_back((*iter)->getSrcID());
-        storeEdges.second.push_back((*iter)->getDstID());
-    }
-
-    std::cout << "starting ptagpu w/ " << cg->getTotalNodeNum() << " nodes and " << cg->getTotalEdgeNum() << " Edges!\n";
-    run(cg->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, &gepEdges, cg, pag);
     SVFIR::releaseSVFIR();
 
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
