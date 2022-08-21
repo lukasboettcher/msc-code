@@ -737,7 +737,7 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     }
 }
 
-__host__ uint handleGepEdges(edgeSetOffset *gepEdges, uint *currPts, uint *nextPts, void *consG, void *pag)
+__host__ uint handleGepEdges(uint *currPts, uint *nextPts, void *consG, void *pag)
 {
     edgeSet newPts;
     handleGepsSVF(consG, pag, currPts, newPts);
@@ -1010,8 +1010,6 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
             break;
         }
         checkCuda(cudaDeviceSynchronize());
-        V = handleGepEdges(gepEdges, currPtsDiff, nextPtsDiff, consG, pag);
-        checkCuda(cudaDeviceSynchronize());
         kernel<PTS_CURR, PTS_NEXT><<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff);
         checkCuda(cudaDeviceSynchronize());
         kernel<PTS_CURR, COPY><<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy);
@@ -1026,6 +1024,9 @@ __host__ int run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges
 
         checkCuda(cudaDeviceSynchronize());
         kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, invStore, invCopy);
+        checkCuda(cudaDeviceSynchronize());
+        uint Vnew = handleGepEdges(currPtsDiff, nextPtsDiff, consG, pag);
+        V = Vnew;
         checkCuda(cudaDeviceSynchronize());
     }
     // Free memory
