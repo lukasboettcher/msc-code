@@ -602,7 +602,7 @@ __global__ void kernel_store(int n, uint *A, uint *B, uint *C)
                 uint numDstNodes = __popc(threadsWithDstNode);
                 if (usedShared + numDstNodes > 128)
                 {
-                    insert_store_map(index, usedShared, _shared_, B, C);
+                    insert_store_map(src, usedShared, _shared_, B, C);
                     usedShared = 0;
                 }
                 // calculate pos in shared mem, by counting prev threads that had a dst node
