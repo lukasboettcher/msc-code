@@ -150,3 +150,23 @@ void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
         }
     }
 }
+
+void getObjects(void *cg, void *pg, uint *memory)
+{
+    using namespace SVF;
+
+    SVF::ConstraintGraph *consCG = (SVF::ConstraintGraph *)cg;
+    SVF::SVFIR *pag = (SVF::SVFIR *)pg;
+
+    for (size_t nodeId = 0; nodeId < consCG->getTotalNodeNum(); nodeId++)
+    {
+        SVFVar *node = pag->getGNode(nodeId);
+        if (SVFUtil::isa<ObjVar>(node))
+        {
+            if (!pag->isConstantObj(nodeId) && !pag->isNonPointerObj(nodeId))
+                memory[nodeId] = UINT_MAX;
+            else
+                memory[nodeId] = 0;
+        }
+    }
+}
