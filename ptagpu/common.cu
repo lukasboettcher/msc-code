@@ -29,18 +29,36 @@ __device__ uint *__ptsCurr__;
 __device__ uint *__ptsNext__;
 
 /**
- * getHeadIndex
+ * getIndex
  *
  * get the index of the first element for a given node
  *
  * \param src the node for which to get the head index
+ * \param rel relation for which to get the head index
  *
- * \return index of the
+ * \return index of the bitvector
  *
  */
-__host__ __device__ size_t getHeadIndex(uint src, uint *graph)
+__host__ __device__ size_t getIndex(uint src, uint rel)
 {
-    return 0;
+    switch (rel)
+    {
+    case PTS:
+        return OFFSET_PTS + (32 * src);
+    case PTS_CURR:
+        return OFFSET_PTS_CURR + (32 * src);
+    case PTS_NEXT:
+        return OFFSET_PTS_NEXT + (32 * src);
+    case COPY:
+        return OFFSET_COPY + (32 * src);
+    case LOAD:
+        return OFFSET_LOAD + (32 * src);
+    case STORE:
+        return OFFSET_STORE + (32 * src);
+    }
+    // uint index = __memory__[src * N_TYPES + rel];
+    return src * 32;
+}
 }
 
 __device__ uint incEdgeCouter(int type)
