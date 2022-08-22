@@ -939,6 +939,39 @@ __global__ void kernel_memoryCheck(const uint n)
     __syncthreads();
 }
 
+__global__ void kernel_count_pts(const uint n, uint rel)
+{
+    uint start = blockIdx.x * blockDim.y + threadIdx.y;
+    uint stride = blockDim.y * gridDim.x;
+    uint bits, base, next, index;
+
+    for (int i = start; i < n; i += stride)
+    {
+        index = getIndex(i, rel);
+        while (index != UINT_MAX)
+        {
+            bits = __memory__[index + threadIdx.x];
+            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            if (base == UINT_MAX)
+                break;
+
+            uint value = threadIdx.x < BASE ? __popc(bits) : 0;
+
+            for (int i = 16; i >= 1; i /= 2)
+                value += __shfl_xor_sync(0x3FFFFFFF, value, i);
+
+            if (!threadIdx.x)
+            {
+                atomicAdd(&__counter__, value);
+            }
+
+            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+
+            index = next;
+        }
+    }
+}
+
 __device__ inline uint resetWorklistIndex()
 {
     __syncthreads();
