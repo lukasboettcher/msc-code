@@ -157,6 +157,14 @@ void handleGepsSVF(void *cg, void *pg, uint *memory, edgeSet &newPtsEdges)
     }
 }
 
+bool isObject(void *cg, void *pg, uint nodeId)
+{
+    SVF::ConstraintGraph *consCG = (SVF::ConstraintGraph *)cg;
+    SVF::SVFIR *pag = (SVF::SVFIR *)pg;
+    SVF::SVFVar *node = pag->getGNode(nodeId);
+    return SVF::SVFUtil::isa<SVF::ObjVar>(node) && !pag->isConstantObj(nodeId) && !pag->isNonPointerObj(nodeId);
+}
+
 void getObjects(void *cg, void *pg, uint *memory)
 {
     using namespace SVF;
