@@ -88,7 +88,7 @@ __device__ uint incEdgeCouter(int type)
 
 __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
 {
-    uint index = src * 32;
+    uint index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
     uint word = WORD_OF(dst);
     uint bit = BIT_OF(dst);
@@ -215,20 +215,46 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
 }
 
 template <uint fromRel, uint toRel>
-__device__ void mergeBitvectors(const uint *origin, uint *target, const uint to, const uint numDstNodes, uint *_shared_);
+__device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_shared_);
 
 template <uint fromRel, uint toRel>
-__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory);
+__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage);
 
-__device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, uint fromIndex, uint *storage, const uint toRel)
+__device__ inline uint getAndIncrement(uint *counter, uint delta)
 {
-    uint toIndex = to * 32;
+    __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
+    if (!threadIdx.x)
+    {
+        _shared_[threadIdx.y] = atomicAdd(counter, delta);
+    }
+    return _shared_[threadIdx.y];
+}
+
+__device__ void insert_store_map(const uint src, uint *const _shared_, uint numFrom)
+{
+    const uint storeIndex = getIndex(src, STORE);
+    for (int i = 0; i < numFrom; i += 32)
+    {
+        uint size = min(numFrom - i, 32);
+        uint next = getAndIncrement(&__storeMapHead__, size);
+        // TODO: we need to make sure that (next + threadIdx.x < MAX_HASH_SIZE)
+        if (threadIdx.x < size)
+        {
+            __key__[next + threadIdx.x] = _shared_[i + threadIdx.x]; // at most 2 transactions
+            __val__[next + threadIdx.x] = src;
+        }
+    }
+}
+
+__device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const uint toRel)
+{
+    uint toIndex = getIndex(to, toRel);
     if (fromIndex == toIndex)
     {
         return;
     }
     // read dst out edges
-    uint fromBits = origin[fromIndex + threadIdx.x];
+    uint fromBits = __memory__[fromIndex + threadIdx.x];
     // get the base from thread nr 30
     uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
     // terminate if no data in from bitvector
@@ -240,7 +266,7 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
     uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
 
     // share needed data for to indices
-    uint toBits = target[toIndex + threadIdx.x];
+    uint toBits = __memory__[toIndex + threadIdx.x];
     uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
     uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
@@ -263,7 +289,7 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             // each thread gets a value that will be written back to memory
             uint val = threadIdx.x == NEXT ? toNext : orBits;
             if (val != toBits)
-                target[toIndex + threadIdx.x] = val;
+                __memory__[toIndex + threadIdx.x] = val;
 
             // as we are merging into copy,
             // we need to also merge the underlying pts sets
@@ -272,7 +298,7 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             if (diffs)
             {
                 uint diffBits = fromBits & ~toBits;
-                collectBitvectorTargets<PTS, PTS_NEXT>(to, diffBits, fromBase, storage, numFrom, __pts__, __ptsNext__);
+                collectBitvectorTargets<PTS, PTS_NEXT>(to, diffBits, fromBase, storage, numFrom);
             }
             // if no more bitvectors in origin, end loop
             if (fromNext == UINT_MAX)
@@ -293,11 +319,11 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             }
             else
             {
-                toBits = target[toIndex + threadIdx.x];
+                toBits = __memory__[toIndex + threadIdx.x];
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             }
-            fromBits = origin[fromNext + threadIdx.x];
+            fromBits = __memory__[fromNext + threadIdx.x];
             fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         }
@@ -308,7 +334,8 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             if (toNext == UINT_MAX)
             {
                 uint newNext = incEdgeCouter(toRel);
-                target[toIndex + NEXT] = newNext;
+                __memory__[toIndex + NEXT] = newNext;
+                assert(toIndex != newNext);
                 toIndex = newNext;
                 toBits = UINT_MAX;
                 toBase = UINT_MAX;
@@ -316,7 +343,7 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             else
             {
                 toIndex = toNext;
-                toBits = target[toNext + threadIdx.x];
+                toBits = __memory__[toNext + threadIdx.x];
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             }
@@ -334,15 +361,15 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             {
                 newVal = incEdgeCouter(toRel);
                 // write the current bits from the target element to a new location
-                target[newVal + threadIdx.x] = toBits;
+                __memory__[newVal + threadIdx.x] = toBits;
             }
 
             // overwrite the current bits with fromBits (insert before node)
             fromBits = threadIdx.x == NEXT ? newVal : fromBits;
-            target[toIndex + threadIdx.x] = fromBits;
+            __memory__[toIndex + threadIdx.x] = fromBits;
 
             // collect pts edges
-            collectBitvectorTargets<PTS, PTS_NEXT>(to, fromBits, fromBase, storage, numFrom, __pts__, __ptsNext__);
+            collectBitvectorTargets<PTS, PTS_NEXT>(to, fromBits, fromBase, storage, numFrom);
 
             // if next from element is defined, update the bits
             // if not, break for this element
@@ -352,7 +379,7 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
             }
             toIndex = newVal;
 
-            fromBits = origin[fromNext + threadIdx.x];
+            fromBits = __memory__[fromNext + threadIdx.x];
             fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         }
@@ -360,11 +387,11 @@ __device__ void mergeBitvectorCopy(const uint *origin, uint *target, uint to, ui
     // merge collected pts edges
     if (numFrom)
     {
-        mergeBitvectors<PTS, PTS_NEXT>(__pts__, __ptsNext__, to, numFrom, storage);
+        mergeBitvectors<PTS, PTS_NEXT>(to, numFrom, storage);
     }
 }
 
-__device__ void insertBitvector(const uint *originMemory, uint *targetMemory, uint toIndex, uint fromBits, uint toRel)
+__device__ void insertBitvector(uint toIndex, uint fromBits, uint toRel)
 {
     while (1)
     {
@@ -376,21 +403,21 @@ __device__ void insertBitvector(const uint *originMemory, uint *targetMemory, ui
         // handle the special next entry, since we can not reuse the fromNext bits
         uint val = threadIdx.x == NEXT ? toNext : fromBits;
         // write new values to target memory location
-        targetMemory[toIndex + threadIdx.x] = val;
+        __memory__[toIndex + threadIdx.x] = val;
 
         // exit if no more elements in from bitvector
         if (fromNext == UINT_MAX)
             return;
         toIndex = toNext;
-        fromBits = originMemory[fromNext + threadIdx.x];
+        fromBits = __memory__[fromNext + threadIdx.x];
     }
 }
 
-__device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uint fromIndex, const uint toRel)
+__device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
 {
-    uint toIndex = to * 32;
+    uint toIndex = getIndex(to, toRel);
     // read dst out edges
-    uint fromBits = origin[fromIndex + threadIdx.x];
+    uint fromBits = __memory__[fromIndex + threadIdx.x];
     // get the base from thread nr 30
     uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
     // terminate if no data in from bitvector
@@ -400,13 +427,13 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
     uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
 
     // share needed data for to indices
-    uint toBits = target[toIndex + threadIdx.x];
+    uint toBits = __memory__[toIndex + threadIdx.x];
     uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
     uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
 
     if (toBase == UINT_MAX)
     {
-        insertBitvector(origin, target, toIndex, fromBits, toRel);
+        insertBitvector(toIndex, fromBits, toRel);
         return;
     }
 
@@ -421,23 +448,23 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
             // each thread gets a value that will be written back to memory
             uint val = threadIdx.x == NEXT ? newToNext : orBits;
             if (val != toBits)
-                target[toIndex + threadIdx.x] = val;
+                __memory__[toIndex + threadIdx.x] = val;
 
             // if no more bitvectors in origin, end loop
             if (fromNext == UINT_MAX)
                 return;
 
             // else load next bits
-            fromBits = origin[fromNext + threadIdx.x];
+            fromBits = __memory__[fromNext + threadIdx.x];
             fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
             if (toNext == UINT_MAX)
             {
-                insertBitvector(origin, target, toIndex, fromBits, toRel);
+                insertBitvector(toIndex, fromBits, toRel);
                 return;
             }
             toIndex = newToNext;
-            toBits = target[toNext + threadIdx.x];
+            toBits = __memory__[toNext + threadIdx.x];
             toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
             toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
         }
@@ -448,12 +475,12 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
             if (toNext == UINT_MAX)
             {
                 toNext = incEdgeCouter(toRel);
-                insertBitvector(origin, target, toNext, fromBits, toRel);
+                insertBitvector(toNext, fromBits, toRel);
                 return;
             }
             // if toNext is defined, load those to bits for the next iteration
             toIndex = toNext;
-            toBits = target[toNext + threadIdx.x];
+            toBits = __memory__[toNext + threadIdx.x];
             toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
             toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
         }
@@ -464,10 +491,10 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
             // and shift the current element back (ref. linked lists)
             uint newIndex = incEdgeCouter(toRel);
             // write the current bits from the target element to a new location
-            target[newIndex + threadIdx.x] = toBits;
+            __memory__[newIndex + threadIdx.x] = toBits;
             // then overwrite the current bits with fromBits (insert before node)
             uint val = threadIdx.x == NEXT ? newIndex : fromBits;
-            target[toIndex + threadIdx.x] = val;
+            __memory__[toIndex + threadIdx.x] = val;
 
             // if next from element is defined, update the bits
             // if not, break for this element
@@ -476,7 +503,7 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
 
             toIndex = newIndex;
 
-            fromBits = origin[fromNext + threadIdx.x];
+            fromBits = __memory__[fromNext + threadIdx.x];
             fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         }
@@ -484,26 +511,26 @@ __device__ void mergeBitvectorPts(const uint *origin, uint *target, uint to, uin
 }
 
 template <uint fromRel, uint toRel>
-__device__ void mergeBitvectors(const uint *origin, uint *target, const uint to, const uint numDstNodes, uint *_shared_)
+__device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_shared_)
 {
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
     {
-        uint fromIndex = _shared_[i] * 32;
+        uint fromIndex = getIndex(_shared_[i], fromRel);
 
         if (toRel == COPY)
         {
-            mergeBitvectorCopy(origin, target, to, fromIndex, _shared_ + 128, toRel);
+            mergeBitvectorCopy(to, fromIndex, _shared_ + 128, toRel);
         }
         else
         {
-            mergeBitvectorPts(origin, target, to, fromIndex, toRel);
+            mergeBitvectorPts(to, fromIndex, toRel);
         }
     }
 }
 
 template <uint fromRel, uint toRel>
-__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage, uint *originMemory, uint *targetMemory)
+__device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage)
 {
     // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
     uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
@@ -528,8 +555,10 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
         uint numDstNodes = __popc(threadsWithDstNode);
         if (usedStorage + numDstNodes > 128)
         {
-            // insert_store_map(index, usedStorage, storage, originMemory, targetMemory);
-            mergeBitvectors<fromRel, toRel>(originMemory, targetMemory, to, numDstNodes, storage);
+            if (toRel == STORE)
+                insert_store_map(to, storage, usedStorage);
+            else
+                mergeBitvectors<fromRel, toRel>(to, usedStorage, storage);
             usedStorage = 0;
         }
         // calculate pos in shared mem, by counting prev threads that had a dst node
@@ -542,139 +571,26 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
     }
 }
 
-template <uint fromRel, uint toRel>
-__global__ void kernel(int n, uint *A, uint *B, uint *C)
-{
-    // each warp gets a shared block for one access to global memory
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
-    uint *const _shared_ = &_sh_[threadIdx.y * 256];
-    for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
-    {
-        uint usedShared = 0;
-        uint index = src * 32;
-        do
-        {
-            uint bits = A[index + threadIdx.x];
-            uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
-            if (base == UINT_MAX)
-                break;
-
-            collectBitvectorTargets<fromRel, toRel>(src, bits, base, _shared_, usedShared, B, C);
-            index = __shfl_sync(0xFFFFFFFF, bits, 31);
-        } while (index != UINT_MAX);
-        if (usedShared)
-        {
-            mergeBitvectors<fromRel, toRel>(B, C, src, usedShared, _shared_);
-        }
-    }
-}
-
-__device__ uint store_map_head = 0;
-
-__device__ void insert_store_map(const uint src, const uint n, uint *const list, uint *store_map_pts, uint *store_map_src)
-{
-    for (int i = 0; i < n; i += 32)
-    {
-        uint size = min(n - i, 32);
-        uint next;
-        if (!threadIdx.x)
-        {
-            next = atomicAdd(&store_map_head, size);
-        }
-        next = __shfl_sync(0xFFFFFFFF, next, 0);
-        if (threadIdx.x < size)
-        {
-            store_map_pts[next + threadIdx.x] = list[i + threadIdx.x];
-            // store_map_src[next + threadIdx.x] = src_index;
-            store_map_src[next + threadIdx.x] = src;
-        }
-    }
-}
-
-/**
- * Kernel for store edges,
- * here we need to collect all store edges that share a pts edge
- * and selectively assign them to the same warps
- * so that we save on synchronization between warps
- */
-__global__ void kernel_store(int n, uint *A, uint *B, uint *C)
-{
-    // each warp gets a shared block for one access to global memory
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 128];
-    uint *const _shared_ = &_sh_[threadIdx.y * 128];
-    for (uint src = blockIdx.x * blockDim.y + threadIdx.y; src < n; src += blockDim.y * gridDim.x)
-    {
-        uint index = src * 32;
-        uint usedShared = 0;
-        do
-        {
-            uint bits = A[index + threadIdx.x];
-            uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
-            if (base == UINT_MAX)
-                break;
-            // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
-            uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
-            const uint threadMask = 1 << threadIdx.x;
-            const uint myMask = threadMask - 1;
-            while (nonEmptyThreads)
-            {
-                // work through the nonEmptyThreads bits, get thread number of first thread w/ non empty bits
-                int leastThread = __ffs(nonEmptyThreads) - 1;
-                // remove lsb from nonEmptyThreads (iteration step)
-                nonEmptyThreads &= (nonEmptyThreads - 1);
-                // share current bits with all threads in warp
-                uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
-
-                // use the base and the word of the current thread's bits to calculate the target dst id
-                uint var = getDstNode(base, leastThread, threadIdx.x);
-                // check if this thread is looking at a dst node
-                // uint bitActive = (var != 1U) && (current_bits & threadMask);
-                uint bitActive = (current_bits & threadMask);
-                // count threads that are looking at dst nodes
-                uint threadsWithDstNode = __ballot_sync(0xFFFFFFFF, bitActive);
-                uint numDstNodes = __popc(threadsWithDstNode);
-                if (usedShared + numDstNodes > 128)
-                {
-                    insert_store_map(src, usedShared, _shared_, B, C);
-                    usedShared = 0;
-                }
-                // calculate pos in shared mem, by counting prev threads that had a dst node
-                uint pos = usedShared + __popc(threadsWithDstNode & myMask);
-                if (bitActive)
-                {
-                    _shared_[pos] = var;
-                }
-                usedShared += numDstNodes;
-            }
-            index = __shfl_sync(0xFFFFFFFF, bits, 31);
-        } while (index != UINT_MAX);
-        if (usedShared)
-        {
-            insert_store_map(src, usedShared, _shared_, B, C);
-        }
-    }
-}
-
-__global__ void kernel_store2copy(const uint n, uint *store_map_pts, uint *store_map_src, uint *store_map_idx, uint *store, uint *invCopy)
+__global__ void kernel_store2copy(const uint n)
 {
     __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
     for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
     {
-        uint idx = store_map_idx[i];
-        uint idx_next = store_map_idx[i + 1];
+        uint idx = __keyAux__[i];
+        uint idx_next = __keyAux__[i + 1];
 
         // load the pts target, this should not change for the next totalDstNodes
-        uint pts_target = store_map_pts[idx];
+        uint pts_target = __key__[idx];
 
         for (uint j = idx; j < idx_next; j += 32)
         {
             uint numDstNodes = min(idx_next - j, 32U);
             if (j + threadIdx.x < idx_next)
             {
-                _shared_[threadIdx.x] = store_map_src[j + threadIdx.x];
+                _shared_[threadIdx.x] = __val__[j + threadIdx.x];
             }
-            mergeBitvectors<STORE, COPY>(store, invCopy, pts_target, numDstNodes, _shared_);
+            mergeBitvectors<STORE, COPY>(pts_target, numDstNodes, _shared_);
         }
     }
 }
@@ -740,7 +656,7 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
  */
 __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts)
 {
-    uint index = src * 32;
+    uint index = getIndex(src, PTS);
     uint base, next, bits, ptsTarget;
 
     while (index != UINT_MAX)
@@ -770,11 +686,11 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     }
 }
 
-__host__ uint handleGepEdges(uint *currPts, uint *nextPts, void *consG, void *pag)
+__host__ uint handleGepEdges(uint *memory, void *consG, void *pag)
 {
     edgeSet newPts;
-    handleGepsSVF(consG, pag, currPts, newPts);
-    insertEdges(&newPts, nextPts, 0, PTS_NEXT);
+    handleGepsSVF(consG, pag, memory, newPts);
+    insertEdges(&newPts, memory, 0, PTS_NEXT);
     uint nodeCount = getNodeCount(consG);
     return nodeCount;
 }
@@ -793,18 +709,19 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
     return false;
 }
 
-__device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext, uint *pts, uint *curr_pts, uint *next_pts)
+__device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext)
 {
-    insertBitvector(next_pts, pts, ptsIndex, diffPtsBits, PTS);
+    insertBitvector(ptsIndex, diffPtsBits, PTS);
     if (currDiffPtsIndex != UINT_MAX)
     {
-        curr_pts[currDiffPtsIndex + NEXT] = ptsIndex;
+        __memory__[currDiffPtsIndex + NEXT] = ptsIndex;
+        assert(currDiffPtsIndex != ptsIndex);
     }
     else
     {
-        currDiffPtsIndex = 32 * var;
-        uint ptsBits = pts[ptsIndex + threadIdx.x];
-        curr_pts[currDiffPtsIndex + threadIdx.x] = ptsBits;
+        currDiffPtsIndex = getIndex(var, PTS_CURR);
+        uint ptsBits = __memory__[ptsIndex + threadIdx.x];
+        __memory__[currDiffPtsIndex + threadIdx.x] = ptsBits;
     }
 }
 
@@ -820,12 +737,12 @@ __device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsInd
  * @param next_pts memory for all newly added pts bitvectors
  * @return true if new pts edges have been added to this variable
  */
-__device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, uint *next_pts)
+__device__ bool updatePtsAndDiffPts(const uint var)
 {
     // next next index
-    const uint diffPtsHeadIndex = var * 32;
+    const uint diffPtsHeadIndex = getIndex(var, PTS_NEXT);
 
-    uint diffPtsBits = next_pts[diffPtsHeadIndex + threadIdx.x];
+    uint diffPtsBits = __memory__[diffPtsHeadIndex + threadIdx.x];
     uint diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
 
     if (diffPtsBase == UINT_MAX)
@@ -834,16 +751,16 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
     }
 
     uint diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
-    next_pts[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
+    __memory__[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
 
-    uint ptsIndex = var * 32;
-    uint ptsBits = pts[ptsIndex + threadIdx.x];
+    uint ptsIndex = getIndex(var, PTS);
+    uint ptsBits = __memory__[ptsIndex + threadIdx.x];
     uint ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
 
     if (ptsBase == UINT_MAX)
     {
         // we pass ptsBase instead of UINT_MAX because it's also UINT_MAX but it can be modified
-        cloneAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+        cloneAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext);
         return true;
     }
     uint ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
@@ -853,18 +770,19 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
         if (ptsBase > diffPtsBase)
         {
             uint newIndex = incEdgeCouter(PTS);
-            pts[newIndex + threadIdx.x] = ptsBits;
+            __memory__[newIndex + threadIdx.x] = ptsBits;
             uint val = threadIdx.x == NEXT ? newIndex : diffPtsBits;
-            pts[ptsIndex + threadIdx.x] = val;
+            __memory__[ptsIndex + threadIdx.x] = val;
 
             ptsIndex = newIndex;
             // update CURR_DIFF_PTS
-            newIndex = currDiffPtsIndex == UINT_MAX ? 32 * var : incEdgeCouter(PTS_CURR);
+            newIndex = currDiffPtsIndex == UINT_MAX ? getIndex(var, PTS_CURR) : incEdgeCouter(PTS_CURR);
             val = threadIdx.x == NEXT ? UINT_MAX : diffPtsBits;
-            curr_pts[newIndex + threadIdx.x] = val;
+            __memory__[newIndex + threadIdx.x] = val;
             if (currDiffPtsIndex != UINT_MAX)
             {
-                curr_pts[currDiffPtsIndex + NEXT] = newIndex;
+                __memory__[currDiffPtsIndex + NEXT] = newIndex;
+                assert(currDiffPtsIndex != newIndex);
             }
             if (diffPtsNext == UINT_MAX)
             {
@@ -872,7 +790,7 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
             }
             currDiffPtsIndex = newIndex;
 
-            diffPtsBits = next_pts[diffPtsNext + threadIdx.x];
+            diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
             diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
             diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
         }
@@ -880,104 +798,125 @@ __device__ bool updatePtsAndDiffPts(const uint var, uint *pts, uint *curr_pts, u
         {
             uint newPtsNext = (ptsNext == UINT_MAX && diffPtsNext != UINT_MAX) ? incEdgeCouter(PTS) : ptsNext;
             uint orBits = threadIdx.x == NEXT ? newPtsNext : ptsBits | diffPtsBits;
-            uint ballot = __ballot_sync(0x3FFFFFFF, orBits != ptsBits);
-            pts[ptsIndex + threadIdx.x] = orBits;
+            uint ballot = __ballot_sync(0xFFFFFFFF, orBits != ptsBits);
             if (ballot)
             {
-                // update CURR_DIFF_PTS
-                orBits = diffPtsBits & ~ptsBits;
-                if (threadIdx.x == BASE)
+                __memory__[ptsIndex + threadIdx.x] = orBits;
+                if (ballot & ((1 << 30) - 1))
                 {
-                    orBits = ptsBase;
-                }
-                else if (threadIdx.x == NEXT)
-                {
-                    orBits = UINT_MAX;
-                }
-                uint newIndex;
-                if (currDiffPtsIndex != UINT_MAX)
-                {
+                    // update CURR_DIFF_PTS
+                    orBits = diffPtsBits & ~ptsBits;
+                    if (threadIdx.x == BASE)
+                    {
+                        orBits = ptsBase;
+                    }
+                    else if (threadIdx.x == NEXT)
+                    {
+                        orBits = UINT_MAX;
+                    }
+                    uint newIndex;
+                    if (currDiffPtsIndex != UINT_MAX)
+                    {
 
-                    newIndex = incEdgeCouter(PTS_CURR);
-                    curr_pts[currDiffPtsIndex + NEXT] = newIndex;
+                        newIndex = incEdgeCouter(PTS_CURR);
+                        __memory__[currDiffPtsIndex + NEXT] = newIndex;
+                        assert(currDiffPtsIndex != newIndex);
+                    }
+                    else
+                    {
+                        newIndex = getIndex(var, PTS_CURR);
+                    }
+                    __memory__[newIndex + threadIdx.x] = orBits;
+                    currDiffPtsIndex = newIndex;
                 }
-                else
-                {
-                    newIndex = var * 32;
-                }
-                curr_pts[newIndex + threadIdx.x] = orBits;
-                currDiffPtsIndex = newIndex;
             }
             if (diffPtsNext == UINT_MAX)
             {
                 return (currDiffPtsIndex != UINT_MAX);
             }
-            diffPtsBits = next_pts[diffPtsNext + threadIdx.x];
+            diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
             diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
             diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
 
             if (ptsNext == UINT_MAX)
             {
-                cloneAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+                cloneAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
             ptsIndex = ptsNext;
 
-            ptsBits = pts[ptsIndex + threadIdx.x];
+            ptsBits = __memory__[ptsIndex + threadIdx.x];
             ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
             ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
         }
         else
-        { // ptsBase > diffPtsBase
+        { // ptsBase < diffPtsBase
             if (ptsNext == UINT_MAX)
             {
                 uint newPtsIndex = incEdgeCouter(PTS);
-                pts[ptsIndex + NEXT] = newPtsIndex;
-                cloneAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext, pts, curr_pts, next_pts);
+                __memory__[ptsIndex + NEXT] = newPtsIndex;
+                assert(ptsIndex != newPtsIndex);
+                cloneAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
             ptsIndex = ptsNext;
-            ptsBits = pts[ptsIndex + threadIdx.x];
+            ptsBits = __memory__[ptsIndex + threadIdx.x];
             ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
             ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
         }
     }
 }
 
-__global__ void kernel_updatePts(const uint n, uint *pts, uint *curr_pts, uint *next_pts)
-{
-    if (__pts__ != pts)
-    {
-        __pts__ = pts;
-        __ptsCurr__ = curr_pts;
-        __ptsNext__ = next_pts;
-    }
 
+__device__ inline uint resetWorklistIndex()
+{
+    __syncthreads();
+    uint numBlocks = gridDim.x;
+    if (!((32 * threadIdx.y) + threadIdx.x) && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
+    {
+        __worklistIndex0__ = 0;
+        __counter__ = 0;
+        return 1;
+    }
+    return 0;
+}
+
+__global__ void kernel_updatePts(const uint n)
+{
     __done__ = true;
     bool newWork = false;
-    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
+    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n; i += blockDim.y * gridDim.x)
     {
-        bool newStuff = updatePtsAndDiffPts(i, pts, curr_pts, next_pts);
+        bool newStuff = updatePtsAndDiffPts(i);
         newWork |= newStuff;
         if (!newStuff)
         {
-            const uint currPtsHeadIndex = 32 * i;
-            curr_pts[currPtsHeadIndex + threadIdx.x] = UINT_MAX;
+            const uint currPtsHeadIndex = getIndex(i, PTS_CURR);
+            __memory__[currPtsHeadIndex + threadIdx.x] = UINT_MAX;
         }
     }
     if (newWork)
     {
         __done__ = false;
     }
-    __syncthreads();
-    __freeList__[PTS_CURR] = n * 32;
-    __freeList__[PTS_NEXT] = n * 32;
+    if (resetWorklistIndex())
+    {
+        __freeList__[PTS_CURR] = n * 32;
+        __freeList__[PTS_NEXT] = n * 32;
+    }
+}
 }
 
-__host__ void printWord(uint *memory, uint start, bool isNodeId = true)
+__host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
 {
+    // if (isNodeId)
+    //     start *= 32;
+    uint start;
     if (isNodeId)
-        start *= 32;
+        start = getIndex(src, rel);
+    else
+        start = src;
+
     for (size_t i = 0; i < 32; i++)
     {
         uint checkpoint = memory[start + i];
@@ -989,89 +928,82 @@ __host__ void printWord(uint *memory, uint start, bool isNodeId = true)
 
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag)
 {
-    int N = 1 << 28;
-    uint *pts, *currPtsDiff, *nextPtsDiff, *invCopy, *invStore, *invLoad, *store_map_pts, *store_map_src, *store_map_idx;
+    setlocale(LC_NUMERIC, "");
+    // cudaDeviceProp prop; // CUDA device properties variable
+    // checkCuda(cudaGetDeviceProperties(&prop, 0));
+    // printf("total global memory available:\n\t\t%lu\n", prop.totalGlobalMem);
+    // printf("total bytes: \t%lu\n", SIZE_TOTAL_BYTES);
+    int N = 1 << 20;
+    size_t numStoreDst = storeEdges->second.size();
+    uint *store_map_pts, *store_map_src, *store_map_idx, *storeConstraints, *memory;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
-    checkCuda(cudaMallocManaged(&pts, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&currPtsDiff, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&nextPtsDiff, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&invCopy, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&invStore, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&invLoad, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint1)));
-    checkCuda(cudaMallocManaged(&store_map_idx, N * sizeof(uint1)));
+    checkCuda(cudaMallocManaged(&memory, SIZE_TOTAL_BYTES));
+    checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&store_map_idx, N * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&storeConstraints, numStoreDst * sizeof(uint)));
 
     // set all values to UINT_MAX
-    cudaMemset(pts, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(currPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(nextPtsDiff, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(invCopy, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(invStore, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(invLoad, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(memory, UCHAR_MAX, SIZE_TOTAL_BYTES);
     cudaMemset(store_map_pts, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_src, UCHAR_MAX, N * sizeof(unsigned int));
     cudaMemset(store_map_idx, UCHAR_MAX, N * sizeof(unsigned int));
 
+    // move the store constraints into managed memory and sort / unique
+    memcpy(storeConstraints, storeEdges->second.data(), numStoreDst * sizeof(uint));
+    thrust::sort(storeConstraints, storeConstraints + numStoreDst);
+    size_t numStoreConstraints = thrust::unique(storeConstraints, storeConstraints + numStoreDst) - storeConstraints;
+
     // num of vertices
     size_t V{numNodes};
 
-    // reserve 20% for new edges added by gep offsets
-    uint initNum = std::ceil(1.2 * V) * ELEMENT_WIDTH;
-    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum, initNum, initNum};
-    checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint), 0, cudaMemcpyHostToDevice));
+    // move managed memory ptrs into device memory
+    __memory__ = memory;
+    __key__ = store_map_pts;
+    __val__ = store_map_src;
+    __keyAux__ = store_map_idx;
 
-    insertEdges(addrEdges, nextPtsDiff, 1, PTS_NEXT);
-    insertEdges(directEdges, invCopy, 1, COPY);
-    insertEdges(loadEdges, invLoad, 1, LOAD);
-    insertEdges(storeEdges, invStore, 1, STORE);
+    // reserve 20% for new edges added by gep offsets
+    uint initNum = std::ceil(2 * V) * ELEMENT_WIDTH;
+    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum, initNum};
+    checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint)));
+
+
+    insertEdges(addrEdges, memory, 1, PTS_NEXT);
+    insertEdges(directEdges, memory, 1, COPY);
+    insertEdges(loadEdges, memory, 1, LOAD);
+    insertEdges(storeEdges, memory, 1, STORE);
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
     while (1)
     {
-        kernel_updatePts<<<numBlocks, threadsPerBlock>>>(V, pts, currPtsDiff, nextPtsDiff);
+        kernel_updatePts<<<numBlocks, threadsPerBlock>>>(V);
         checkCuda(cudaDeviceSynchronize());
 
-        bool done = true;
-        checkCuda(cudaMemcpyFromSymbol(&done, __done__, sizeof(bool)));
 
-        if (done)
+        if (__done__)
         {
             break;
         }
-        checkCuda(cudaDeviceSynchronize());
-        kernel<PTS_CURR, PTS_NEXT><<<numBlocks, threadsPerBlock>>>(V, invCopy, currPtsDiff, nextPtsDiff);
-        checkCuda(cudaDeviceSynchronize());
-        kernel<PTS_CURR, COPY><<<numBlocks, threadsPerBlock>>>(V, invLoad, currPtsDiff, invCopy);
 
-        checkCuda(cudaDeviceSynchronize());
-        kernel_store<<<numBlocks, threadsPerBlock>>>(V, currPtsDiff, store_map_pts, store_map_src);
+        kernel<<<numBlocks, threadsPerBlock>>>(V, numStoreConstraints, storeConstraints);
         checkCuda(cudaDeviceSynchronize());
 
         thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
         auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
 
-
+        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs);
         checkCuda(cudaDeviceSynchronize());
-        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs, store_map_pts, store_map_src, store_map_idx, invStore, invCopy);
-        checkCuda(cudaDeviceSynchronize());
-        uint Vnew = handleGepEdges(currPtsDiff, nextPtsDiff, consG, pag);
+        uint Vnew = handleGepEdges(memory, consG, pag);
         V = Vnew;
-        checkCuda(cudaDeviceSynchronize());
     }
     // Free memory
-    // checkCuda(cudaFree(pts));
-    checkCuda(cudaFree(currPtsDiff));
-    checkCuda(cudaFree(nextPtsDiff));
-    checkCuda(cudaFree(invCopy));
-    checkCuda(cudaFree(invStore));
-    checkCuda(cudaFree(invLoad));
     checkCuda(cudaFree(store_map_pts));
     checkCuda(cudaFree(store_map_src));
     checkCuda(cudaFree(store_map_idx));
 
-    return pts;
+    return memory;
 }
