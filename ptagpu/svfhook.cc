@@ -34,9 +34,10 @@ unsigned int getNodeCount(void *consG)
     return numNodes;
 }
 
+size_t getIndex(uint src, uint rel);
 void collectFromBitvectorHook(uint src, uint *memory, std::vector<uint> &pts)
 {
-    uint index = src * 32;
+    uint index = getIndex(src, 1);
     uint base, next, bits, ptsTarget;
 
     while (index != UINT_MAX)
