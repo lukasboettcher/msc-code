@@ -13,13 +13,13 @@
 #define N_BLOCKS 16
 
 #define PTS 0
-#define COPY 1
-#define STORE 2
-#define LOAD 3
-#define GEP 4
-#define PTS_CURR 5
-#define PTS_NEXT 6
-#define N_TYPES 7
+#define PTS_CURR 1
+#define PTS_NEXT 2
+#define COPY 3
+#define LOAD 4
+#define STORE 5
+#define N_TYPES 6
+
 
 __device__ __host__ static inline uint div32(uint num)
 {
