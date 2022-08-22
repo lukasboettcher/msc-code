@@ -13,7 +13,7 @@ using namespace SVF;
 class AndersenCustom : public Andersen
 {
 public:
-    uint *pts;
+    uint *pts = nullptr;
     edgeSet addrEdges, directEdges, storeEdges, loadEdges;
     AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
     SVF::AliasResult alias(NodeID node1, NodeID node2)
