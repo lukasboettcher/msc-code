@@ -66,7 +66,7 @@ void collectFromBitvectorHook(uint src, uint *memory, std::vector<uint> &pts)
     }
 }
 
-void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
+void handleGepsSVF(void *cg, void *pg, uint *memory, edgeSet &newPtsEdges)
 {
     using namespace SVF;
 
@@ -83,7 +83,7 @@ void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
             {
                 // const PointsTo &pts = getDiffPts(edge->getSrcID());
                 NodeVector pts;
-                collectFromBitvectorHook(edge->getSrcID(), currPts, pts);
+                collectFromBitvectorHook(edge->getSrcID(), memory, pts);
 
                 // PointsTo tmpDstPts;
                 NodeVector tmpDstPts;
