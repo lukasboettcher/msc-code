@@ -1,7 +1,5 @@
 #include "common.cuh"
 
-std::map<unsigned int *, unsigned int> testMap;
-
 /**
  * __ptsFreeList__
  * this is the head of the free list
@@ -59,6 +57,12 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
     // uint index = __memory__[src * N_TYPES + rel];
     return src * 32;
 }
+
+__host__ uint incEdgeCouterHost(int type)
+{
+    uint index = __freeList__[type];
+    __freeList__[type] += 32;
+    return index;
 }
 
 __device__ uint incEdgeCouter(int type)
@@ -132,9 +136,9 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
  * it is also assumed, that all edges have the same base and fit into the first word.
  * This is only for testing the kernel.
  */
-__host__ void insertEdge(uint src, uint dst, uint *graph)
+__host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
 {
-    uint index = src * 32;
+    uint index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
     uint word = WORD_OF(dst);
     uint bit = BIT_OF(dst);
@@ -166,7 +170,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
         {
             if (toNext == UINT_MAX)
             {
-                uint nextIndex = ++testMap[graph] * 32;
+                uint nextIndex = incEdgeCouterHost(toRel);
                 graph[index + NEXT] = nextIndex;
 
                 for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
@@ -187,7 +191,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph)
         else if (toBase > base)
         {
 
-            uint nextIndex = ++testMap[graph] * 32;
+            uint nextIndex = incEdgeCouterHost(toRel);
             for (size_t i = 0; i < ELEMENT_WIDTH; i++)
                 graph[nextIndex + i] = graph[index + i];
             for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
