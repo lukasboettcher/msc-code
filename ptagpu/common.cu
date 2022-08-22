@@ -1028,7 +1028,7 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
     if (usedShared)
     {
         if (fromRel == STORE)
-            insert_store_map(src, _shared_, numFrom);
+            insert_store_map(src, _shared_, usedShared);
         else
             mergeBitvectors<fromRel, toRel>(src, usedShared, _shared_);
     }
