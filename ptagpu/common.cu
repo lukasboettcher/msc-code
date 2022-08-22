@@ -1034,6 +1034,38 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
     }
 }
 
+__global__ void kernel(const uint n, const uint n_stores, uint *storeConstraints)
+{
+    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
+    uint *const _shared_ = &_sh_[threadIdx.y * 256];
+    uint to = n;
+    uint src = getAndIncrement(&__worklistIndex1__, 1);
+    while (src < to)
+    {
+        rewriteRule<COPY, PTS_CURR, PTS_NEXT>(src, _shared_ + 128);
+        rewriteRule<LOAD, PTS_CURR, COPY>(src, _shared_);
+
+        src = getAndIncrement(&__worklistIndex1__, 1);
+    }
+    to = n_stores;
+    src = getAndIncrement(&__worklistIndex0__, 1);
+    while (src < to)
+    {
+        src = storeConstraints[src];
+        if (src != UINT_MAX)
+        {
+            rewriteRule<PTS_CURR, STORE, STORE>(src, _shared_);
+        }
+        src = getAndIncrement(&__worklistIndex0__, 1);
+    }
+    if (resetWorklistIndex())
+    {
+        __numKeys__ = __storeMapHead__ + 1;
+        __storeMapHead__ = 0;
+        __worklistIndex1__ = 0;
+    }
+}
+
 __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
 {
     // if (isNodeId)
