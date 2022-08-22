@@ -68,6 +68,24 @@ public:
         }
     }
 
+    void printObjs()
+    {
+        GTraits::nodes_iterator I = GTraits::nodes_begin(consCG);
+        GTraits::nodes_iterator E = GTraits::nodes_end(consCG);
+        for (; I != E; ++I)
+        {
+            NodeID nodeId = GTraits::getNodeID(*I);
+            SVFVar *node = pag->getGNode(nodeId);
+            if (SVFUtil::isa<ObjVar>(node))
+            {
+                if (!pag->isConstantObj(nodeId) && !pag->isNonPointerObj(nodeId))
+                {
+                    std::cout << nodeId << "\n";
+                }
+            }
+        }
+    }
+
     void analyze()
     {
         initialize();
