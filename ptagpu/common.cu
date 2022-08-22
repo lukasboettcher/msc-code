@@ -7,14 +7,27 @@
  * access needs to be atomic to prevent collisions
  *
  */
-__device__ uint __freeList__[N_TYPES];
+__device__ __managed__ uint __freeList__[N_TYPES];
 
 /**
  * flag that keeps track of remaining work
  * if true, no next iteration needed
  *
  */
-__device__ bool __done__ = true;
+__device__ __managed__ bool __done__ = true;
+
+__device__ __managed__ uint *__key__;
+__device__ __managed__ uint *__val__;
+__device__ __managed__ uint *__keyAux__;
+
+__device__ uint __numKeys__;
+
+__device__ __managed__ uint __counter__ = 0;
+
+__device__ uint __worklistIndex0__ = 0;
+__device__ uint __worklistIndex1__ = 0;
+
+__device__ uint __storeMapHead__ = 0;
 
 /**
  * device pointers for the pts bitvectors
@@ -22,9 +35,7 @@ __device__ bool __done__ = true;
  * so are written to device symbols permanently
  *
  */
-__device__ uint *__pts__;
-__device__ uint *__ptsCurr__;
-__device__ uint *__ptsNext__;
+__device__ __managed__ uint *__memory__;
 
 /**
  * getIndex
