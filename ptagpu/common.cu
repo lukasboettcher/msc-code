@@ -867,6 +867,77 @@ __device__ bool updatePtsAndDiffPts(const uint var)
     }
 }
 
+__global__ void kernel_memoryCheck(const uint n)
+{
+    __syncthreads();
+
+    uint start = blockIdx.x * blockDim.y + threadIdx.y;
+    uint stride = blockDim.y * gridDim.x;
+    uint bits, base, next, index;
+
+    for (int i = start; i < n; i += stride)
+    {
+        index = getIndex(i, PTS_CURR);
+        while (index != UINT_MAX)
+        {
+            bits = __memory__[index + threadIdx.x];
+            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            if (base == UINT_MAX)
+                break;
+
+            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            if (!threadIdx.x && next == index)
+            {
+                printf("huh?? currpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_CURR]);
+                break;
+            }
+            index = next;
+        }
+    }
+    __syncthreads();
+
+    for (int i = start; i < n; i += stride)
+    {
+        index = getIndex(i, PTS);
+        while (index != UINT_MAX)
+        {
+            bits = __memory__[index + threadIdx.x];
+            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            if (base == UINT_MAX)
+                break;
+
+            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            if (!threadIdx.x && next == index)
+            {
+                printf("huh?? pts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS]);
+                break;
+            }
+            index = next;
+        }
+    }
+    __syncthreads();
+
+    for (int i = start; i < n; i += stride)
+    {
+        index = getIndex(i, PTS_NEXT);
+        while (index != UINT_MAX)
+        {
+            bits = __memory__[index + threadIdx.x];
+            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            if (base == UINT_MAX)
+                break;
+
+            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            if (!threadIdx.x && next == index)
+            {
+                printf("huh?? nextpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_NEXT]);
+                break;
+            }
+            index = next;
+        }
+    }
+    __syncthreads();
+}
 
 __device__ inline uint resetWorklistIndex()
 {
