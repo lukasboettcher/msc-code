@@ -94,6 +94,9 @@ void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
                     // unless the object is a black hole/constant.
                     for (NodeID o : pts)
                     {
+                        if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                            continue;
+
                         if (consCG->isBlkObjOrConstantObj(o))
                         {
                             tmpDstPts.push_back(o);
@@ -119,6 +122,8 @@ void handleGepsSVF(void *cg, void *pg, uint *currPts, edgeSet &newPtsEdges)
                     // base object is always returned.
                     for (NodeID o : pts)
                     {
+                        if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                            continue;
 
                         if (consCG->isBlkObjOrConstantObj(o) || pag->getBaseObj(o)->isFieldInsensitive())
                         {
