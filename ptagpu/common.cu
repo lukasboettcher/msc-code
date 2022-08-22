@@ -1009,6 +1009,29 @@ __global__ void kernel_updatePts(const uint n)
         __freeList__[PTS_NEXT] = n * 32;
     }
 }
+
+template <uint originRel, uint fromRel, uint toRel>
+__device__ void rewriteRule(const uint src, uint *const _shared_)
+{
+    uint usedShared = 0;
+    uint index = getIndex(src, originRel);
+    do
+    {
+        uint bits = __memory__[index + threadIdx.x];
+        uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
+        if (base == UINT_MAX)
+            break;
+
+        collectBitvectorTargets<fromRel, toRel>(src, bits, base, _shared_, usedShared);
+        index = __shfl_sync(0xFFFFFFFF, bits, 31);
+    } while (index != UINT_MAX);
+    if (usedShared)
+    {
+        if (fromRel == STORE)
+            insert_store_map(src, _shared_, numFrom);
+        else
+            mergeBitvectors<fromRel, toRel>(src, usedShared, _shared_);
+    }
 }
 
 __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
