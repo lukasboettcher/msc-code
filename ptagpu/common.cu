@@ -31,7 +31,7 @@ __device__ __managed__ uint *__key__;
 __device__ __managed__ uint *__val__;
 __device__ __managed__ uint *__keyAux__;
 
-__device__ uint __numKeys__;
+__device__ __managed__ uint __numKeys__;
 
 __device__ __managed__ uint __counter__ = 0;
 
@@ -720,7 +720,7 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
     return false;
 }
 
-__device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext)
+__device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext)
 {
     insertBitvector(ptsIndex, diffPtsBits, PTS);
     if (currDiffPtsIndex != UINT_MAX)
@@ -748,7 +748,7 @@ __device__ void cloneAndLink(uint var, const uint ptsIndex, uint &currDiffPtsInd
  * @param next_pts memory for all newly added pts bitvectors
  * @return true if new pts edges have been added to this variable
  */
-__device__ bool updatePtsAndDiffPts(const uint var)
+__device__ bool computeDiffPts(const uint var)
 {
     // next next index
     const uint diffPtsHeadIndex = getIndex(var, PTS_NEXT);
@@ -771,7 +771,7 @@ __device__ bool updatePtsAndDiffPts(const uint var)
     if (ptsBase == UINT_MAX)
     {
         // we pass ptsBase instead of UINT_MAX because it's also UINT_MAX but it can be modified
-        cloneAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext);
+        insertBitvectorAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext);
         return true;
     }
     uint ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
@@ -851,7 +851,7 @@ __device__ bool updatePtsAndDiffPts(const uint var)
 
             if (ptsNext == UINT_MAX)
             {
-                cloneAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext);
+                insertBitvectorAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
             ptsIndex = ptsNext;
@@ -867,7 +867,7 @@ __device__ bool updatePtsAndDiffPts(const uint var)
                 uint newPtsIndex = incEdgeCouter(PTS);
                 __memory__[ptsIndex + NEXT] = newPtsIndex;
                 assert(ptsIndex != newPtsIndex);
-                cloneAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
+                insertBitvectorAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
             ptsIndex = ptsNext;
@@ -1002,7 +1002,7 @@ __global__ void kernel_updatePts(const uint n)
     bool newWork = false;
     for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n; i += blockDim.y * gridDim.x)
     {
-        bool newStuff = updatePtsAndDiffPts(i);
+        bool newStuff = computeDiffPts(i);
         newWork |= newStuff;
         if (!newStuff)
         {
@@ -1016,8 +1016,8 @@ __global__ void kernel_updatePts(const uint n)
     }
     if (resetWorklistIndex())
     {
-        __freeList__[PTS_CURR] = n * 32;
-        __freeList__[PTS_NEXT] = n * 32;
+        __freeList__[PTS_CURR] = __reservedHeader__;
+        __freeList__[PTS_NEXT] = __reservedHeader__;
     }
 }
 
