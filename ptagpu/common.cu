@@ -10,6 +10,17 @@
 __device__ __managed__ uint __freeList__[N_TYPES];
 
 /**
+ * __reservedHeader__
+ *
+ * this variable represents to max number of nodes
+ *
+ * is to be initialized with enough overhead
+ * to allow adding further nodes via gep offsets calculations
+ *
+ */
+__device__ __managed__ uint __reservedHeader__;
+
+/**
  * flag that keeps track of remaining work
  * if true, no next iteration needed
  *
