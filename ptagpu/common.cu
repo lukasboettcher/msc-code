@@ -1135,9 +1135,11 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     __keyAux__ = store_map_idx;
 
     // reserve 20% for new edges added by gep offsets
-    uint initNum = std::ceil(2 * V) * ELEMENT_WIDTH;
-    uint freeList[N_TYPES] = {initNum, initNum, initNum, initNum, initNum, initNum};
-    checkCuda(cudaMemcpyToSymbol(__freeList__, freeList, N_TYPES * sizeof(uint)));
+    __reservedHeader__ = ceil(1.2 * V) * ELEMENT_WIDTH;
+    for (size_t i = 0; i < N_TYPES; i++)
+    {
+        __freeList__[i] = __reservedHeader__;
+    }
 
 
     insertEdges(addrEdges, memory, 1, PTS_NEXT);
