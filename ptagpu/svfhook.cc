@@ -149,8 +149,8 @@ void handleGepsSVF(void *cg, void *pg, uint *memory, edgeSet &newPtsEdges)
 
                 for (auto pt : tmpDstPts)
                 {
-                    newPtsEdges.first.push_back(dstId);
-                    newPtsEdges.second.push_back(pt);
+                    newPtsEdges.first.push_back(pt);
+                    newPtsEdges.second.push_back(dstId);
                 }
             }
         }

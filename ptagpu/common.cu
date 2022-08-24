@@ -701,7 +701,7 @@ __host__ uint handleGepEdges(uint *memory, void *consG, void *pag)
 {
     edgeSet newPts;
     handleGepsSVF(consG, pag, memory, newPts);
-    insertEdges(&newPts, memory, 0, PTS_NEXT);
+    insertEdges(&newPts, memory, 1, PTS_NEXT);
     uint nodeCount = getNodeCount(consG);
     return nodeCount;
 }
