@@ -1057,7 +1057,7 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
 
 __global__ void kernel(const uint n, const uint n_stores, uint *storeConstraints)
 {
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
+    __shared__ uint _sh_[(THREADS_PER_BLOCK / WARP_SIZE) * 256];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
     uint to = n;
     uint src = getAndIncrement(&__worklistIndex1__, 1);
