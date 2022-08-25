@@ -444,7 +444,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
 
     if (toBase == UINT_MAX)
     {
-        insertBitvector(toIndex, fromBits, toRel);
+        insertBitvector(toIndex, fromBits, fromNext, toRel);
         return;
     }
 
@@ -471,7 +471,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
             if (toNext == UINT_MAX)
             {
-                insertBitvector(toIndex, fromBits, toRel);
+                insertBitvector(toIndex, fromBits, fromNext, toRel);
                 return;
             }
             toIndex = newToNext;
@@ -486,7 +486,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             if (toNext == UINT_MAX)
             {
                 toNext = incEdgeCouter(toRel);
-                insertBitvector(toNext, fromBits, toRel);
+                insertBitvector(toNext, fromBits, fromNext, toRel);
                 return;
             }
             // if toNext is defined, load those to bits for the next iteration
@@ -722,7 +722,7 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
 
 __device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext)
 {
-    insertBitvector(ptsIndex, diffPtsBits, PTS);
+    insertBitvector(ptsIndex, diffPtsBits, diffPtsNext, PTS);
     if (currDiffPtsIndex != UINT_MAX)
     {
         __memory__[currDiffPtsIndex + NEXT] = ptsIndex;
