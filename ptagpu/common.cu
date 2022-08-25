@@ -89,12 +89,11 @@ __host__ uint incEdgeCouterHost(int type)
 
 __device__ uint incEdgeCouter(int type)
 {
-    __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
-    if (threadIdx.x == 0)
-    {
-        _shared_[threadIdx.y] = atomicAdd(&__freeList__[type], 32);
-    }
-    return _shared_[threadIdx.y];
+    uint newIndex;
+    if (!threadIdx.x)
+        newIndex = atomicAdd(&__freeList__[type], 32);
+    newIndex = __shfl_sync(0xFFFFFFFF, newIndex, 0);
+    return newIndex;
 }
 
 __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
