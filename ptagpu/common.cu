@@ -1081,6 +1081,8 @@ __global__ void kernel(const uint n, const uint n_stores, uint *storeConstraints
     }
     if (resetWorklistIndex())
     {
+        __key__[__storeMapHead__] = UINT_MAX;
+        __val__[__storeMapHead__] = UINT_MAX;
         __numKeys__ = __storeMapHead__ + 1;
         __storeMapHead__ = 0;
         __worklistIndex1__ = 0;
