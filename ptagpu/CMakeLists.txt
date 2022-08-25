@@ -8,3 +8,8 @@ target_link_libraries(svfhook Svf ${llvm_libs})
 add_library(ptagpu ${CMAKE_CURRENT_SOURCE_DIR}/common.cu)
 target_link_libraries(ptagpu ${CUDA_LIBRARIES} svfhook)
 set_target_properties(ptagpu PROPERTIES CUDA_ARCHITECTURES "86")
+target_compile_options(ptagpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
+    --generate-line-info
+    # --device-debug
+    --use_fast_math
+    >)
