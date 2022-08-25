@@ -486,6 +486,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             if (toNext == UINT_MAX)
             {
                 toNext = incEdgeCouter(toRel);
+                __memory__[toIndex + NEXT] = toNext;
                 insertBitvector(toNext, fromBits, fromNext, toRel);
                 return;
             }
