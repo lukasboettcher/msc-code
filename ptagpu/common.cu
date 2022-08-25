@@ -554,7 +554,7 @@ template <uint fromRel, uint toRel>
 __device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage)
 {
     // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
-    uint nonEmptyThreads = __ballot_sync(0x3FFFFFFF, bits);
+    uint nonEmptyThreads = __ballot_sync(0xFFFFFFFF, bits) & 0x3FFFFFFF;
     const uint threadMask = 1 << threadIdx.x;
     const uint myMask = threadMask - 1;
     while (nonEmptyThreads)
@@ -564,7 +564,7 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
         // remove lsb from nonEmptyThreads (iteration step)
         nonEmptyThreads &= (nonEmptyThreads - 1);
         // share current bits with all threads in warp
-        uint current_bits = __shfl_sync(0x3FFFFFFF, bits, leastThread);
+        uint current_bits = __shfl_sync(0xFFFFFFFF, bits, leastThread);
 
         // use the base and the word of the current thread's bits to calculate the target dst id
         uint var = getDstNode(base, leastThread, threadIdx.x);
