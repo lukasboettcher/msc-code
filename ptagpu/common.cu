@@ -400,25 +400,27 @@ __device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const
     }
 }
 
-__device__ void insertBitvector(uint toIndex, uint fromBits, uint toRel)
+__device__ void insertBitvector(uint toIndex, uint fromBits, uint fromNext, const uint toRel)
 {
     while (1)
     {
-        // use warp intrinsics to get next index in from memory
-        uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         // check if a new bitvector is required
         // if that is the case, allocate a new index for a new element
-        uint toNext = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(toRel);
+        uint newIndex = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(toRel);
         // handle the special next entry, since we can not reuse the fromNext bits
-        uint val = threadIdx.x == NEXT ? toNext : fromBits;
+        uint val = threadIdx.x == NEXT ? newIndex : fromBits;
         // write new values to target memory location
         __memory__[toIndex + threadIdx.x] = val;
 
         // exit if no more elements in from bitvector
         if (fromNext == UINT_MAX)
-            return;
-        toIndex = toNext;
+            break;
+
+        // start next iteration
+        toIndex = newIndex;
         fromBits = __memory__[fromNext + threadIdx.x];
+        // use warp intrinsics to get next index in from memory
+        fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
     }
 }
 
