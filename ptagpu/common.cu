@@ -282,19 +282,22 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
     // keep count of used storage in shared memory
     // this storage is adjacent to previous collectBitvectorTargets memory
     uint numFrom = 0;
+    uint newVal;
     while (1)
     {
+
         if (toBase == fromBase)
         {
             // union the bits, adding the new edges
             uint orBits = fromBits | toBits;
-            uint diffs = __any_sync(0x7FFFFFFF, orBits != toBits);
-            bool nextWasUndef = false;
+            uint diffs = __any_sync(0xFFFFFFFF, orBits != toBits && threadIdx.x < NEXT);
+            bool nextWasUINT_MAX = false;
             if (toNext == UINT_MAX && fromNext != UINT_MAX)
             {
                 toNext = incEdgeCouter(COPY);
-                nextWasUndef = true;
+                nextWasUINT_MAX = true;
             }
+
             // each thread gets a value that will be written back to memory
             uint val = threadIdx.x == NEXT ? toNext : orBits;
             if (val != toBits)
@@ -322,7 +325,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             // instead make toBits undefined manually
             // handle this in toBase > fromBase
             toIndex = toNext;
-            if (nextWasUndef)
+            if (nextWasUINT_MAX)
             {
                 toBits = UINT_MAX;
                 toBase = UINT_MAX;
@@ -347,7 +350,6 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             {
                 uint newNext = incEdgeCouter(COPY);
                 __memory__[toIndex + NEXT] = newNext;
-                assert(toIndex != newNext);
                 toIndex = newNext;
                 toBits = UINT_MAX;
                 toBase = UINT_MAX;
