@@ -87,7 +87,7 @@ __host__ uint incEdgeCouterHost(int type)
     return index;
 }
 
-__device__ uint incEdgeCouter(int type)
+__device__ inline uint incEdgeCouter(int type)
 {
     uint newIndex;
     if (!threadIdx.x)
