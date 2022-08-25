@@ -304,16 +304,18 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             // we need to also merge the underlying pts sets
             // we do this by running collectBitvectorTargets
             // and then merge thos pts edges again at the end of this loop
-            if (diffs)
+            if (applyCopy && diffs)
             {
                 uint diffBits = fromBits & ~toBits;
                 collectBitvectorTargets<PTS, PTS_NEXT>(to, diffBits, fromBase, storage, numFrom);
             }
+
             // if no more bitvectors in origin, end loop
             if (fromNext == UINT_MAX)
             {
                 break;
             }
+
             // else load next bits
             // keep in mind that we do not use insertBitvector
             // since we need to also merge pts edges
@@ -332,6 +334,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
             }
+
             fromBits = __memory__[fromNext + threadIdx.x];
             fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
@@ -352,6 +355,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             else
             {
                 toIndex = toNext;
+
                 toBits = __memory__[toNext + threadIdx.x];
                 toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
                 toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
@@ -361,14 +365,13 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
         {
             // compared to mergeBitvectorPts
             // we need to handle the toBase == UINT_MAX case here
-            uint newVal;
             if (toBase == UINT_MAX)
             {
                 newVal = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(COPY);
             }
             else
             {
-                newVal = incEdgeCouter(toRel);
+                newVal = incEdgeCouter(COPY);
                 // write the current bits from the target element to a new location
                 __memory__[newVal + threadIdx.x] = toBits;
             }
@@ -376,9 +379,11 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             // overwrite the current bits with fromBits (insert before node)
             fromBits = threadIdx.x == NEXT ? newVal : fromBits;
             __memory__[toIndex + threadIdx.x] = fromBits;
-
-            // collect pts edges
-            collectBitvectorTargets<PTS, PTS_NEXT>(to, fromBits, fromBase, storage, numFrom);
+            if (applyCopy)
+            {
+                // collect pts edges for resolving the copy edges later
+                collectBitvectorTargets<PTS, PTS_NEXT>(to, fromBits, fromBase, storage, numFrom);
+            }
 
             // if next from element is defined, update the bits
             // if not, break for this element
@@ -386,6 +391,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             {
                 break;
             }
+
             toIndex = newVal;
 
             fromBits = __memory__[fromNext + threadIdx.x];
@@ -393,8 +399,9 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
         }
     }
+
     // merge collected pts edges
-    if (numFrom)
+    if (applyCopy && numFrom)
     {
         mergeBitvectors<PTS, PTS_NEXT>(to, numFrom, storage);
     }
