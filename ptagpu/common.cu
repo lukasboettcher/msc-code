@@ -232,12 +232,11 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
 
 __device__ inline uint getAndIncrement(uint *counter, uint delta)
 {
-    __shared__ volatile uint _shared_[THREADS_PER_BLOCK / WARP_SIZE];
+    uint newIndex;
     if (!threadIdx.x)
-    {
-        _shared_[threadIdx.y] = atomicAdd(counter, delta);
-    }
-    return _shared_[threadIdx.y];
+        newIndex = atomicAdd(counter, delta);
+    newIndex = __shfl_sync(0xFFFFFFFF, newIndex, 0);
+    return newIndex;
 }
 
 __device__ void insert_store_map(const uint src, uint *const _shared_, uint numFrom)
