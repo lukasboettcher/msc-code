@@ -255,9 +255,9 @@ __device__ void insert_store_map(const uint src, uint *const _shared_, uint numF
     }
 }
 
-__device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const uint toRel)
+__device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *const storage, bool applyCopy = true)
 {
-    uint toIndex = getIndex(to, toRel);
+    uint toIndex = getIndex(to, COPY);
     if (fromIndex == toIndex)
     {
         return;
@@ -292,7 +292,7 @@ __device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const
             bool nextWasUndef = false;
             if (toNext == UINT_MAX && fromNext != UINT_MAX)
             {
-                toNext = incEdgeCouter(toRel);
+                toNext = incEdgeCouter(COPY);
                 nextWasUndef = true;
             }
             // each thread gets a value that will be written back to memory
@@ -342,7 +342,7 @@ __device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const
             // after that, we can simply insert the origin bitvector
             if (toNext == UINT_MAX)
             {
-                uint newNext = incEdgeCouter(toRel);
+                uint newNext = incEdgeCouter(COPY);
                 __memory__[toIndex + NEXT] = newNext;
                 assert(toIndex != newNext);
                 toIndex = newNext;
@@ -364,7 +364,7 @@ __device__ void mergeBitvectorCopy(uint to, uint fromIndex, uint *storage, const
             uint newVal;
             if (toBase == UINT_MAX)
             {
-                newVal = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(toRel);
+                newVal = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(COPY);
             }
             else
             {
@@ -532,7 +532,7 @@ __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_sh
 
         if (toRel == COPY)
         {
-            mergeBitvectorCopy(to, fromIndex, _shared_ + 128, toRel);
+            mergeBitvectorCopy(to, fromIndex, _shared_ + 128);
         }
         else
         {
