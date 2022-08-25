@@ -1017,8 +1017,8 @@ __global__ void kernel_updatePts(const uint n)
     }
     if (resetWorklistIndex())
     {
-        __freeList__[PTS_CURR] = __reservedHeader__;
-        __freeList__[PTS_NEXT] = __reservedHeader__;
+        __freeList__[PTS_CURR] = OFFSET_PTS_CURR + __reservedHeader__;
+        __freeList__[PTS_NEXT] = OFFSET_PTS_NEXT + __reservedHeader__;
     }
 }
 
@@ -1137,10 +1137,12 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     // reserve 20% for new edges added by gep offsets
     __reservedHeader__ = ceil(1.2 * V) * ELEMENT_WIDTH;
-    for (size_t i = 0; i < N_TYPES; i++)
-    {
-        __freeList__[i] = __reservedHeader__;
-    }
+    __freeList__[PTS] = OFFSET_PTS + __reservedHeader__;
+    __freeList__[PTS_CURR] = OFFSET_PTS_CURR + __reservedHeader__;
+    __freeList__[PTS_NEXT] = OFFSET_PTS_NEXT + __reservedHeader__;
+    __freeList__[COPY] = OFFSET_COPY + __reservedHeader__;
+    __freeList__[LOAD] = OFFSET_LOAD + __reservedHeader__;
+    __freeList__[STORE] = OFFSET_STORE + __reservedHeader__;
 
 
     insertEdges(addrEdges, memory, 1, PTS_NEXT);
