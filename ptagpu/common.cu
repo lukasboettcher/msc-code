@@ -1178,8 +1178,8 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         kernel<<<numBlocks, threadsPerBlock>>>(V, numStoreConstraints, storeConstraints);
         checkCuda(cudaDeviceSynchronize());
 
-        thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + N, store_map_src);
-        auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
+        thrust::sort_by_key(thrust::device, store_map_pts, store_map_pts + __numKeys__, store_map_src);
+        auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + __numKeys__, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
 
         kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs);
         checkCuda(cudaDeviceSynchronize());
