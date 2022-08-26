@@ -15,6 +15,23 @@ These are required for compiling this tool.
 sudo apt install build-essential cmake llvm-13 clang-13 nvidia-cuda-toolkit
 ```
 
+## Set up this repo
+```bash
+# check out the code
+git clone git@github.com:lukasboettcher/msc-code.git
+cd msc-code
+
+# Generate a Project Buildsystem
+cmake -S . -B ./build
+
+# Compile the Code
+cmake --build build/ --parallel $(nproc) --target runptagpu
+
+# Run ptagpu
+build/ptagpu/runptagpu -stat=0 <bitcode>
+```
+
+
 ## Generating Bitcode
 ### Simple Programs
 ```bash
