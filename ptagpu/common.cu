@@ -268,7 +268,7 @@ __device__ inline uint resetWorklistIndex()
 {
     __syncthreads();
     uint numBlocks = gridDim.x;
-    if (!((32 * threadIdx.y) + threadIdx.x) && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
+    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
     {
         __worklistIndex0__ = 0;
         __counter__ = 0;
