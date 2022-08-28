@@ -264,6 +264,19 @@ __device__ void insert_store_map(const uint src, uint *const _shared_, uint numF
     }
 }
 
+__device__ inline uint resetWorklistIndex()
+{
+    __syncthreads();
+    uint numBlocks = gridDim.x;
+    if (!((32 * threadIdx.y) + threadIdx.x) && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
+    {
+        __worklistIndex0__ = 0;
+        __counter__ = 0;
+        return 1;
+    }
+    return 0;
+}
+
 __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *const storage, bool applyCopy = true)
 {
     uint toIndex = getIndex(to, COPY);
@@ -1002,18 +1015,6 @@ __global__ void kernel_count_pts(const uint n, uint rel)
     }
 }
 
-__device__ inline uint resetWorklistIndex()
-{
-    __syncthreads();
-    uint numBlocks = gridDim.x;
-    if (!((32 * threadIdx.y) + threadIdx.x) && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
-    {
-        __worklistIndex0__ = 0;
-        __counter__ = 0;
-        return 1;
-    }
-    return 0;
-}
 
 __global__ void kernel_updatePts(const uint n)
 {
