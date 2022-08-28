@@ -1,6 +1,15 @@
 #include "common.cuh"
 
 /**
+ * relNames
+ *
+ * this variable holds strings for each of the relations
+ * this allows us to get a name from a numeric relation
+ *
+ */
+char const *relNames[6] = {"PTS", "PTS Current", "PTS Next", "Inv COPY", "Inv LOAD", "Inv Store"};
+
+/**
  * __ptsFreeList__
  * this is the head of the free list
  * keeps track of last allocated memory location
