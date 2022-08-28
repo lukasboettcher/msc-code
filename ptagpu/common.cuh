@@ -9,8 +9,9 @@
 #define WORD_OF(x) (div32((x) % ELEMENT_CARDINALITY))
 #define BIT_OF(x) (mod32(x))
 #define WARP_SIZE 32
+// important, limit to 512 threads per threadblock, otherwise we exceed 64K register limit
 #define THREADS_PER_BLOCK 512
-#define N_BLOCKS 16
+#define N_BLOCKS 80
 
 #define PTS 0
 #define PTS_CURR 1
