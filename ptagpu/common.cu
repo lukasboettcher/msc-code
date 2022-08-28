@@ -1118,6 +1118,27 @@ __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
     }
 }
 
+__host__ void printMemory(uint start, uint end, uint rel)
+{
+    uint usedUints = __freeList__[rel] - start;
+    size_t usedBytes = usedUints * sizeof(uint);
+    size_t totalBytes = (end - start) * sizeof(uint);
+    printf("%12s Elements:(uints)%16u\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
+}
+
+__host__ void reportMemory()
+{
+    printf("##### MEMORY USAGE\n");
+    printMemory(OFFSET_PTS, TOTAL_MEMORY_LENGTH, PTS);
+    printMemory(OFFSET_PTS_CURR, OFFSET_PTS, PTS_CURR);
+    printMemory(OFFSET_PTS_NEXT, OFFSET_PTS_CURR, PTS_NEXT);
+    printMemory(OFFSET_COPY, OFFSET_PTS_NEXT, COPY);
+    printMemory(OFFSET_LOAD, OFFSET_COPY, LOAD);
+    printMemory(OFFSET_STORE, OFFSET_LOAD, STORE);
+    printf("##### MEMORY USAGE\n");
+}
+
+
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag)
 {
     setlocale(LC_NUMERIC, "");
