@@ -20,7 +20,7 @@ sudo apt install build-essential cmake llvm-13 clang-13 \
 ## Set up this repo
 ```bash
 # check out the code
-git clone git@github.com:lukasboettcher/msc-code.git
+git clone --recursive git@github.com:lukasboettcher/msc-code.git
 cd msc-code
 
 # Generate a Project Buildsystem
