@@ -12,7 +12,9 @@ These are required for compiling this tool.
 
 ### Installation on Ubuntu 22.04
 ```bash
-sudo apt install build-essential cmake llvm-13 clang-13 nvidia-cuda-toolkit
+sudo apt install build-essential cmake llvm-13 clang-13 \
+    libboost-system-dev libboost-thread-dev
+# install nvidia cuda toolkit from https://developer.nvidia.com/cuda-downloads
 ```
 
 ## Set up this repo
