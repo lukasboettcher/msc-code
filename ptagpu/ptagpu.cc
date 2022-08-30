@@ -33,11 +33,16 @@ public:
 
     void initEdgeSets()
     {
+        if (printEdges)
+        {
+            fprintf(stderr, "%u %lu %lu %lu %lu\n", consCG->getTotalNodeNum(), consCG->getAddrCGEdges().size(), consCG->getDirectCGEdges().size(), consCG->getLoadCGEdges().size(), consCG->getStoreCGEdges().size());
+        }
+
         ConstraintEdge::ConstraintEdgeSetTy &addrs = consCG->getAddrCGEdges();
         for (ConstraintEdge *edge : addrs)
         {
             if (printEdges)
-                std::cout << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t addr\n";
+                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t addr\n";
             addrEdges.first.push_back(edge->getSrcID());
             addrEdges.second.push_back(edge->getDstID());
         }
@@ -45,10 +50,10 @@ public:
         ConstraintEdge::ConstraintEdgeSetTy &directs = consCG->getDirectCGEdges();
         for (ConstraintEdge *edge : directs)
         {
-            if (printEdges)
-                std::cout << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t copy\n";
             if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(edge))
             {
+                if (printEdges)
+                    std::cerr << "src: " << copy->getSrcID() << " dst: " << copy->getDstID() << "\t copy\n";
                 directEdges.first.push_back(copy->getSrcID());
                 directEdges.second.push_back(copy->getDstID());
             }
@@ -58,7 +63,7 @@ public:
         for (ConstraintEdge *edge : loads)
         {
             if (printEdges)
-                std::cout << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t load\n";
+                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t load\n";
             loadEdges.first.push_back(edge->getSrcID());
             loadEdges.second.push_back(edge->getDstID());
         }
@@ -67,7 +72,7 @@ public:
         for (ConstraintEdge *edge : stores)
         {
             if (printEdges)
-                std::cout << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t store\n";
+                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t store\n";
             storeEdges.first.push_back(edge->getSrcID());
             storeEdges.second.push_back(edge->getDstID());
         }
