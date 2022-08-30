@@ -1138,8 +1138,7 @@ __host__ void reportMemory()
     printf("##### MEMORY USAGE\n");
 }
 
-
-__host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag)
+__host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
     setlocale(LC_NUMERIC, "");
     // cudaDeviceProp prop; // CUDA device properties variable
@@ -1215,6 +1214,12 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs);
         checkCuda(cudaDeviceSynchronize());
         uint Vnew = handleGepEdges(memory, consG, pag);
+        V = Vnew;
+        edgeSet newPts;
+        edgeSet newCopys;
+        Vnew = callgraphCallback(memory, &newPts, &newCopys);
+        insertEdges(&newPts, 0, PTS_NEXT);
+        insertEdges(&newCopys, 1, COPY);
         V = Vnew;
     }
     // Free memory

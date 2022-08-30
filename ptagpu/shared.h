@@ -26,11 +26,11 @@
 #define OFFSET_STORE 0UL
 
 #include <vector>
+#include <functional>
 
 typedef std::pair<std::vector<unsigned int>, std::vector<unsigned int>> edgeSet;
-typedef std::pair<std::pair<std::vector<unsigned int>, std::vector<unsigned int>>, std::vector<unsigned int>> edgeSetOffset;
 
-unsigned int *run(unsigned int numNodes, edgeSet *addr, edgeSet *direct, edgeSet *load, edgeSet *store, void *consG, void *pag);
+unsigned int *run(unsigned int numNodes, edgeSet *addr, edgeSet *direct, edgeSet *load, edgeSet *store, void *consG, void *pag, std::function<unsigned int(unsigned int *, edgeSet *pts, edgeSet *copy)> callgraphCallback);
 bool aliasBV(unsigned int a, unsigned int b, unsigned int *memory);
 unsigned long getIndex(unsigned int src, unsigned int rel);
 
