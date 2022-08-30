@@ -14,6 +14,8 @@ class AndersenCustom : public Andersen
 {
 public:
     uint *pts = nullptr;
+    edgeSet *tmpPts;
+    edgeSet *tmpCopy;
     bool printEdges = false;
     edgeSet addrEdges, directEdges, storeEdges, loadEdges;
     AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
@@ -120,6 +122,9 @@ public:
 
     uint handleCallgraphCallback(uint *memory, edgeSet *ptsSet, edgeSet *copySet)
     {
+        pts = memory;
+        tmpPts = ptsSet;
+        tmpCopy = copySet;
         return consCG->getTotalNodeNum();
     }
 };
