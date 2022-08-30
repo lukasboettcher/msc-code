@@ -127,6 +127,7 @@ public:
         pts = memory;
         tmpPts = ptsSet;
         tmpCopy = copySet;
+        updateCallGraph(getIndirectCallsites());
         return consCG->getTotalNodeNum();
     }
 
