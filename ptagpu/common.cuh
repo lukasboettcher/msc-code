@@ -13,30 +13,6 @@
 #define THREADS_PER_BLOCK 512
 #define N_BLOCKS 80
 
-#define PTS 0
-#define PTS_CURR 1
-#define PTS_NEXT 2
-#define COPY 3
-#define LOAD 4
-#define STORE 5
-#define N_TYPES 6
-
-// total 10GiB of GPU memory
-#define SIZE_TOTAL_BYTES 10 * 1024 * 1024 * 1024UL
-#define SIZE_MIB_PTS_CURR 1500L
-#define SIZE_MIB_PTS_NEXT 2000L
-#define SIZE_MIB_COPY 1000L
-#define SIZE_MIB_LOAD 700L
-#define SIZE_MIB_STORE 700L
-
-#define TOTAL_MEMORY_LENGTH SIZE_TOTAL_BYTES / sizeof(unsigned int)
-#define OFFSET_PTS OFFSET_PTS_CURR + (SIZE_MIB_PTS_CURR * 1024 * 1024 / sizeof(unsigned int))
-#define OFFSET_PTS_CURR OFFSET_PTS_NEXT + (SIZE_MIB_PTS_NEXT * 1024 * 1024 / sizeof(unsigned int))
-#define OFFSET_PTS_NEXT OFFSET_COPY + (SIZE_MIB_COPY * 1024 * 1024 / sizeof(unsigned int))
-#define OFFSET_COPY OFFSET_LOAD + (SIZE_MIB_LOAD * 1024 * 1024 / sizeof(unsigned int))
-#define OFFSET_LOAD OFFSET_STORE + (SIZE_MIB_STORE * 1024 * 1024 / sizeof(unsigned int))
-#define OFFSET_STORE 0UL
-
 __device__ __host__ static inline uint div32(uint num)
 {
   return num >> 5;
