@@ -127,6 +127,45 @@ public:
         tmpCopy = copySet;
         return consCG->getTotalNodeNum();
     }
+
+    virtual inline void pushIntoWorklist(NodeID id)
+    {
+        if (!pts)
+        {
+            return Andersen::pushIntoWorklist(id);
+        }
+    }
+
+    virtual inline bool addCopyEdge(NodeID src, NodeID dst)
+    {
+        if (pts)
+        {
+            tmpCopy->first.push_back(src);
+            tmpCopy->second.push_back(dst);
+
+            std::vector<uint> srcPts;
+            collectFromBitvector(src, pts, srcPts);
+            for (auto ptd : srcPts)
+            {
+                addPts(dst, ptd);
+            }
+        }
+        else
+            return Andersen::addCopyEdge(src, dst);
+        return false;
+    }
+
+    virtual inline bool addPts(NodeID id, NodeID ptd)
+    {
+        if (pts)
+        {
+            tmpPts->first.push_back(id);
+            tmpPts->second.push_back(ptd);
+        }
+        else
+            return getPTDataTy()->addPts(id, ptd);
+        return false;
+    }
 };
 
 static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("<input bitcode>"), llvm::cl::init("-"));
