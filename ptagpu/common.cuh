@@ -49,4 +49,30 @@ void check(cudaError_t err, const char *const func, const char *const file, cons
   }
 }
 
+static double reportPotentialOccupancy(void *kernel, int blockSize,
+                                       size_t dynamicSMem)
+{
+  int device;
+  cudaDeviceProp prop;
+
+  int numBlocks;
+  int activeWarps;
+  int maxWarps;
+
+  double occupancy;
+
+  checkCuda(cudaGetDevice(&device));
+  checkCuda(cudaGetDeviceProperties(&prop, device));
+
+  checkCuda(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+      &numBlocks, kernel, blockSize, dynamicSMem));
+
+  activeWarps = numBlocks * blockSize / prop.warpSize;
+  maxWarps = prop.maxThreadsPerMultiProcessor / prop.warpSize;
+
+  occupancy = (double)activeWarps / maxWarps;
+
+  return occupancy;
+}
+
 #endif
