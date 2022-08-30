@@ -32,5 +32,6 @@ typedef std::pair<std::pair<std::vector<unsigned int>, std::vector<unsigned int>
 
 unsigned int *run(unsigned int numNodes, edgeSet *addr, edgeSet *direct, edgeSet *load, edgeSet *store, void *consG, void *pag);
 bool aliasBV(unsigned int a, unsigned int b, unsigned int *memory);
+unsigned long getIndex(unsigned int src, unsigned int rel);
 
 #endif
