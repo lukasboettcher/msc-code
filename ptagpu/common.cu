@@ -105,7 +105,7 @@ __device__ inline uint incEdgeCouter(int type)
     return newIndex;
 }
 
-__device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
+__device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
 {
     uint index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
@@ -122,18 +122,18 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
 
     while (1)
     {
-        uint toBits = graph[index + threadIdx.x];
+        uint toBits = __memory__[index + threadIdx.x];
         uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
         if (toBase == UINT_MAX)
         {
-            graph[index + threadIdx.x] = myBits;
+            __memory__[index + threadIdx.x] = myBits;
             return index;
         }
         if (toBase == base)
         {
             uint orBits = toBits | myBits;
             if (orBits != toBits && threadIdx.x < NEXT)
-                graph[index + threadIdx.x] = orBits;
+                __memory__[index + threadIdx.x] = orBits;
 
             return index;
         }
@@ -143,8 +143,8 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
             if (toNext == UINT_MAX)
             {
                 uint newIndex = incEdgeCouter(toRel);
-                graph[index + NEXT] = newIndex;
-                graph[newIndex + threadIdx.x] = myBits;
+                __memory__[index + NEXT] = newIndex;
+                __memory__[newIndex + threadIdx.x] = myBits;
                 return newIndex;
             }
             index = toNext;
@@ -152,9 +152,9 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint *graph, uint toRel)
         else
         {
             uint newIndex = incEdgeCouter(toRel);
-            graph[newIndex + threadIdx.x] = toBits;
+            __memory__[newIndex + threadIdx.x] = toBits;
             uint val = threadIdx.x == NEXT ? newIndex : myBits;
-            graph[index + threadIdx.x] = val;
+            __memory__[index + threadIdx.x] = val;
             return index;
         }
     }
@@ -638,7 +638,7 @@ __global__ void kernel_store2copy(const uint n)
     }
 }
 
-__global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *from, uint *to, uint *ofst, uint *memory, int rel)
+__global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *from, uint *to, uint *ofst, int rel)
 {
     uint index = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
@@ -653,12 +653,12 @@ __global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *fro
         for (j = offset; j < offset_next; j++)
         {
             dst = to[j];
-            insertEdgeDevice(src, dst, memory, rel);
+            insertEdgeDevice(src, dst, rel);
         }
     }
 }
 
-__host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
+__host__ void insertEdges(edgeSet *edges, int inv, int rel)
 {
     uint *from, *to, *ofst, N;
 
@@ -686,7 +686,7 @@ __host__ void insertEdges(edgeSet *edges, uint *memory, int inv, int rel)
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
     checkCuda(cudaDeviceSynchronize());
-    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, from, to, ofst, memory, rel);
+    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, from, to, ofst, rel);
     checkCuda(cudaDeviceSynchronize());
 
     checkCuda(cudaFree(from));
@@ -733,7 +733,7 @@ __host__ uint handleGepEdges(uint *memory, void *consG, void *pag)
 {
     edgeSet newPts;
     handleGepsSVF(consG, pag, memory, newPts);
-    insertEdges(&newPts, memory, 1, PTS_NEXT);
+    insertEdges(&newPts, 1, PTS_NEXT);
     uint nodeCount = getNodeCount(consG);
     return nodeCount;
 }
@@ -1186,11 +1186,11 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     __freeList__[LOAD] = OFFSET_LOAD + __reservedHeader__;
     __freeList__[STORE] = OFFSET_STORE + __reservedHeader__;
 
+    insertEdges(addrEdges, 1, PTS_NEXT);
+    insertEdges(directEdges, 1, COPY);
+    insertEdges(loadEdges, 1, LOAD);
+    insertEdges(storeEdges, 1, STORE);
 
-    insertEdges(addrEdges, memory, 1, PTS_NEXT);
-    insertEdges(directEdges, memory, 1, COPY);
-    insertEdges(loadEdges, memory, 1, LOAD);
-    insertEdges(storeEdges, memory, 1, STORE);
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
