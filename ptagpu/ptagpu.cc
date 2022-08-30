@@ -169,6 +169,53 @@ public:
         return false;
     }
 
+    void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts)
+    {
+        uint index = getIndex(src, 0);
+        uint base, next, bits, ptsTarget;
+
+        while (index != UINT_MAX)
+        {
+            base = memory[index + 30];
+            next = memory[index + 31];
+
+            if (base == UINT_MAX)
+            {
+                break;
+            }
+
+            for (size_t j = 0; j < 30; j++)
+            {
+                bits = memory[index + j];
+                for (size_t k = 0; k < 32; k++)
+                {
+                    if (1 << k & bits)
+                    {
+                        ptsTarget = 960 * base + 32 * j + k;
+                        pts.push_back(ptsTarget);
+                    }
+                }
+            }
+            index = next;
+        }
+    }
+
+    void fillPtsFromPTAGPU(PointsTo &ptsTarget, NodeID id)
+    {
+        if (pts)
+        {
+            NodeVector nv;
+            collectFromBitvector(id, pts, nv);
+            for (auto i : nv)
+                ptsTarget.set(i);
+        }
+        else
+        {
+            const PointsTo &svfPts = getPTDataTy()->getPts(id);
+            ptsTarget = svfPts;
+        }
+    }
+
     void onTheFlyCallGraphSolve(const CallSiteToFunPtrMap &callsites, CallEdgeMap &newEdges)
     {
         for (CallSiteToFunPtrMap::const_iterator iter = callsites.begin(), eiter = callsites.end(); iter != eiter; ++iter)
