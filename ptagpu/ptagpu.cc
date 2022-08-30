@@ -9,6 +9,8 @@
 using namespace llvm;
 using namespace std;
 using namespace SVF;
+using namespace SVFUtil;
+using namespace cppUtil;
 
 class AndersenCustom : public Andersen
 {
@@ -165,6 +167,28 @@ public:
         else
             return getPTDataTy()->addPts(id, ptd);
         return false;
+    }
+
+    void onTheFlyCallGraphSolve(const CallSiteToFunPtrMap &callsites, CallEdgeMap &newEdges)
+    {
+        for (CallSiteToFunPtrMap::const_iterator iter = callsites.begin(), eiter = callsites.end(); iter != eiter; ++iter)
+        {
+            const CallICFGNode *cs = iter->first;
+            PointsTo ptsTarget;
+            if (cppUtil::isVirtualCallSite(SVFUtil::getLLVMCallSite(cs->getCallSite())))
+            {
+                const Value *vtbl = cppUtil::getVCallVtblPtr(SVFUtil::getLLVMCallSite(cs->getCallSite()));
+                assert(pag->hasValueNode(vtbl));
+                NodeID vtblId = pag->getValueNode(vtbl);
+                fillPtsFromPTAGPU(ptsTarget, vtblId);
+                resolveCPPIndCalls(cs, ptsTarget, newEdges);
+            }
+            else
+            {
+                fillPtsFromPTAGPU(ptsTarget, iter->second);
+                resolveIndCalls(iter->first, ptsTarget, newEdges);
+            }
+        }
     }
 };
 
