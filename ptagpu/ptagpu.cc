@@ -127,8 +127,95 @@ public:
         pts = memory;
         tmpPts = ptsSet;
         tmpCopy = copySet;
+        handleGeps();
         updateCallGraph(getIndirectCallsites());
         return consCG->getTotalNodeNum();
+    }
+
+    void handleGeps()
+    {
+        for (size_t i = 0; i < consCG->getTotalNodeNum(); i++)
+        {
+            // SVF::ConstraintNode *node = iter.second;
+            SVF::ConstraintNode *node = consCG->getGNode(i);
+            for (ConstraintEdge *uedge : node->getGepOutEdges())
+            {
+                if (GepCGEdge *edge = SVFUtil::dyn_cast<GepCGEdge>(uedge))
+                {
+                    NodeVector tmpSrcPts;
+                    collectFromBitvector(edge->getSrcID(), pts, tmpSrcPts, PTS_CURR);
+                    // PointsTo tmpDstPts;
+                    NodeVector tmpDstPts;
+                    if (SVFUtil::isa<VariantGepCGEdge>(edge))
+                    {
+                        // If a pointer is connected by a variant gep edge,
+                        // then set this memory object to be field insensitive,
+                        // unless the object is a black hole/constant.
+                        for (NodeID o : tmpSrcPts)
+                        {
+                            if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                                continue;
+
+                            if (consCG->isBlkObjOrConstantObj(o))
+                            {
+                                tmpDstPts.push_back(o);
+                                continue;
+                            }
+
+                            if (!pag->getBaseObj(o)->isFieldInsensitive())
+                            {
+                                MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
+                                mem->setFieldInsensitive();
+                                consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
+                            }
+
+                            // Add the field-insensitive node into pts.
+                            NodeID baseId = consCG->getFIObjVar(o);
+                            NodeBS &allFields = consCG->getAllFieldsObjVars(baseId);
+                            for (NodeBS::iterator fieldIt = allFields.begin(), fieldEit = allFields.end(); fieldIt != fieldEit; fieldIt++)
+                            {
+                                NodeID fieldId = *fieldIt;
+                                if (fieldId != baseId)
+                                    tmpDstPts.push_back(fieldId);
+                            }
+                            tmpDstPts.push_back(baseId);
+                        }
+                    }
+                    else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+                    {
+                        // TODO: after the node is set to field insensitive, handling invariant
+                        // gep edge may lose precision because offsets here are ignored, and the
+                        // base object is always returned.
+                        for (NodeID o : tmpSrcPts)
+                        {
+                            if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                                continue;
+
+                            if (consCG->isBlkObjOrConstantObj(o) || pag->getBaseObj(o)->isFieldInsensitive())
+                            {
+                                tmpDstPts.push_back(o);
+                                continue;
+                            }
+
+
+                            NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+                            tmpDstPts.push_back(fieldSrcPtdNode);
+                        }
+                    }
+                    else
+                    {
+                        assert(false && "Andersen::processGepPts: New type GEP edge type?");
+                    }
+
+                    NodeID dstId = edge->getDstID();
+
+                    for (auto ptd : tmpDstPts)
+                    {
+                        addPts(dstId, ptd);
+                    }
+                }
+            }
+        }
     }
 
     virtual inline void pushIntoWorklist(NodeID id)
@@ -147,7 +234,7 @@ public:
             tmpCopy->second.push_back(dst);
 
             std::vector<uint> srcPts;
-            collectFromBitvector(src, pts, srcPts);
+            collectFromBitvector(src, pts, srcPts, PTS);
             for (auto ptd : srcPts)
             {
                 addPts(dst, ptd);
@@ -170,43 +257,12 @@ public:
         return false;
     }
 
-    void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts)
-    {
-        uint index = getIndex(src, 0);
-        uint base, next, bits, ptsTarget;
-
-        while (index != UINT_MAX)
-        {
-            base = memory[index + 30];
-            next = memory[index + 31];
-
-            if (base == UINT_MAX)
-            {
-                break;
-            }
-
-            for (size_t j = 0; j < 30; j++)
-            {
-                bits = memory[index + j];
-                for (size_t k = 0; k < 32; k++)
-                {
-                    if (1 << k & bits)
-                    {
-                        ptsTarget = 960 * base + 32 * j + k;
-                        pts.push_back(ptsTarget);
-                    }
-                }
-            }
-            index = next;
-        }
-    }
-
     void fillPtsFromPTAGPU(PointsTo &ptsTarget, NodeID id)
     {
         if (pts)
         {
             NodeVector nv;
-            collectFromBitvector(id, pts, nv);
+            collectFromBitvector(id, pts, nv, PTS);
             for (auto i : nv)
                 ptsTarget.set(i);
         }

@@ -697,53 +697,39 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 /**
  * collect pts targets for src
  */
-__host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts)
+__host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts, uint rel)
 {
-    uint index = getIndex(src, PTS);
-    uint base, next, bits, ptsTarget;
-
+    uint index = getIndex(src, rel);
     while (index != UINT_MAX)
     {
-        base = memory[index + BASE];
-        next = memory[index + NEXT];
-
+        uint base = memory[index + 30U];
+        uint next = memory[index + 31U];
         if (base == UINT_MAX)
         {
             break;
         }
-
-        for (size_t j = 0; j < BASE; j++)
+        for (size_t j = 0; j < 30U; j++)
         {
-            bits = memory[index + j];
+            uint value = memory[index + j];
             for (size_t k = 0; k < 32; k++)
             {
-                if (1 << k & bits)
+                if (value & 1)
                 {
-                    // calculate target from bitvector
-                    ptsTarget = 960 * base + 32 * j + k;
-                    pts.push_back(ptsTarget);
+                    pts.push_back(base * 960 + j * 32 + k);
                 }
+                value >>= 1;
             }
         }
         index = next;
     }
 }
 
-__host__ uint handleGepEdges(uint *memory, void *consG, void *pag)
-{
-    edgeSet newPts;
-    handleGepsSVF(consG, pag, memory, newPts);
-    insertEdges(&newPts, 1, PTS_NEXT);
-    uint nodeCount = getNodeCount(consG);
-    return nodeCount;
-}
-
 __host__ bool aliasBV(uint a, uint b, uint *memory)
 {
     std::vector<uint> ptsA, ptsB;
 
-    collectFromBitvector(a, memory, ptsA);
-    collectFromBitvector(b, memory, ptsB);
+    collectFromBitvector(a, memory, ptsA, PTS);
+    collectFromBitvector(b, memory, ptsB, PTS);
 
     for (uint target : ptsA)
         if (std::find(ptsB.begin(), ptsB.end(), target) != ptsB.end())
@@ -1213,11 +1199,9 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
         kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs);
         checkCuda(cudaDeviceSynchronize());
-        uint Vnew = handleGepEdges(memory, consG, pag);
-        V = Vnew;
-        edgeSet newPts;
-        edgeSet newCopys;
-        Vnew = callgraphCallback(memory, &newPts, &newCopys);
+
+        edgeSet newPts, newCopys;
+        uint Vnew = callgraphCallback(memory, &newPts, &newCopys);
         insertEdges(&newPts, 0, PTS_NEXT);
         insertEdges(&newCopys, 1, COPY);
         V = Vnew;
