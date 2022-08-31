@@ -113,6 +113,13 @@ void handleGepsSVF(void *cg, void *pg, uint *memory, edgeSet &newPtsEdges)
 
                         // Add the field-insensitive node into pts.
                         NodeID baseId = consCG->getFIObjVar(o);
+                        NodeBS &allFields = consCG->getAllFieldsObjVars(baseId);
+                        for (NodeBS::iterator fieldIt = allFields.begin(), fieldEit = allFields.end(); fieldIt != fieldEit; fieldIt++)
+                        {
+                            NodeID fieldId = *fieldIt;
+                            if (fieldId != baseId)
+                                tmpDstPts.push_back(fieldId);
+                        }
                         tmpDstPts.push_back(baseId);
                     }
                 }
