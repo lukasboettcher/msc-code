@@ -1104,6 +1104,22 @@ __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
     }
 }
 
+__host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
+{
+    for (size_t i = 0; i < V; i++)
+    {
+        std::vector<uint> targets;
+        collectFromBitvector(i, memory, targets, rel);
+        if (targets.size())
+        {
+            printf("\n %lu -> [", i);
+            for (auto t : targets)
+                printf("%u ", t);
+            printf("]");
+        }
+    }
+}
+
 __host__ void printMemory(uint start, uint end, uint rel)
 {
     uint usedUints = __freeList__[rel] - start;
