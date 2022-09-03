@@ -70,4 +70,29 @@ static double reportPotentialOccupancy(void *kernel, int blockSize,
   return occupancy;
 }
 
+static void calculateKernelParams(void *kernel)
+{
+  int blockSize;
+  int minGridSize;
+
+  size_t dynamicSMemUsage = 0;
+
+  double potentialOccupancy;
+
+  void *kernel2check = (void *)kernel;
+
+  checkCuda(cudaOccupancyMaxPotentialBlockSize(
+      &minGridSize, &blockSize, (void *)kernel2check, dynamicSMemUsage,
+      0));
+
+  std::cout << "Suggested block size: " << blockSize << std::endl
+            << "Minimum grid size for maximum occupancy: " << minGridSize
+            << std::endl;
+  potentialOccupancy =
+      reportPotentialOccupancy((void *)kernel2check, blockSize, dynamicSMemUsage);
+
+  std::cout << "Potential occupancy: " << potentialOccupancy * 100 << "%"
+            << std::endl;
+}
+
 #endif
