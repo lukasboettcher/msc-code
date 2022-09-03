@@ -1001,7 +1001,6 @@ __global__ void kernel_count_pts(const uint n, uint rel)
     }
 }
 
-
 __global__ void kernel_updatePts(const uint n)
 {
     __done__ = true;

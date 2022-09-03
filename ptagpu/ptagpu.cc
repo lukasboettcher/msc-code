@@ -197,7 +197,6 @@ public:
                                 continue;
                             }
 
-
                             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
                             tmpDstPts.push_back(fieldSrcPtdNode);
                         }

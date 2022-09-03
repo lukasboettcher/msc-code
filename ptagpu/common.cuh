@@ -1,6 +1,12 @@
 #ifndef COMMON_HEADER
 #define COMMON_HEADER
 
+#include "shared.h"
+#include <bitset>
+#include <thrust/sort.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/discard_iterator.h>
+
 #define BASE (30U)
 #define NEXT (31U)
 #define ELEMENT_WIDTH 32
@@ -27,17 +33,6 @@ __device__ __host__ static inline uint getDstNode(uint base, uint word, uint bit
 {
   return base * ELEMENT_CARDINALITY + word * WARP_SIZE + bit;
 }
-
-#include "shared.h"
-#include "svfhook.h"
-#include <bitset>
-#include <map>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <thrust/sort.h>
-#include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
