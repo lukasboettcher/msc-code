@@ -10,3 +10,23 @@ target_compile_options(ptagpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
     # --device-debug
     --use_fast_math
     >)
+
+file(GLOB filesc "${CMAKE_SOURCE_DIR}/Test-Suite/test_cases_bc/basic_c_tests/*.bc")
+
+foreach(filename ${filesc})
+    add_test(
+        NAME ptagpu-ctest/${filename}
+        COMMAND "runptagpu" ${filename}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endforeach()
+
+file(GLOB filescpp "${CMAKE_SOURCE_DIR}/Test-Suite/test_cases_bc/basic_cpp_tests/*.bc")
+
+foreach(filename ${filescpp})
+    add_test(
+        NAME ptagpu-cpptest/${filename}
+        COMMAND "runptagpu" ${filename}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endforeach()
