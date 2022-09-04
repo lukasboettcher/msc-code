@@ -1183,7 +1183,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     // checkCuda(cudaGetDeviceProperties(&prop, 0));
     // printf("total global memory available:\n\t\t%lu\n", prop.totalGlobalMem);
     // printf("total bytes: \t%lu\n", SIZE_TOTAL_BYTES);
-    int N = 1 << 20;
+    int N = 1 << 26;
     size_t numStoreDst = storeEdges->second.size();
     uint *store_map_pts, *store_map_src, *store_map_idx, *storeConstraints, *memory;
 
