@@ -17,7 +17,7 @@ char const *relNames[6] = {"PTS", "PTS Current", "PTS Next", "Inv COPY", "Inv LO
  *
  */
 __device__ __managed__ uint __freeList__[N_TYPES];
-
+__device__ __managed__ uint tmpFreePtsCurr = 0;
 /**
  * __reservedHeader__
  *
@@ -1021,6 +1021,7 @@ __global__ void kernel_updatePts(const uint n)
     }
     if (resetWorklistIndex())
     {
+        tmpFreePtsCurr = __freeList__[PTS_CURR];
         __freeList__[PTS_CURR] = OFFSET_PTS_CURR + __reservedHeader__;
         __freeList__[PTS_NEXT] = OFFSET_PTS_NEXT + __reservedHeader__;
     }
@@ -1121,7 +1122,11 @@ __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
 
 __host__ void printMemory(uint start, uint end, uint rel)
 {
-    uint usedUints = __freeList__[rel] - start;
+    uint usedUints;
+    if (rel == PTS_CURR)
+        usedUints = tmpFreePtsCurr - start;
+    else
+        usedUints = __freeList__[rel] - start;
     size_t usedBytes = usedUints * sizeof(uint);
     size_t totalBytes = (end - start) * sizeof(uint);
     printf("%12s Elements:(uints)%16u\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
