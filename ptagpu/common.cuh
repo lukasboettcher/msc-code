@@ -18,6 +18,7 @@
 // important, limit to 512 threads per threadblock, otherwise we exceed 64K register limit
 #define THREADS_PER_BLOCK 512
 #define N_BLOCKS 80
+#define KV_SIZE 1<<26
 
 __device__ __host__ static inline uint div32(uint num)
 {

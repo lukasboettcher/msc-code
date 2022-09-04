@@ -660,38 +660,31 @@ __global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *fro
 
 __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 {
-    uint *from, *to, *ofst, N;
+    uint N = edges->second.size();
 
-    N = edges->second.size();
-
-    checkCuda(cudaMallocManaged(&from, N * sizeof(unsigned int)));
-    checkCuda(cudaMallocManaged(&to, N * sizeof(unsigned int)));
-    checkCuda(cudaMallocManaged(&ofst, N * sizeof(unsigned int)));
+    assert(N <= KV_SIZE);
 
     if (inv)
     {
-        memcpy(from, edges->second.data(), N * sizeof(unsigned int));
-        memcpy(to, edges->first.data(), N * sizeof(unsigned int));
+        memcpy(__key__, edges->second.data(), N * sizeof(unsigned int));
+        memcpy(__val__, edges->first.data(), N * sizeof(unsigned int));
     }
     else
     {
-        memcpy(from, edges->first.data(), N * sizeof(unsigned int));
-        memcpy(to, edges->second.data(), N * sizeof(unsigned int));
+        memcpy(__key__, edges->first.data(), N * sizeof(unsigned int));
+        memcpy(__val__, edges->second.data(), N * sizeof(unsigned int));
     }
 
-    thrust::sort_by_key(thrust::device, from, from + N, to);
-    long numUnique = thrust::unique_by_key_copy(thrust::device, from, from + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), ofst).second - ofst;
+    // thrust::sort_by_key(thrust::device, from, from + N, to);
+    auto kv_start = thrust::make_zip_iterator(thrust::make_tuple(__key__, __val__));
+    thrust::sort(thrust::device, kv_start, kv_start + N);
+    long numUnique = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __keyAux__).second - __keyAux__;
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
+    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, __key__, __val__, __keyAux__, rel);
     checkCuda(cudaDeviceSynchronize());
-    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, from, to, ofst, rel);
-    checkCuda(cudaDeviceSynchronize());
-
-    checkCuda(cudaFree(from));
-    checkCuda(cudaFree(to));
-    checkCuda(cudaFree(ofst));
 }
 
 /**
@@ -1183,22 +1176,21 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     // checkCuda(cudaGetDeviceProperties(&prop, 0));
     // printf("total global memory available:\n\t\t%lu\n", prop.totalGlobalMem);
     // printf("total bytes: \t%lu\n", SIZE_TOTAL_BYTES);
-    int N = 1 << 26;
     size_t numStoreDst = storeEdges->second.size();
     uint *store_map_pts, *store_map_src, *store_map_idx, *storeConstraints, *memory;
 
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&memory, SIZE_TOTAL_BYTES));
-    checkCuda(cudaMallocManaged(&store_map_pts, N * sizeof(uint)));
-    checkCuda(cudaMallocManaged(&store_map_src, N * sizeof(uint)));
-    checkCuda(cudaMallocManaged(&store_map_idx, N * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&store_map_pts, KV_SIZE * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&store_map_src, KV_SIZE * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&store_map_idx, KV_SIZE * sizeof(uint)));
     checkCuda(cudaMallocManaged(&storeConstraints, numStoreDst * sizeof(uint)));
 
     // set all values to UINT_MAX
     cudaMemset(memory, UCHAR_MAX, SIZE_TOTAL_BYTES);
-    cudaMemset(store_map_pts, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(store_map_src, UCHAR_MAX, N * sizeof(unsigned int));
-    cudaMemset(store_map_idx, UCHAR_MAX, N * sizeof(unsigned int));
+    cudaMemset(store_map_pts, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
+    cudaMemset(store_map_src, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
+    cudaMemset(store_map_idx, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
 
     // move the store constraints into managed memory and sort / unique
     memcpy(storeConstraints, storeEdges->second.data(), numStoreDst * sizeof(uint));
@@ -1227,7 +1219,6 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     insertEdges(directEdges, 1, COPY);
     insertEdges(loadEdges, 1, LOAD);
     insertEdges(storeEdges, 1, STORE);
-
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
