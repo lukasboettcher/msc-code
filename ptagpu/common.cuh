@@ -18,7 +18,8 @@
 // important, limit to 512 threads per threadblock, otherwise we exceed 64K register limit
 #define THREADS_PER_BLOCK 512
 #define N_BLOCKS 80
-#define KV_SIZE 1<<26
+// set asize 2^26 uints for key value and offset, total: 256MiB x 3
+#define KV_SIZE 67108864
 
 __device__ __host__ static inline uint div32(uint num)
 {
