@@ -1104,6 +1104,38 @@ __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
     }
 }
 
+__host__ void printAllPts(uint V, uint *memory, uint rel)
+{
+    for (size_t i = 0; i < V; i++)
+    {
+        uint index = getIndex(i, rel);
+        printf("\n %lu -> [", i);
+        while (index != UINT_MAX)
+        {
+            uint base = __memory__[index + BASE];
+            uint next = __memory__[index + NEXT];
+            if (base == UINT_MAX)
+            {
+                break;
+            }
+            for (size_t j = 0; j < BASE; j++)
+            {
+                uint value = __memory__[index + j];
+                for (size_t k = 0; k < 32; k++)
+                {
+                    if (value & 1)
+                    {
+                        printf("%u ", getDstNode(base, j, k));
+                    }
+                    value >>= 1;
+                }
+            }
+            index = next;
+        }
+        printf("]");
+    }
+}
+
 __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
 {
     for (size_t i = 0; i < V; i++)
