@@ -10,12 +10,12 @@
 #define N_TYPES 6
 
 // total 10GiB of GPU memory
-#define SIZE_TOTAL_BYTES 4 * 1024 * 1024 * 1024UL
+#define SIZE_TOTAL_BYTES 10 * 1024 * 1024 * 1024UL
 #define SIZE_MIB_PTS_CURR 700L
-#define SIZE_MIB_PTS_NEXT 700L
-#define SIZE_MIB_COPY 700L
-#define SIZE_MIB_LOAD 500L
-#define SIZE_MIB_STORE 500L
+#define SIZE_MIB_PTS_NEXT 1500L
+#define SIZE_MIB_COPY 1200L
+#define SIZE_MIB_LOAD 200L
+#define SIZE_MIB_STORE 200L
 
 #define TOTAL_MEMORY_LENGTH SIZE_TOTAL_BYTES / sizeof(unsigned int)
 #define OFFSET_PTS OFFSET_PTS_CURR + (SIZE_MIB_PTS_CURR * 1024 * 1024 / sizeof(unsigned int))
