@@ -1,5 +1,8 @@
 enable_language(CUDA)
+find_package(OpenMP REQUIRED)
+
 add_executable(runptagpu ptagpu.cc)
+target_link_libraries(runptagpu ptagpu Svf OpenMP::OpenMP_CXX ${llvm_libs})
 target_compile_options(runptagpu PRIVATE $<$<COMPILE_LANGUAGE:CXX>:
     -std=c++14
     -O3
