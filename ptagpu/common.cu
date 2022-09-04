@@ -38,7 +38,7 @@ __device__ __managed__ bool __done__ = true;
 
 __device__ __managed__ uint *__key__;
 __device__ __managed__ uint *__val__;
-__device__ __managed__ uint *__keyAux__;
+__device__ __managed__ uint *__offsets__;
 
 __device__ __managed__ uint __numKeys__;
 
@@ -620,8 +620,8 @@ __global__ void kernel_store2copy(const uint n)
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
     for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
     {
-        uint idx = __keyAux__[i];
-        uint idx_next = __keyAux__[i + 1];
+        uint idx = __offsets__[i];
+        uint idx_next = __offsets__[i + 1];
 
         // load the pts target, this should not change for the next totalDstNodes
         uint pts_target = __key__[idx];
@@ -678,12 +678,12 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
     // thrust::sort_by_key(thrust::device, from, from + N, to);
     auto kv_start = thrust::make_zip_iterator(thrust::make_tuple(__key__, __val__));
     thrust::sort(thrust::device, kv_start, kv_start + N);
-    long numUnique = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __keyAux__).second - __keyAux__;
+    long numUnique = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
-    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, __key__, __val__, __keyAux__, rel);
+    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, __key__, __val__, __offsets__, rel);
     checkCuda(cudaDeviceSynchronize());
 }
 
@@ -1204,7 +1204,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     __memory__ = memory;
     __key__ = store_map_pts;
     __val__ = store_map_src;
-    __keyAux__ = store_map_idx;
+    __offsets__ = store_map_idx;
 
     // reserve 20% for new edges added by gep offsets
     __reservedHeader__ = ceil(1.2 * V) * ELEMENT_WIDTH;
