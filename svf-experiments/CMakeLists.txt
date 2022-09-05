@@ -19,3 +19,6 @@ target_link_libraries(leak Svf ${llvm_libs})
 
 add_executable(dump src/dump-andersen.cpp)
 target_link_libraries(dump Svf ${llvm_libs})
+
+add_executable(dump-preanalysis src/dump-pag.cpp)
+target_link_libraries(dump-preanalysis Svf ${llvm_libs})
