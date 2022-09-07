@@ -35,9 +35,9 @@ int main(int argc, char **argv)
     ICFG *icfg = pag->getICFG();
     ConstraintGraph *cg = new ConstraintGraph(pag);
 
-    ofstream pagdump("pag-dump.txt", ios::trunc);
-    ofstream icfgdump("icfg-dump.txt", ios::trunc);
-    ofstream constrdump("cg-dump.txt", ios::trunc);
+    ofstream pagdump(moduleNameVec[0] + "-pag-dump.txt", ios::trunc);
+    ofstream icfgdump(moduleNameVec[0] + "-icfg-dump.txt", ios::trunc);
+    ofstream constrdump(moduleNameVec[0] + "-cg-dump.txt", ios::trunc);
 
     for (auto node : *pag)
         for (auto outedge : node.second->getOutEdges())
@@ -59,7 +59,6 @@ int main(int argc, char **argv)
 
     SVFIR::releaseSVFIR();
 
-    LLVMModuleSet::getLLVMModuleSet()->dumpModulesToFile(".svf.bc");
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
 
     llvm::llvm_shutdown();
