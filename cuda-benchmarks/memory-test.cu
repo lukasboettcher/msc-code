@@ -86,6 +86,32 @@ void test_native()
     free(h_A);
 };
 
+void test_mapped()
+{
+    cudaDeviceProp prop; // CUDA device properties variable
+    checkCuda(cudaGetDeviceProperties(&prop, 0));
+    // size_t N = prop.totalGlobalMem - 1024 * 1024 * 1024;
+    size_t N = 10 * 1024 * 1024 * 1024L;
+    size_t N_entries = N / sizeof(size_t);
+    size_t *d_A, *h_A;
+
+    checkCuda(cudaHostAlloc(&h_A, N, cudaHostAllocMapped | 0)); // cudaHostAllocWriteCombined
+    checkCuda(cudaHostGetDevicePointer(&d_A, h_A, 0));
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
+    kernel<<<blocksPerGrid, threadsPerBlock>>>(d_A, N_entries);
+    checkCuda(cudaDeviceSynchronize());
+
+    printf("kernel done…\n");
+
+    // size_t *check_back = (size_t *)malloc(N);
+    // checkCuda(cudaMemcpy(check_back, d_A, N, cudaMemcpyDeviceToHost));
+    verify(N_entries, h_A);
+
+    checkCuda(cudaFreeHost(h_A));
+};
+
 int main(int argc, char const *argv[])
 {
     test_managed();
