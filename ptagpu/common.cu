@@ -9,6 +9,18 @@
  */
 char const *relNames[6] = {"PTS", "PTS Current", "PTS Next", "Inv COPY", "Inv LOAD", "Inv Store"};
 
+struct KernelInfo
+{
+    bool initialized = false;
+    dim3 blockSize;
+    dim3 gridSize;
+    long elapsedMilliseconds = 0;
+};
+
+typedef void (*kernel_function)();
+
+std::map<kernel_function, KernelInfo> kernelParameters;
+
 __device__ __managed__ size_t V;
 
 /**
