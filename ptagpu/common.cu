@@ -9,6 +9,8 @@
  */
 char const *relNames[6] = {"PTS", "PTS Current", "PTS Next", "Inv COPY", "Inv LOAD", "Inv Store"};
 
+__device__ __managed__ size_t V;
+
 /**
  * __ptsFreeList__
  * this is the head of the free list
@@ -1198,7 +1200,8 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     size_t numStoreConstraints = thrust::unique(storeConstraints, storeConstraints + numStoreDst) - storeConstraints;
 
     // num of vertices
-    size_t V{numNodes};
+    V = numNodes;
+    size_t V_max = (size_t)ceil(1.2 * V);
 
     // move managed memory ptrs into device memory
     __memory__ = memory;
@@ -1207,7 +1210,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     __offsets__ = store_map_idx;
 
     // reserve 20% for new edges added by gep offsets
-    __reservedHeader__ = ceil(1.2 * V) * ELEMENT_WIDTH;
+    __reservedHeader__ = V_max * ELEMENT_WIDTH;
     __freeList__[PTS] = OFFSET_PTS + __reservedHeader__;
     __freeList__[PTS_CURR] = OFFSET_PTS_CURR + __reservedHeader__;
     __freeList__[PTS_NEXT] = OFFSET_PTS_NEXT + __reservedHeader__;
