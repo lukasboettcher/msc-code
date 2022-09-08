@@ -1183,6 +1183,41 @@ __host__ void reportMemory()
     printf("##### MEMORY USAGE\n");
 }
 
+__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
+{
+
+
+    printf("%s\n", statusString);
+    KernelInfo config = kernelParameters[kernel];
+
+    if (config.initialized)
+    {
+        kernel<<<config.gridSize, config.blockSize>>>();
+    }
+    else
+    {
+        int optimalBlockSize;
+        int optimalGridSize;
+
+        size_t dynamicSMemUsage = 0;
+
+        checkCuda(cudaOccupancyMaxPotentialBlockSize(&optimalGridSize, &optimalBlockSize, kernel, dynamicSMemUsage, 0));
+
+        printf("calculated blkSize: %i and grdSize: %i for fn: %p\n", optimalBlockSize, optimalGridSize, kernel);
+
+        dim3 gridSize(optimalGridSize);
+        dim3 blockSize(WARP_SIZE, optimalBlockSize / WARP_SIZE);
+
+        config.gridSize = gridSize;
+        config.blockSize = blockSize;
+        config.initialized = true;
+
+        kernel<<<config.gridSize, config.blockSize>>>();
+    }
+
+    checkCuda(cudaDeviceSynchronize());
+}
+
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
     setlocale(LC_NUMERIC, "");
