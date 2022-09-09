@@ -73,6 +73,9 @@ __device__ uint __storeMapHead__ = 0;
  */
 __device__ __managed__ uint *__memory__;
 
+__device__ __managed__ uint *__storeConstraints__;
+__device__ __managed__ uint __numStoreConstraints__;
+
 /**
  * getIndex
  *
@@ -1232,25 +1235,25 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     // printf("total global memory available:\n\t\t%lu\n", prop.totalGlobalMem);
     // printf("total bytes: \t%lu\n", SIZE_TOTAL_BYTES);
     size_t numStoreDst = storeEdges->second.size();
-    uint *store_map_pts, *store_map_src, *store_map_idx, *storeConstraints, *memory;
-
+    uint *memory;
     // Allocate Unified Memory -- accessible from CPU or GPU
     checkCuda(cudaMallocManaged(&memory, SIZE_TOTAL_BYTES));
-    checkCuda(cudaMallocManaged(&store_map_pts, KV_SIZE * sizeof(uint)));
-    checkCuda(cudaMallocManaged(&store_map_src, KV_SIZE * sizeof(uint)));
-    checkCuda(cudaMallocManaged(&store_map_idx, KV_SIZE * sizeof(uint)));
-    checkCuda(cudaMallocManaged(&storeConstraints, numStoreDst * sizeof(uint)));
+    // checkCuda(cudaHostAlloc(&memory, SIZE_TOTAL_BYTES, cudaHostAllocMapped | 0));
+    checkCuda(cudaMallocManaged(&__key__, KV_SIZE * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&__val__, KV_SIZE * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&__offsets__, KV_SIZE * sizeof(uint)));
+    checkCuda(cudaMallocManaged(&__storeConstraints__, numStoreDst * sizeof(uint)));
 
     // set all values to UINT_MAX
     cudaMemset(memory, UCHAR_MAX, SIZE_TOTAL_BYTES);
-    cudaMemset(store_map_pts, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
-    cudaMemset(store_map_src, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
-    cudaMemset(store_map_idx, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
+    cudaMemset(__key__, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
+    cudaMemset(__val__, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
+    cudaMemset(__offsets__, UCHAR_MAX, KV_SIZE * sizeof(unsigned int));
 
     // move the store constraints into managed memory and sort / unique
-    memcpy(storeConstraints, storeEdges->second.data(), numStoreDst * sizeof(uint));
-    thrust::sort(storeConstraints, storeConstraints + numStoreDst);
-    size_t numStoreConstraints = thrust::unique(storeConstraints, storeConstraints + numStoreDst) - storeConstraints;
+    memcpy(__storeConstraints__, storeEdges->second.data(), numStoreDst * sizeof(uint));
+    thrust::sort(__storeConstraints__, __storeConstraints__ + numStoreDst);
+    __numStoreConstraints__ = thrust::unique(__storeConstraints__, __storeConstraints__ + numStoreDst) - __storeConstraints__;
 
     // num of vertices
     V = numNodes;
@@ -1258,9 +1261,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     // move managed memory ptrs into device memory
     __memory__ = memory;
-    __key__ = store_map_pts;
-    __val__ = store_map_src;
-    __offsets__ = store_map_idx;
+    // checkCuda(cudaHostGetDevicePointer(&__memory__, memory, 0));
 
     // reserve 20% for new edges added by gep offsets
     __reservedHeader__ = V_max * ELEMENT_WIDTH;
@@ -1278,6 +1279,8 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+
+    cudaStreamCreate(&mainStream);
 
     while (1)
     {
