@@ -677,6 +677,44 @@ __global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *fro
     }
 }
 
+__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
+{
+    printf("%s", statusString);
+    KernelInfo *config = &kernelParameters[kernel];
+
+    if (!config->initialized)
+    {
+        cudaEventCreate(&config->start);
+        cudaEventCreate(&config->stop);
+        int optimalBlockSize;
+        int optimalGridSize;
+
+        size_t dynamicSMemUsage = 0;
+
+        checkCuda(cudaOccupancyMaxPotentialBlockSize(&optimalGridSize, &optimalBlockSize, kernel, dynamicSMemUsage, 0));
+
+        printf("calculated blkSize: %i and grdSize: %i for fn: %p\n", optimalBlockSize, optimalGridSize, kernel);
+
+        dim3 gridSize(optimalGridSize);
+        dim3 blockSize(WARP_SIZE, optimalBlockSize / WARP_SIZE);
+
+        config->gridSize = gridSize;
+        config->blockSize = blockSize;
+        config->initialized = true;
+        config->sharedMemory = blockSize.y * 256 * sizeof(uint);
+    }
+
+    checkCuda(cudaEventRecord(config->start, 0));
+    kernel<<<config->gridSize, config->blockSize, config->sharedMemory, mainStream>>>();
+    checkCuda(cudaEventRecord(config->stop, 0));
+    checkCuda(cudaEventSynchronize(config->stop));
+    float elapsedTime;
+    checkCuda(cudaEventElapsedTime(&elapsedTime, config->start, config->stop));
+    config->elapsedTime += elapsedTime;
+    // checkCuda(cudaDeviceSynchronize());
+    checkCuda(cudaStreamSynchronize(mainStream));
+}
+
 __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 {
     uint N = edges->second.size();
@@ -1187,45 +1225,6 @@ __host__ void reportMemory()
     printMemory(OFFSET_LOAD, OFFSET_COPY, LOAD);
     printMemory(OFFSET_STORE, OFFSET_LOAD, STORE);
     printf("##### MEMORY USAGE\n");
-}
-
-
-__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
-{
-    printf("%s", statusString);
-    KernelInfo *config = &kernelParameters[kernel];
-
-    if (!config->initialized)
-    {
-        cudaEventCreate(&config->start);
-        cudaEventCreate(&config->stop);
-        int optimalBlockSize;
-        int optimalGridSize;
-
-        size_t dynamicSMemUsage = 0;
-
-        checkCuda(cudaOccupancyMaxPotentialBlockSize(&optimalGridSize, &optimalBlockSize, kernel, dynamicSMemUsage, 0));
-
-        printf("calculated blkSize: %i and grdSize: %i for fn: %p\n", optimalBlockSize, optimalGridSize, kernel);
-
-        dim3 gridSize(optimalGridSize);
-        dim3 blockSize(WARP_SIZE, optimalBlockSize / WARP_SIZE);
-
-        config->gridSize = gridSize;
-        config->blockSize = blockSize;
-        config->initialized = true;
-        config->sharedMemory = blockSize.y * 256 * sizeof(uint);
-    }
-
-    checkCuda(cudaEventRecord(config->start, 0));
-    kernel<<<config->gridSize, config->blockSize, config->sharedMemory, mainStream>>>();
-    checkCuda(cudaEventRecord(config->stop, 0));
-    checkCuda(cudaEventSynchronize(config->stop));
-    float elapsedTime;
-    checkCuda(cudaEventElapsedTime(&elapsedTime, config->start, config->stop));
-    config->elapsedTime += elapsedTime;
-    // checkCuda(cudaDeviceSynchronize());
-    checkCuda(cudaStreamSynchronize(mainStream));
 }
 
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
