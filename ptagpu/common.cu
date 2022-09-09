@@ -1185,17 +1185,6 @@ __host__ void reportMemory()
     printf("##### MEMORY USAGE\n");
 }
 
-__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
-{
-
-
-    printf("%s\n", statusString);
-    KernelInfo config = kernelParameters[kernel];
-
-    if (config.initialized)
-    {
-        kernel<<<config.gridSize, config.blockSize>>>();
-    }
 
 __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
 {
@@ -1224,7 +1213,15 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
         config->sharedMemory = blockSize.y * 256 * sizeof(uint);
     }
 
-    checkCuda(cudaDeviceSynchronize());
+    checkCuda(cudaEventRecord(config->start, 0));
+    kernel<<<config->gridSize, config->blockSize, config->sharedMemory, mainStream>>>();
+    checkCuda(cudaEventRecord(config->stop, 0));
+    checkCuda(cudaEventSynchronize(config->stop));
+    float elapsedTime;
+    checkCuda(cudaEventElapsedTime(&elapsedTime, config->start, config->stop));
+    config->elapsedTime += elapsedTime;
+    // checkCuda(cudaDeviceSynchronize());
+    checkCuda(cudaStreamSynchronize(mainStream));
 }
 
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
