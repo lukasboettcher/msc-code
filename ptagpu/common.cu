@@ -14,7 +14,9 @@ struct KernelInfo
     bool initialized = false;
     dim3 blockSize;
     dim3 gridSize;
-    long elapsedMilliseconds = 0;
+    size_t sharedMemory;
+    float elapsedTime = 0;
+    cudaEvent_t start, stop;
 };
 
 typedef void (*kernel_function)();
@@ -1194,8 +1196,16 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
     {
         kernel<<<config.gridSize, config.blockSize>>>();
     }
-    else
+
+__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
+{
+    printf("%s", statusString);
+    KernelInfo *config = &kernelParameters[kernel];
+
+    if (!config->initialized)
     {
+        cudaEventCreate(&config->start);
+        cudaEventCreate(&config->stop);
         int optimalBlockSize;
         int optimalGridSize;
 
@@ -1208,11 +1218,10 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
         dim3 gridSize(optimalGridSize);
         dim3 blockSize(WARP_SIZE, optimalBlockSize / WARP_SIZE);
 
-        config.gridSize = gridSize;
-        config.blockSize = blockSize;
-        config.initialized = true;
-
-        kernel<<<config.gridSize, config.blockSize>>>();
+        config->gridSize = gridSize;
+        config->blockSize = blockSize;
+        config->initialized = true;
+        config->sharedMemory = blockSize.y * 256 * sizeof(uint);
     }
 
     checkCuda(cudaDeviceSynchronize());
