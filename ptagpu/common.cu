@@ -1173,6 +1173,7 @@ __host__ void printMemory(uint start, uint end, uint rel)
         usedUints = __freeList__[rel] - start;
     size_t usedBytes = usedUints * sizeof(uint);
     size_t totalBytes = (end - start) * sizeof(uint);
+    assert(usedBytes < totalBytes);
     printf("%12s Elements:(uints)%16u\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
 }
 
