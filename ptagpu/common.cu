@@ -659,7 +659,6 @@ __global__ void kernel_store2copy(const uint n)
 
 __global__ void kernel_insert_edges(uint rel)
 {
-    // uint rel = __currRel__;
     uint index = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
     uint src, dst, offset, offset_next, j;
@@ -741,11 +740,11 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
     thrust::sort(thrust::device, kv_start, kv_start + N);
     __numKeys__ = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
 
-    dim3 numBlocks(N_BLOCKS);
-    dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+    void *kernelArgs[] = {
+        (void *)&rel,
+    };
 
-    kernel_insert_edges<<<numBlocks, threadsPerBlock>>>(N, numUnique, __key__, __val__, __offsets__, rel);
-    checkCuda(cudaDeviceSynchronize());
+    kernelWrapper((void *)&kernel_insert_edges, "", kernelArgs);
 }
 
 /**
