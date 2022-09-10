@@ -677,7 +677,7 @@ __global__ void kernel_insert_edges(uint rel)
     }
 }
 
-__host__ void kernelWrapper(kernel_function kernel, const char *statusString)
+__host__ void kernelWrapper(void *kernel, const char *statusString, void **args = 0)
 {
     printf("%s", statusString);
     KernelInfo *config = &kernelParameters[kernel];
@@ -689,11 +689,11 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
         int optimalBlockSize;
         int optimalGridSize;
 
-        size_t dynamicSMemUsage = 0;
+        size_t dynamicSMemUsage = 32 * 256 * sizeof(uint);
 
         checkCuda(cudaOccupancyMaxPotentialBlockSize(&optimalGridSize, &optimalBlockSize, kernel, dynamicSMemUsage, 0));
 
-        printf("calculated blkSize: %i and grdSize: %i for fn: %p\n", optimalBlockSize, optimalGridSize, kernel);
+        printf("[automatic kernel configuration] calculated blkSize: %i and grdSize: %i for kernel [%p]\n", optimalBlockSize, optimalGridSize, kernel);
 
         dim3 gridSize(optimalGridSize);
         dim3 blockSize(WARP_SIZE, optimalBlockSize / WARP_SIZE);
@@ -701,18 +701,16 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
         config->gridSize = gridSize;
         config->blockSize = blockSize;
         config->initialized = true;
-        config->sharedMemory = blockSize.y * 256 * sizeof(uint);
+        config->sharedMemory = dynamicSMemUsage;
     }
-
+    checkCuda(cudaDeviceSynchronize());
     checkCuda(cudaEventRecord(config->start, 0));
-    kernel<<<config->gridSize, config->blockSize, config->sharedMemory, mainStream>>>();
+    checkCuda(cudaLaunchKernel(kernel, config->gridSize, config->blockSize, args, config->sharedMemory, 0));
     checkCuda(cudaEventRecord(config->stop, 0));
     checkCuda(cudaEventSynchronize(config->stop));
     float elapsedTime;
     checkCuda(cudaEventElapsedTime(&elapsedTime, config->start, config->stop));
     config->elapsedTime += elapsedTime;
-    // checkCuda(cudaDeviceSynchronize());
-    checkCuda(cudaStreamSynchronize(mainStream));
 }
 
 __host__ void insertEdges(edgeSet *edges, int inv, int rel)
