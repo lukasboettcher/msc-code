@@ -19,9 +19,7 @@ struct KernelInfo
     cudaEvent_t start, stop;
 };
 
-typedef void (*kernel_function)();
-
-std::map<kernel_function, KernelInfo> kernelParameters;
+std::map<void *, KernelInfo> kernelParameters;
 
 __device__ __managed__ size_t V;
 
@@ -809,7 +807,7 @@ __device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &curr
  * Update the current, next and total PTS sets of a variable. In the last iteration of the main
  * loop, points-to edges have been added to NEXT_DIFF_PTS. However, many of them might already be
  * present in PTS. The purpose of this function is to update PTS as PTS U NEXT_DIFF_PTS, and set
- * CURR_DIFF_PTS as the difference between the old and new PTS for the given variable.
+ * PTS_CURR as the difference between the old and new PTS for the given variable.
  *
  * @param var ID of the variable
  * @param pts memory for all points to bitvectors
@@ -855,7 +853,6 @@ __device__ bool computeDiffPts(const uint var)
             __memory__[ptsIndex + threadIdx.x] = val;
 
             ptsIndex = newIndex;
-            // update CURR_DIFF_PTS
             newIndex = currDiffPtsIndex == UINT_MAX ? getIndex(var, PTS_CURR) : incEdgeCouter(PTS_CURR);
             val = threadIdx.x == NEXT ? UINT_MAX : diffPtsBits;
             __memory__[newIndex + threadIdx.x] = val;
@@ -884,7 +881,6 @@ __device__ bool computeDiffPts(const uint var)
                 __memory__[ptsIndex + threadIdx.x] = orBits;
                 if (ballot & ((1 << 30) - 1))
                 {
-                    // update CURR_DIFF_PTS
                     orBits = diffPtsBits & ~ptsBits;
                     if (threadIdx.x == BASE)
                     {
@@ -1086,12 +1082,11 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
     do
     {
         uint bits = __memory__[index + threadIdx.x];
-        uint base = __shfl_sync(0xFFFFFFFF, bits, 30);
+        uint base = __shfl_sync(0xFFFFFFFF, bits, BASE);
         if (base == UINT_MAX)
             break;
-
+        index = __shfl_sync(0xFFFFFFFF, bits, NEXT);
         collectBitvectorTargets<fromRel, toRel>(src, bits, base, _shared_, usedShared);
-        index = __shfl_sync(0xFFFFFFFF, bits, 31);
     } while (index != UINT_MAX);
     if (usedShared)
     {
