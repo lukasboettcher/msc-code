@@ -657,21 +657,22 @@ __global__ void kernel_store2copy(const uint n)
     }
 }
 
-__global__ void kernel_insert_edges(const uint n, const uint n_unique, uint *from, uint *to, uint *ofst, int rel)
+__global__ void kernel_insert_edges(uint rel)
 {
+    // uint rel = __currRel__;
     uint index = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
     uint src, dst, offset, offset_next, j;
-    for (int i = index; i < n_unique; i += stride)
+    for (int i = index; i < __numKeys__ - 1; i += stride)
     {
 
-        offset = ofst[i];
-        offset_next = i == (n_unique - 1) ? n : ofst[i + 1];
-        src = from[offset];
+        offset = __offsets__[i];
+        offset_next = __offsets__[i + 1];
+        src = __key__[offset];
 
         for (j = offset; j < offset_next; j++)
         {
-            dst = to[j];
+            dst = __val__[j];
             insertEdgeDevice(src, dst, rel);
         }
     }
