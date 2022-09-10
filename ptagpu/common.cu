@@ -1289,6 +1289,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
         if (__done__)
         {
+            std::cout << "\t\tno change recorded, aborting main loop in iter: " << iter << "\n";
             break;
         }
 
@@ -1319,6 +1320,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         after = std::chrono::high_resolution_clock::now();
         timeSvf += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
         V = Vnew;
+        reportMemory();
     }
 
     printf("time update: %.3f ms\n", kernelParameters[(void *)&kernel_updatePts].elapsedTime);
