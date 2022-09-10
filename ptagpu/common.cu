@@ -633,11 +633,11 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
     }
 }
 
-__global__ void kernel_store2copy(const uint n)
+__global__ void kernel_store2copy()
 {
-    __shared__ uint _sh_[THREADS_PER_BLOCK / WARP_SIZE * 256];
+    extern __shared__ uint _sh_[];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
-    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n - 1; i += blockDim.y * gridDim.x)
+    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < __numKeys__ - 1; i += blockDim.y * gridDim.x)
     {
         uint idx = __offsets__[i];
         uint idx_next = __offsets__[i + 1];
@@ -1052,11 +1052,11 @@ __global__ void kernel_count_pts(const uint n, uint rel)
     }
 }
 
-__global__ void kernel_updatePts(const uint n)
+__global__ void kernel_updatePts()
 {
     __done__ = true;
     bool newWork = false;
-    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < n; i += blockDim.y * gridDim.x)
+    for (uint i = blockIdx.x * blockDim.y + threadIdx.y; i < V; i += blockDim.y * gridDim.x)
     {
         bool newStuff = computeDiffPts(i);
         newWork |= newStuff;
@@ -1102,11 +1102,11 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
     }
 }
 
-__global__ void kernel(const uint n, const uint n_stores, uint *storeConstraints)
+__global__ void kernel()
 {
-    __shared__ uint _sh_[(THREADS_PER_BLOCK / WARP_SIZE) * 256];
+    extern __shared__ uint _sh_[];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
-    uint to = n;
+    uint to = V;
     uint src = getAndIncrement(&__worklistIndex1__, 1);
     while (src < to)
     {
@@ -1115,11 +1115,11 @@ __global__ void kernel(const uint n, const uint n_stores, uint *storeConstraints
 
         src = getAndIncrement(&__worklistIndex1__, 1);
     }
-    to = n_stores;
+    to = __numStoreConstraints__;
     src = getAndIncrement(&__worklistIndex0__, 1);
     while (src < to)
     {
-        src = storeConstraints[src];
+        src = __storeConstraints__[src];
         if (src != UINT_MAX)
         {
             rewriteRule<PTS_CURR, STORE, STORE>(src, _shared_);
