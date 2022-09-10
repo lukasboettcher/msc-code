@@ -718,25 +718,28 @@ __host__ void kernelWrapper(kernel_function kernel, const char *statusString)
 
 __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 {
-    uint N = edges->second.size();
+    uint numEdges = edges->second.size();
+    uint N = numEdges + 1;
 
     assert(N <= KV_SIZE);
 
     if (inv)
     {
-        memcpy(__key__, edges->second.data(), N * sizeof(unsigned int));
-        memcpy(__val__, edges->first.data(), N * sizeof(unsigned int));
+        memcpy(__key__, edges->second.data(), numEdges * sizeof(unsigned int));
+        memcpy(__val__, edges->first.data(), numEdges * sizeof(unsigned int));
     }
     else
     {
-        memcpy(__key__, edges->first.data(), N * sizeof(unsigned int));
-        memcpy(__val__, edges->second.data(), N * sizeof(unsigned int));
+        memcpy(__key__, edges->first.data(), numEdges * sizeof(unsigned int));
+        memcpy(__val__, edges->second.data(), numEdges * sizeof(unsigned int));
     }
 
-    // thrust::sort_by_key(thrust::device, from, from + N, to);
+    __key__[numEdges] = UINT_MAX;
+    __val__[numEdges] = UINT_MAX;
+
     auto kv_start = thrust::make_zip_iterator(thrust::make_tuple(__key__, __val__));
     thrust::sort(thrust::device, kv_start, kv_start + N);
-    long numUnique = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
+    __numKeys__ = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
 
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
