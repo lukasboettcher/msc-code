@@ -1276,12 +1276,12 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     dim3 numBlocks(N_BLOCKS);
     dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
 
-    cudaStreamCreate(&mainStream);
+    size_t iter = 0;
 
     while (1)
     {
-        kernel_updatePts<<<numBlocks, threadsPerBlock>>>(V);
-        checkCuda(cudaDeviceSynchronize());
+        ++iter;
+        kernelWrapper((void *)&kernel_updatePts, "updating info \n");
 
 
         if (__done__)
@@ -1289,18 +1289,19 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
             break;
         }
 
-        kernel<<<numBlocks, threadsPerBlock>>>(V, numStoreConstraints, storeConstraints);
-        checkCuda(cudaDeviceSynchronize());
-
-        thrust::zip_iterator<thrust::tuple<uint *, uint *>> kv_start = thrust::make_zip_iterator(thrust::make_tuple(store_map_pts, store_map_src));
-        thrust::sort(thrust::device, kv_start, kv_start + __numKeys__);
-        auto numSrcs = thrust::unique_by_key_copy(thrust::device, store_map_pts, store_map_pts + __numKeys__, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), store_map_idx).second - store_map_idx;
-
-        kernel_store2copy<<<numBlocks, threadsPerBlock>>>(numSrcs);
-        checkCuda(cudaDeviceSynchronize());
-
         edgeSet newPts, newCopys;
-        uint Vnew = callgraphCallback(memory, &newPts, &newCopys);
+        std::future<uint> cbFuture = std::async(callgraphCallback, memory, &newPts, &newCopys);
+
+        kernelWrapper((void *)&kernel, "\trunning main kernel\n");
+
+        auto sync_exec_policy = thrust::device;
+        thrust::zip_iterator<thrust::tuple<uint *, uint *>> kv_start = thrust::make_zip_iterator(thrust::make_tuple(__key__, __val__));
+        thrust::sort(sync_exec_policy, kv_start, kv_start + __numKeys__);
+        __numKeys__ = thrust::unique_by_key_copy(sync_exec_policy, __key__, __key__ + __numKeys__, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
+
+        kernelWrapper((void *)&kernel_store2copy, "\trunning kernel_store2copy\n");
+
+        uint Vnew = cbFuture.get();
         insertEdges(&newPts, 0, PTS_NEXT);
         insertEdges(&newCopys, 1, COPY);
         V = Vnew;
