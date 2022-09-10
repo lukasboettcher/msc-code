@@ -3,6 +3,8 @@
 
 #include "shared.h"
 #include <bitset>
+#include <map>
+#include <future>
 #include <thrust/sort.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -19,7 +21,7 @@
 #define THREADS_PER_BLOCK 512
 #define N_BLOCKS 80
 // set asize 2^26 uints for key value and offset, total: 256MiB x 3
-#define KV_SIZE 67108864
+#define KV_SIZE 240000000 // 67108864
 
 __device__ __host__ static inline uint div32(uint num)
 {
