@@ -1278,6 +1278,9 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     size_t iter = 0;
 
+    std::chrono::high_resolution_clock::time_point before, after;
+    std::chrono::duration<double, std::milli> timeThrust(0), timeSvf(0);
+
     while (1)
     {
         ++iter;
@@ -1294,18 +1297,36 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
         kernelWrapper((void *)&kernel, "\trunning main kernel\n");
 
+        before = std::chrono::high_resolution_clock::now();
+        std::cout << "\tsorting and calculating offsets for store kernel\n";
         auto sync_exec_policy = thrust::device;
         thrust::zip_iterator<thrust::tuple<uint *, uint *>> kv_start = thrust::make_zip_iterator(thrust::make_tuple(__key__, __val__));
         thrust::sort(sync_exec_policy, kv_start, kv_start + __numKeys__);
         __numKeys__ = thrust::unique_by_key_copy(sync_exec_policy, __key__, __key__ + __numKeys__, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
+        after = std::chrono::high_resolution_clock::now();
+        timeThrust += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
         kernelWrapper((void *)&kernel_store2copy, "\trunning kernel_store2copy\n");
 
+        std::cout << "\thandle gep edges & ind calls";
+        before = std::chrono::high_resolution_clock::now();
         uint Vnew = cbFuture.get();
+        printf("  inserting %lu  ", newPts.first.size());
         insertEdges(&newPts, 0, PTS_NEXT);
         insertEdges(&newCopys, 1, COPY);
+        printf("  inserting done  ");
+        std::cout << "\tnew nodes: " << Vnew - V << " new V: " << Vnew << "\n";
+        after = std::chrono::high_resolution_clock::now();
+        timeSvf += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
         V = Vnew;
     }
+
+    printf("time update: %.3f ms\n", kernelParameters[(void *)&kernel_updatePts].elapsedTime);
+    printf("time kernel: %.3f ms\n", kernelParameters[(void *)&kernel].elapsedTime);
+    printf("time thrust: %.3f ms\n", timeThrust.count());
+    printf("time store : %.3f ms\n", kernelParameters[(void *)&kernel_store2copy].elapsedTime);
+    printf("time svf   : %.3f ms\n", timeSvf.count());
+
     // Free memory
     checkCuda(cudaFree(__key__));
     checkCuda(cudaFree(__val__));
