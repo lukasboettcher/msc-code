@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <functional>
+#include <chrono>
 
 typedef std::pair<std::vector<unsigned int>, std::vector<unsigned int>> edgeSet;
 
