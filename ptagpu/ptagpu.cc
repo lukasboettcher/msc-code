@@ -20,7 +20,15 @@ public:
     edgeSet *tmpCopy;
     bool printEdges = false;
     edgeSet addrEdges, directEdges, storeEdges, loadEdges;
-    AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check) {}
+
+    std::chrono::high_resolution_clock::time_point before, after;
+    std::chrono::duration<double, std::milli> gepTime, indTime;
+
+    AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check)
+    {
+        gepTime = std::chrono::nanoseconds(0);
+        indTime = std::chrono::nanoseconds(0);
+    }
     SVF::AliasResult alias(NodeID node1, NodeID node2)
     {
         if (!pts)
@@ -120,6 +128,8 @@ public:
         std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << consCG->getTotalEdgeNum() << " Edges!\n";
         pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, consCG, pag, [&](uint *memory, edgeSet *pts, edgeSet *copy) -> uint
                   { return handleCallgraphCallback(memory, pts, copy); });
+        std::cout << "SVF gep time: " << gepTime.count() << "ms" << std::endl;
+        std::cout << "SVF ind time: " << indTime.count() << "ms" << std::endl;
     }
 
     uint handleCallgraphCallback(uint *memory, edgeSet *ptsSet, edgeSet *copySet)
@@ -127,8 +137,19 @@ public:
         pts = memory;
         tmpPts = ptsSet;
         tmpCopy = copySet;
+
+        before = std::chrono::high_resolution_clock::now();
         handleGeps();
+        after = std::chrono::high_resolution_clock::now();
+        gepTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
+        printf("  geps done  ");
+
+        before = std::chrono::high_resolution_clock::now();
         updateCallGraph(getIndirectCallsites());
+        after = std::chrono::high_resolution_clock::now();
+        indTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
+        printf("  indcall done  ");
+
         return consCG->getTotalNodeNum();
     }
 
