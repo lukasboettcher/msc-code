@@ -4,7 +4,7 @@ project(MSC-CODE)
 find_package(LLVM REQUIRED CONFIG)
 
 include_directories(${CMAKE_SOURCE_DIR}/SVF/include ${LLVM_INCLUDE_DIRS})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -O2")
 find_library(Z3_LIBRARIES NAMES libz3.so)
 
 enable_testing()
