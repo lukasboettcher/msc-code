@@ -284,8 +284,7 @@ __device__ void insert_store_map(const uint src, uint *const _shared_, uint numF
 __device__ inline uint resetWorklistIndex()
 {
     __syncthreads();
-    uint numBlocks = gridDim.x;
-    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, numBlocks - 1) == (numBlocks - 1))
+    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
     {
         __worklistIndex0__ = 0;
         __counter__ = 0;
