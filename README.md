@@ -105,3 +105,13 @@ sys     1m13.887s<br>
 ### for synthetic graph construction
 
 docker run --rm -it -u`id -u` -v `pwd`:/wd -w /wd tiagopeixoto/graph-tool
+
+### ptagpu results
+
+python.bc ptagpu 2m2.827s ander 3m11.537s
+
+bash.bc ptagpu 0m16.312s ander 0m38.319s
+
+wireshark.bc(UI) ptagpu 0m2.755s ander 0m2.374s
+
+perl.bc ptagpu 0m36.619s 0m56.539s
