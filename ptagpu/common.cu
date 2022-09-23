@@ -134,7 +134,7 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
         myBits = 1 << bit;
     else if (threadIdx.x == BASE)
         myBits = base;
-    else if (threadIdx.x == NEXT_LOWER)
+    else if (threadIdx.x >= NEXT_LOWER)
         myBits = UINT_MAX;
 
     while (1)
