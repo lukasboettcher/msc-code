@@ -1333,8 +1333,6 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     checkCuda(cudaFree(__key__));
     checkCuda(cudaFree(__val__));
     checkCuda(cudaFree(__offsets__));
-    checkCuda(cudaFree(__currPtsHead__));
-    checkCuda(cudaFree(__diffPtsMask__));
     checkCuda(cudaFree(__storeConstraints__));
 
     return memory;
