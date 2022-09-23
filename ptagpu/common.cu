@@ -1147,6 +1147,7 @@ __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
         std::bitset<sizeof(uint) * 8> x(checkpoint);
         std::cout << x << '\n';
     }
+    std::cout << '\n';
 }
 
 __host__ void printAllPts(uint V, uint *memory, uint rel)
