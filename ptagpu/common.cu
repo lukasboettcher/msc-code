@@ -134,13 +134,13 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
         myBits = 1 << bit;
     else if (threadIdx.x == BASE)
         myBits = base;
-    else if (threadIdx.x == NEXT)
+    else if (threadIdx.x == NEXT_LOWER)
         myBits = UINT_MAX;
 
     while (1)
     {
         uint toBits = __memory__[index + threadIdx.x];
-        uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
+        uint toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
         if (toBase == UINT_MAX)
         {
             __memory__[index + threadIdx.x] = myBits;
@@ -149,18 +149,18 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
         if (toBase == base)
         {
             uint orBits = toBits | myBits;
-            if (orBits != toBits && threadIdx.x < NEXT)
+            if (orBits != toBits && threadIdx.x < NEXT_LOWER)
                 __memory__[index + threadIdx.x] = orBits;
 
             return index;
         }
         if (toBase < base)
         {
-            uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+            uint toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
             if (toNext == UINT_MAX)
             {
                 uint newIndex = incEdgeCouter(toRel);
-                __memory__[index + NEXT] = newIndex;
+                __memory__[index + NEXT_LOWER] = newIndex;
                 __memory__[newIndex + threadIdx.x] = myBits;
                 return newIndex;
             }
@@ -170,7 +170,7 @@ __device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
         {
             uint newIndex = incEdgeCouter(toRel);
             __memory__[newIndex + threadIdx.x] = toBits;
-            uint val = threadIdx.x == NEXT ? newIndex : myBits;
+            uint val = threadIdx.x == NEXT_LOWER ? newIndex : myBits;
             __memory__[index + threadIdx.x] = val;
             return index;
         }
@@ -203,7 +203,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
     while (1)
     {
         uint toBase = graph[index + BASE];
-        uint toNext = graph[index + NEXT];
+        uint toNext = graph[index + NEXT_LOWER];
 
         if (toBase == UINT_MAX)
         {
@@ -218,7 +218,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
             if (toNext == UINT_MAX)
             {
                 uint nextIndex = incEdgeCouterHost(toRel);
-                graph[index + NEXT] = nextIndex;
+                graph[index + NEXT_LOWER] = nextIndex;
 
                 for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
                     graph[nextIndex + i] = 0;
@@ -244,7 +244,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
             for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
                 graph[nextIndex + i] = 0;
             graph[index + BASE] = base;
-            graph[index + NEXT] = nextIndex;
+            graph[index + NEXT_LOWER] = nextIndex;
             graph[index + word] |= 1 << bit;
         }
     }
@@ -302,20 +302,20 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
     }
     // read dst out edges
     uint fromBits = __memory__[fromIndex + threadIdx.x];
-    // get the base from thread nr 30
-    uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+    // get the base from thread
+    uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
     // terminate if no data in from bitvector
     if (fromBase == UINT_MAX)
     {
         return;
     }
-    // get the next index from thread nr 31
-    uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+    // get the next index from thread
+    uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
 
     // share needed data for to indices
     uint toBits = __memory__[toIndex + threadIdx.x];
-    uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-    uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+    uint toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+    uint toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
 
     // keep count of used storage in shared memory
     // this storage is adjacent to previous collectBitvectorTargets memory
@@ -328,7 +328,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
         {
             // union the bits, adding the new edges
             uint orBits = fromBits | toBits;
-            uint diffs = __any_sync(0xFFFFFFFF, orBits != toBits && threadIdx.x < NEXT);
+            uint diffs = __any_sync(0xFFFFFFFF, orBits != toBits && threadIdx.x < NEXT_LOWER);
             bool nextWasUINT_MAX = false;
             if (toNext == UINT_MAX && fromNext != UINT_MAX)
             {
@@ -337,7 +337,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             }
 
             // each thread gets a value that will be written back to memory
-            uint val = threadIdx.x == NEXT ? toNext : orBits;
+            uint val = threadIdx.x == NEXT_LOWER ? toNext : orBits;
             if (val != toBits)
                 __memory__[toIndex + threadIdx.x] = val;
 
@@ -372,13 +372,13 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             else
             {
                 toBits = __memory__[toIndex + threadIdx.x];
-                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+                toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+                toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
             }
 
             fromBits = __memory__[fromNext + threadIdx.x];
-            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
         }
         else if (toBase < fromBase)
         {
@@ -387,7 +387,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             if (toNext == UINT_MAX)
             {
                 uint newNext = incEdgeCouter(COPY);
-                __memory__[toIndex + NEXT] = newNext;
+                __memory__[toIndex + NEXT_LOWER] = newNext;
                 toIndex = newNext;
                 toBits = UINT_MAX;
                 toBase = UINT_MAX;
@@ -397,8 +397,8 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
                 toIndex = toNext;
 
                 toBits = __memory__[toNext + threadIdx.x];
-                toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-                toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+                toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+                toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
             }
         }
         else if (toBase > fromBase)
@@ -417,7 +417,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             }
 
             // overwrite the current bits with fromBits (insert before node)
-            fromBits = threadIdx.x == NEXT ? newVal : fromBits;
+            fromBits = threadIdx.x == NEXT_LOWER ? newVal : fromBits;
             __memory__[toIndex + threadIdx.x] = fromBits;
             if (applyCopy)
             {
@@ -435,8 +435,8 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             toIndex = newVal;
 
             fromBits = __memory__[fromNext + threadIdx.x];
-            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
         }
     }
 
@@ -455,7 +455,7 @@ __device__ void insertBitvector(uint toIndex, uint fromBits, uint fromNext, cons
         // if that is the case, allocate a new index for a new element
         uint newIndex = fromNext == UINT_MAX ? UINT_MAX : incEdgeCouter(toRel);
         // handle the special next entry, since we can not reuse the fromNext bits
-        uint val = threadIdx.x == NEXT ? newIndex : fromBits;
+        uint val = threadIdx.x == NEXT_LOWER ? newIndex : fromBits;
         // write new values to target memory location
         __memory__[toIndex + threadIdx.x] = val;
 
@@ -467,7 +467,7 @@ __device__ void insertBitvector(uint toIndex, uint fromBits, uint fromNext, cons
         toIndex = newIndex;
         fromBits = __memory__[fromNext + threadIdx.x];
         // use warp intrinsics to get next index in from memory
-        fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+        fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
     }
 }
 
@@ -476,18 +476,18 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
     uint toIndex = getIndex(to, toRel);
     // read dst out edges
     uint fromBits = __memory__[fromIndex + threadIdx.x];
-    // get the base from thread nr 30
-    uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
+    // get the base from thread
+    uint fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
     // terminate if no data in from bitvector
     if (fromBase == UINT_MAX)
         return;
-    // get the next index from thread nr 31
-    uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+    // get the next index from thread
+    uint fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
 
     // share needed data for to indices
     uint toBits = __memory__[toIndex + threadIdx.x];
-    uint toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-    uint toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+    uint toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+    uint toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
 
     if (toBase == UINT_MAX)
     {
@@ -504,7 +504,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             // union the bits, adding the new edges
             uint orBits = fromBits | toBits;
             // each thread gets a value that will be written back to memory
-            uint val = threadIdx.x == NEXT ? newToNext : orBits;
+            uint val = threadIdx.x == NEXT_LOWER ? newToNext : orBits;
             if (val != toBits)
                 __memory__[toIndex + threadIdx.x] = val;
 
@@ -514,8 +514,8 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
 
             // else load next bits
             fromBits = __memory__[fromNext + threadIdx.x];
-            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
             if (toNext == UINT_MAX)
             {
                 insertBitvector(toIndex, fromBits, fromNext, toRel);
@@ -523,8 +523,8 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             }
             toIndex = newToNext;
             toBits = __memory__[toNext + threadIdx.x];
-            toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-            toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+            toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+            toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
         }
         else if (toBase < fromBase)
         {
@@ -533,15 +533,15 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             if (toNext == UINT_MAX)
             {
                 toNext = incEdgeCouter(toRel);
-                __memory__[toIndex + NEXT] = toNext;
+                __memory__[toIndex + NEXT_LOWER] = toNext;
                 insertBitvector(toNext, fromBits, fromNext, toRel);
                 return;
             }
             // if toNext is defined, load those to bits for the next iteration
             toIndex = toNext;
             toBits = __memory__[toNext + threadIdx.x];
-            toBase = __shfl_sync(0xFFFFFFFF, toBits, 30);
-            toNext = __shfl_sync(0xFFFFFFFF, toBits, 31);
+            toBase = __shfl_sync(0xFFFFFFFF, toBits, BASE);
+            toNext = __shfl_sync(0xFFFFFFFF, toBits, NEXT_LOWER);
         }
         else if (toBase > fromBase)
         {
@@ -552,7 +552,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             // write the current bits from the target element to a new location
             __memory__[newIndex + threadIdx.x] = toBits;
             // then overwrite the current bits with fromBits (insert before node)
-            uint val = threadIdx.x == NEXT ? newIndex : fromBits;
+            uint val = threadIdx.x == NEXT_LOWER ? newIndex : fromBits;
             __memory__[toIndex + threadIdx.x] = val;
 
             // if next from element is defined, update the bits
@@ -563,8 +563,8 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             toIndex = newIndex;
 
             fromBits = __memory__[fromNext + threadIdx.x];
-            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, 30);
-            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, 31);
+            fromBase = __shfl_sync(0xFFFFFFFF, fromBits, BASE);
+            fromNext = __shfl_sync(0xFFFFFFFF, fromBits, NEXT_LOWER);
         }
     }
 }
@@ -591,7 +591,7 @@ __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_sh
 template <uint fromRel, uint toRel>
 __device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage)
 {
-    // create mask for threads w/ dst nodes, except last 2 (BASE & NEXT)
+    // create mask for threads w/ dst nodes, except last
     uint nonEmptyThreads = __ballot_sync(0xFFFFFFFF, bits) & 0x3FFFFFFF;
     const uint threadMask = 1 << threadIdx.x;
     const uint myMask = threadMask - 1;
@@ -750,20 +750,20 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     uint index = getIndex(src, rel);
     while (index != UINT_MAX)
     {
-        uint base = memory[index + 30U];
-        uint next = memory[index + 31U];
+        uint base = memory[index + BASE];
+        uint next = memory[index + NEXT_LOWER];
         if (base == UINT_MAX)
         {
             break;
         }
-        for (size_t j = 0; j < 30U; j++)
+        for (size_t j = 0; j < BASE; j++)
         {
             uint value = memory[index + j];
             for (size_t k = 0; k < 32; k++)
             {
                 if (value & 1)
                 {
-                    pts.push_back(base * 960 + j * 32 + k);
+                    pts.push_back(base * ELEMENT_CARDINALITY + j * 32 + k);
                 }
                 value >>= 1;
             }
@@ -791,7 +791,7 @@ __device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &curr
     insertBitvector(ptsIndex, diffPtsBits, diffPtsNext, PTS);
     if (currDiffPtsIndex != UINT_MAX)
     {
-        __memory__[currDiffPtsIndex + NEXT] = ptsIndex;
+        __memory__[currDiffPtsIndex + NEXT_LOWER] = ptsIndex;
         assert(currDiffPtsIndex != ptsIndex);
     }
     else
@@ -820,19 +820,19 @@ __device__ bool computeDiffPts(const uint var)
     const uint diffPtsHeadIndex = getIndex(var, PTS_NEXT);
 
     uint diffPtsBits = __memory__[diffPtsHeadIndex + threadIdx.x];
-    uint diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
+    uint diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, BASE);
 
     if (diffPtsBase == UINT_MAX)
     {
         return false;
     }
 
-    uint diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+    uint diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, NEXT_LOWER);
     __memory__[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
 
     uint ptsIndex = getIndex(var, PTS);
     uint ptsBits = __memory__[ptsIndex + threadIdx.x];
-    uint ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
+    uint ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, BASE);
 
     if (ptsBase == UINT_MAX)
     {
@@ -840,7 +840,7 @@ __device__ bool computeDiffPts(const uint var)
         insertBitvectorAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext);
         return true;
     }
-    uint ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+    uint ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, NEXT_LOWER);
     uint currDiffPtsIndex = UINT_MAX;
     while (1)
     {
@@ -848,16 +848,16 @@ __device__ bool computeDiffPts(const uint var)
         {
             uint newIndex = incEdgeCouter(PTS);
             __memory__[newIndex + threadIdx.x] = ptsBits;
-            uint val = threadIdx.x == NEXT ? newIndex : diffPtsBits;
+            uint val = threadIdx.x == NEXT_LOWER ? newIndex : diffPtsBits;
             __memory__[ptsIndex + threadIdx.x] = val;
 
             ptsIndex = newIndex;
             newIndex = currDiffPtsIndex == UINT_MAX ? getIndex(var, PTS_CURR) : incEdgeCouter(PTS_CURR);
-            val = threadIdx.x == NEXT ? UINT_MAX : diffPtsBits;
+            val = threadIdx.x == NEXT_LOWER ? UINT_MAX : diffPtsBits;
             __memory__[newIndex + threadIdx.x] = val;
             if (currDiffPtsIndex != UINT_MAX)
             {
-                __memory__[currDiffPtsIndex + NEXT] = newIndex;
+                __memory__[currDiffPtsIndex + NEXT_LOWER] = newIndex;
                 assert(currDiffPtsIndex != newIndex);
             }
             if (diffPtsNext == UINT_MAX)
@@ -867,25 +867,25 @@ __device__ bool computeDiffPts(const uint var)
             currDiffPtsIndex = newIndex;
 
             diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
-            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
-            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, BASE);
+            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, NEXT_LOWER);
         }
         else if (ptsBase == diffPtsBase)
         {
             uint newPtsNext = (ptsNext == UINT_MAX && diffPtsNext != UINT_MAX) ? incEdgeCouter(PTS) : ptsNext;
-            uint orBits = threadIdx.x == NEXT ? newPtsNext : ptsBits | diffPtsBits;
+            uint orBits = threadIdx.x == NEXT_LOWER ? newPtsNext : ptsBits | diffPtsBits;
             uint ballot = __ballot_sync(0xFFFFFFFF, orBits != ptsBits);
             if (ballot)
             {
                 __memory__[ptsIndex + threadIdx.x] = orBits;
-                if (ballot & ((1 << 30) - 1))
+                if (ballot & ((1 << BASE) - 1))
                 {
                     orBits = diffPtsBits & ~ptsBits;
                     if (threadIdx.x == BASE)
                     {
                         orBits = ptsBase;
                     }
-                    else if (threadIdx.x == NEXT)
+                    else if (threadIdx.x == NEXT_LOWER)
                     {
                         orBits = UINT_MAX;
                     }
@@ -894,7 +894,7 @@ __device__ bool computeDiffPts(const uint var)
                     {
 
                         newIndex = incEdgeCouter(PTS_CURR);
-                        __memory__[currDiffPtsIndex + NEXT] = newIndex;
+                        __memory__[currDiffPtsIndex + NEXT_LOWER] = newIndex;
                         assert(currDiffPtsIndex != newIndex);
                     }
                     else
@@ -910,8 +910,8 @@ __device__ bool computeDiffPts(const uint var)
                 return (currDiffPtsIndex != UINT_MAX);
             }
             diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
-            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, 30);
-            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, 31);
+            diffPtsBase = __shfl_sync(0xFFFFFFFF, diffPtsBits, BASE);
+            diffPtsNext = __shfl_sync(0xFFFFFFFF, diffPtsBits, NEXT_LOWER);
 
             if (ptsNext == UINT_MAX)
             {
@@ -921,23 +921,23 @@ __device__ bool computeDiffPts(const uint var)
             ptsIndex = ptsNext;
 
             ptsBits = __memory__[ptsIndex + threadIdx.x];
-            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
-            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, BASE);
+            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, NEXT_LOWER);
         }
         else
         { // ptsBase < diffPtsBase
             if (ptsNext == UINT_MAX)
             {
                 uint newPtsIndex = incEdgeCouter(PTS);
-                __memory__[ptsIndex + NEXT] = newPtsIndex;
+                __memory__[ptsIndex + NEXT_LOWER] = newPtsIndex;
                 assert(ptsIndex != newPtsIndex);
                 insertBitvectorAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
             ptsIndex = ptsNext;
             ptsBits = __memory__[ptsIndex + threadIdx.x];
-            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, 30);
-            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, 31);
+            ptsBase = __shfl_sync(0xFFFFFFFF, ptsBits, BASE);
+            ptsNext = __shfl_sync(0xFFFFFFFF, ptsBits, NEXT_LOWER);
         }
     }
 }
@@ -956,14 +956,14 @@ __global__ void kernel_memoryCheck(const uint n)
         while (index != UINT_MAX)
         {
             bits = __memory__[index + threadIdx.x];
-            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            base = __shfl_sync(0xFFFFFFFF, bits, BASE);
             if (base == UINT_MAX)
                 break;
 
-            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            next = __shfl_sync(0xFFFFFFFF, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("huh?? currpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_CURR]);
+                printf("currpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_CURR]);
                 break;
             }
             index = next;
@@ -977,14 +977,14 @@ __global__ void kernel_memoryCheck(const uint n)
         while (index != UINT_MAX)
         {
             bits = __memory__[index + threadIdx.x];
-            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            base = __shfl_sync(0xFFFFFFFF, bits, BASE);
             if (base == UINT_MAX)
                 break;
 
-            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            next = __shfl_sync(0xFFFFFFFF, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("huh?? pts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS]);
+                printf("pts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS]);
                 break;
             }
             index = next;
@@ -998,14 +998,14 @@ __global__ void kernel_memoryCheck(const uint n)
         while (index != UINT_MAX)
         {
             bits = __memory__[index + threadIdx.x];
-            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            base = __shfl_sync(0xFFFFFFFF, bits, BASE);
             if (base == UINT_MAX)
                 break;
 
-            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            next = __shfl_sync(0xFFFFFFFF, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("huh?? nextpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_NEXT]);
+                printf("nextpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_NEXT]);
                 break;
             }
             index = next;
@@ -1026,7 +1026,7 @@ __global__ void kernel_count_pts(const uint n, uint rel)
         while (index != UINT_MAX)
         {
             bits = __memory__[index + threadIdx.x];
-            base = __shfl_sync(0xFFFFFFFF, bits, 30);
+            base = __shfl_sync(0xFFFFFFFF, bits, BASE);
             if (base == UINT_MAX)
                 break;
 
@@ -1040,7 +1040,7 @@ __global__ void kernel_count_pts(const uint n, uint rel)
                 atomicAdd(&__counter__, value);
             }
 
-            next = __shfl_sync(0xFFFFFFFF, bits, 31);
+            next = __shfl_sync(0xFFFFFFFF, bits, NEXT_LOWER);
 
             index = next;
         }
@@ -1084,7 +1084,7 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
         uint base = __shfl_sync(0xFFFFFFFF, bits, BASE);
         if (base == UINT_MAX)
             break;
-        index = __shfl_sync(0xFFFFFFFF, bits, NEXT);
+        index = __shfl_sync(0xFFFFFFFF, bits, NEXT_LOWER);
         collectBitvectorTargets<fromRel, toRel>(src, bits, base, _shared_, usedShared);
     } while (index != UINT_MAX);
     if (usedShared)
@@ -1159,7 +1159,7 @@ __host__ void printAllPts(uint V, uint *memory, uint rel)
         while (index != UINT_MAX)
         {
             uint base = __memory__[index + BASE];
-            uint next = __memory__[index + NEXT];
+            uint next = __memory__[index + NEXT_LOWER];
             if (base == UINT_MAX)
             {
                 break;
