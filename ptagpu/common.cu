@@ -735,11 +735,11 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
     thrust::sort(thrust::device, kv_start, kv_start + N);
     __numKeys__ = thrust::unique_by_key_copy(thrust::device, __key__, __key__ + N, thrust::make_counting_iterator(0), thrust::make_discard_iterator(), __offsets__).second - __offsets__;
 
-    void *kernelArgs[] = {
-        (void *)&rel,
-    };
-
-    kernelWrapper((void *)&kernel_insert_edges, "", kernelArgs);
+    dim3 numBlocks(N_BLOCKS);
+    dim3 threadsPerBlock(WARP_SIZE, THREADS_PER_BLOCK / WARP_SIZE);
+    checkCuda(cudaDeviceSynchronize());
+    kernel_insert_edges<<<numBlocks, threadsPerBlock, 0>>>(rel);
+    checkCuda(cudaDeviceSynchronize());
 }
 
 /**
@@ -1284,8 +1284,10 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     while (1)
     {
         ++iter;
-        kernelWrapper((void *)&kernel_updatePts, "updating info \n");
-
+        printf("updating info \n");
+        checkCuda(cudaDeviceSynchronize());
+        kernel_updatePts<<<numBlocks, threadsPerBlock, 0>>>();
+        checkCuda(cudaDeviceSynchronize());
 
         if (__done__)
         {
@@ -1296,7 +1298,10 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         edgeSet newPts, newCopys;
         std::future<uint> cbFuture = std::async(callgraphCallback, memory, &newPts, &newCopys);
 
-        kernelWrapper((void *)&kernel, "\trunning main kernel\n");
+        printf("\trunning main kernel\n");
+        checkCuda(cudaDeviceSynchronize());
+        kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
+        checkCuda(cudaDeviceSynchronize());
 
         before = std::chrono::high_resolution_clock::now();
         std::cout << "\tsorting and calculating offsets for store kernel\n";
@@ -1307,7 +1312,9 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         after = std::chrono::high_resolution_clock::now();
         timeThrust += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
-        kernelWrapper((void *)&kernel_store2copy, "\trunning kernel_store2copy\n");
+        checkCuda(cudaDeviceSynchronize());
+        kernel_store2copy<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
+        checkCuda(cudaDeviceSynchronize());
 
         std::cout << "\thandle gep edges & ind calls";
         before = std::chrono::high_resolution_clock::now();
