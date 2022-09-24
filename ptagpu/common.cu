@@ -518,7 +518,7 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
             fromNext = __shfl_sync(FULL_MASK, fromBits, NEXT_LOWER);
             if (toNext == UINT_MAX)
             {
-                insertBitvector(toIndex, fromBits, fromNext, toRel);
+                insertBitvector(newToNext, fromBits, fromNext, toRel);
                 return;
             }
             toIndex = newToNext;
