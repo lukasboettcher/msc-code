@@ -126,7 +126,7 @@ public:
     virtual inline void solveWorklist()
     {
         std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << consCG->getTotalEdgeNum() << " Edges!\n";
-        pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, consCG, pag, [&](uint *memory, edgeSet *pts, edgeSet *copy) -> uint
+        pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, [&](uint *memory, edgeSet *pts, edgeSet *copy) -> uint
                   { return handleCallgraphCallback(memory, pts, copy); });
         std::cout << "SVF gep time: " << gepTime.count() << "ms" << std::endl;
         std::cout << "SVF ind time: " << indTime.count() << "ms" << std::endl;

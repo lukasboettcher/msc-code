@@ -31,7 +31,7 @@
 
 typedef std::pair<std::vector<unsigned int>, std::vector<unsigned int>> edgeSet;
 
-unsigned int *run(unsigned int numNodes, edgeSet *addr, edgeSet *direct, edgeSet *load, edgeSet *store, void *consG, void *pag, std::function<unsigned int(unsigned int *, edgeSet *pts, edgeSet *copy)> callgraphCallback);
+unsigned int *run(unsigned int numNodes, edgeSet *addr, edgeSet *direct, edgeSet *load, edgeSet *store, std::function<unsigned int(unsigned int *, edgeSet *pts, edgeSet *copy)> callgraphCallback);
 bool aliasBV(unsigned int a, unsigned int b, unsigned int *memory);
 void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts, uint rel);
 

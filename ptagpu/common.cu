@@ -1223,7 +1223,7 @@ __host__ void reportMemory()
     printf("##### MEMORY USAGE\n");
 }
 
-__host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, void *consG, void *pag, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
+__host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
     setlocale(LC_NUMERIC, "");
     // cudaDeviceProp prop; // CUDA device properties variable
