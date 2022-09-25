@@ -18,7 +18,8 @@
 #define BIT_OF(x) (mod32(x))
 #define WARP_SIZE 32
 // important, limit to 512 threads per threadblock, otherwise we exceed 64K register limit
-#define THREADS_PER_BLOCK 512
+// now 256 threads per threadblock, if we use 64bit addresses
+#define THREADS_PER_BLOCK 256
 #define N_BLOCKS 80
 // set asize 2^26 uints for key value and offset, total: 256MiB x 3
 #define KV_SIZE 240000000 // 67108864
