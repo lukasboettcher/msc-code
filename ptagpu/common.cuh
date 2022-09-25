@@ -161,4 +161,17 @@ __device__ __host__ static inline void store_size_t(uint *__memory__, index_t in
   __memory__[index + NEXT_UPPER] = getUpper(next);
 }
 
+/**
+ * 
+ * helper function assign each thread in a warp the right value
+ * while splitting a 64bit index into two 32 unsigned ints
+ * for the last two threads
+ * 
+ */
+__device__ __host__ static inline uint thread_load_val(uint bits, index_t next)
+{
+  return threadIdx.x < NEXT_LOWER ? bits : threadIdx.x < NEXT_UPPER ? getLower(next)
+                                                                    : getUpper(next);
+}
+
 #endif
