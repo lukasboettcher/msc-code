@@ -1,7 +1,6 @@
 #include "common.cuh"
 
 /**
- * relNames
  *
  * this variable holds strings for each of the relations
  * this allows us to get a name from a numeric relation
@@ -19,51 +18,127 @@ struct KernelInfo
     cudaEvent_t start, stop;
 };
 
+/**
+ *
+ * store calculated kernel parameters here
+ *
+ */
 std::map<void *, KernelInfo> kernelParameters;
 
+/**
+ * represents the number of nodes in the graph
+ *
+ */
 __device__ __managed__ size_t V;
 
 /**
- * __ptsFreeList__
- * this is the head of the free list
  * keeps track of last allocated memory location
+ * for each memory region / relation
  * access needs to be atomic to prevent collisions
  *
  */
-__device__ __managed__ uint __freeList__[N_TYPES];
-__device__ __managed__ uint tmpFreePtsCurr = 0;
+__device__ __managed__ index_t __freeList__[N_TYPES];
+
 /**
- * __reservedHeader__
+ * is a temporary counter for statistics,
+ * since freelist for currpts is reset after updatePts
+ *
+ */
+__device__ __managed__ index_t tmpFreePtsCurr = 0;
+
+/**
  *
  * this variable represents to max number of nodes
  *
  * is to be initialized with enough overhead
  * to allow adding further nodes via gep offsets calculations
+ * currently set to 120% of constraint graph
  *
  */
 __device__ __managed__ uint __reservedHeader__;
 
 /**
+ *
  * flag that keeps track of remaining work
  * if true, no next iteration needed
  *
  */
 __device__ __managed__ bool __done__ = true;
 
+/**
+ *
+ * these variables are used throughout the
+ * code for hashmap operations
+ * where keys are associated w/ values
+ * and then sorted / uniqued
+ *
+ */
 __device__ __managed__ uint *__key__;
+
+/**
+ *
+ * these variables are used throughout the
+ * code for hashmap operations
+ * where keys are associated w/ values
+ * and then sorted / uniqued
+ *
+ */
 __device__ __managed__ uint *__val__;
+
+/**
+ *
+ * these variables are used throughout the
+ * code for hashmap operations
+ * where keys are associated w/ values
+ * and then sorted / uniqued
+ *
+ */
 __device__ __managed__ uint *__offsets__;
 
+/**
+ * __numKeys__
+ *
+ * as kv pair memory is allocated once
+ * with overhead, __numKeys__ keeps track
+ * of actually used space to prevent
+ * redundant work
+ *
+ */
 __device__ __managed__ uint __numKeys__;
 
+/**
+ *
+ * various counters for wortklist algorithms
+ * adapted from mendez et. al
+ *
+ */
 __device__ __managed__ uint __counter__ = 0;
 
+/**
+ *
+ * various counters for wortklist algorithms
+ * adapted from mendez et. al
+ *
+ */
 __device__ uint __worklistIndex0__ = 0;
+
+/**
+ *
+ * various counters for wortklist algorithms
+ * adapted from mendez et. al
+ *
+ */
 __device__ uint __worklistIndex1__ = 0;
 
+/**
+ *
+ * is used as a freelist for the kv store
+ *
+ */
 __device__ uint __storeMapHead__ = 0;
 
 /**
+ *
  * device pointers for the pts bitvectors
  * these need to be accesses adhoc
  * so are written to device symbols permanently
@@ -71,11 +146,24 @@ __device__ uint __storeMapHead__ = 0;
  */
 __device__ __managed__ uint *__memory__;
 
+/**
+ *
+ * alternative memory location
+ * for store constraints
+ * separate from main memory
+ * for store inv kernel
+ *
+ */
 __device__ __managed__ uint *__storeConstraints__;
+
+/**
+ *
+ * is the corresponding counter
+ *
+ */
 __device__ __managed__ uint __numStoreConstraints__;
 
 /**
- * getIndex
  *
  * get the index of the first element for a given node
  *
@@ -102,18 +190,35 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
     case STORE:
         return OFFSET_STORE + (32 * src);
     }
-    // uint index = __memory__[src * N_TYPES + rel];
     return src * 32;
 }
 
-__host__ uint incEdgeCouterHost(int type)
+/**
+ *
+ * increment the edge counter and return free memory location
+ * for new element from the host
+ *
+ * \param type relation for which to reserve memory
+ *
+ * \return index for new bitvector elememt
+ *
+ */
 {
     uint index = __freeList__[type];
     __freeList__[type] += 32;
     return index;
 }
 
-__device__ inline uint incEdgeCouter(int type)
+/**
+ *
+ * increment the edge counter and return free memory location
+ * for new element from the device
+ *
+ * \param type relation for which to reserve memory
+ *
+ * \return index for new bitvector elememt
+ *
+ */
 {
     uint newIndex;
     if (!threadIdx.x)
@@ -122,7 +227,17 @@ __device__ inline uint incEdgeCouter(int type)
     return newIndex;
 }
 
-__device__ uint insertEdgeDevice(uint src, uint dst, uint toRel)
+/**
+ *
+ * insert an edge into the right memory location from device
+ *
+ * \param src edge src
+ * \param dst edge dst
+ * \param toRel edge type
+ *
+ * \return index for inserted edge
+ *
+ */
 {
     uint index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
@@ -256,15 +371,60 @@ __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_sh
 template <uint fromRel, uint toRel>
 __device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage);
 
+/**
+ *
+ * helper function to increment counter
+ * used in worklist algorithms
+ * syncd via warp intrinsics
+ *
+ * \param counter counter to be incremented
+ * \param delta amount to increment
+ *
+ * \return previous counter value
+ *
+ */
 __device__ inline uint getAndIncrement(uint *counter, uint delta)
 {
-    uint newIndex;
+    uint cnt;
     if (!threadIdx.x)
-        newIndex = atomicAdd(counter, delta);
-    newIndex = __shfl_sync(FULL_MASK, newIndex, 0);
-    return newIndex;
+        cnt = atomicAdd(counter, delta);
+    cnt = __shfl_sync(FULL_MASK, cnt, 0);
+    return cnt;
 }
 
+/**
+ *
+ * helper function to reset worklist counters
+ * after operation
+ * syncs blocks and grid by using counter
+ *
+ *
+ * \return boolean whether thread is grid leader
+ *
+ */
+__device__ inline uint resetWorklistIndex()
+{
+    __syncthreads();
+    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
+    {
+        __worklistIndex0__ = 0;
+        __counter__ = 0;
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ *
+ * insert store, pointer pair into kv store
+ *
+ * \param src corresponding store src node
+ * \param _shared_ passed shared memory containing nodes
+ * \param numFrom numver of values in shared memory
+ *
+ * \return previous counter value
+ *
+ */
 __device__ void insert_store_map(const uint src, uint *const _shared_, uint numFrom)
 {
     const uint storeIndex = getIndex(src, STORE);
@@ -281,7 +441,17 @@ __device__ void insert_store_map(const uint src, uint *const _shared_, uint numF
     }
 }
 
-__device__ inline uint resetWorklistIndex()
+/**
+ *
+ * merges two bitvectors and optionally applies copy
+ * pointer operations
+ *
+ * \param to target node
+ * \param fromIndex index of second rel nodes, to be merged
+ * \param storage shared memory shard for recursive mergeBV call
+ * \param applyCopy should always be true, apply copy rule?
+ *
+ */
 {
     __syncthreads();
     if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
@@ -447,7 +617,17 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
     }
 }
 
-__device__ void insertBitvector(uint toIndex, uint fromBits, uint fromNext, const uint toRel)
+/**
+ *
+ * if to BV is empty, just write from BV w/o merging
+ * simply assign new elements for next elements
+ *
+ * \param toIndex target node
+ * \param fromBits bits to be written
+ * \param fromNext next from index, passed so it does not have to be recomputed
+ * \param toRel target relation
+ *
+ */
 {
     while (1)
     {
@@ -471,7 +651,16 @@ __device__ void insertBitvector(uint toIndex, uint fromBits, uint fromNext, cons
     }
 }
 
-__device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
+/**
+ *
+ * merges two bitvectors w/o copy targets,
+ * so no recursive calls
+ *
+ * \param to target node
+ * \param fromIndex index of second rel node
+ * \param toRel target relation, used for new element allocations
+ *
+ */
 {
     uint toIndex = getIndex(to, toRel);
     // read dst out edges
@@ -569,6 +758,17 @@ __device__ void mergeBitvectorPts(uint to, uint fromIndex, const uint toRel)
     }
 }
 
+/**
+ *
+ * general mergeBitvector function
+ * calls mergeBitvectorPts or mergeBitvectorCopy
+ * depending on template relations
+ *
+ * \param to target node
+ * \param numDstNodes size of shared memory
+ * \param _shared_ shared memory shard containing second rel nodes
+ *
+ */
 template <uint fromRel, uint toRel>
 __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_shared_)
 {
@@ -588,6 +788,18 @@ __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_sh
     }
 }
 
+/**
+ *
+ * read bits and read bitvector uints to calculate
+ * and collect target nodes in shared memory
+ *
+ * \param to target node
+ * \param bits bits to be read
+ * \param base base of element to be read
+ * \param storage shared memory to be used for collection
+ * \param usedStorage used to keep track of nodes stored in shared memory
+ *
+ */
 template <uint fromRel, uint toRel>
 __device__ void collectBitvectorTargets(const uint to, const uint bits, const uint base, uint *storage, uint &usedStorage)
 {
@@ -630,7 +842,15 @@ __device__ void collectBitvectorTargets(const uint to, const uint bits, const ui
     }
 }
 
-__global__ void kernel_store2copy()
+/**
+ *
+ * use the kv store w/ store and pts pairs
+ * to add all copy edges resulting from store -> pts paths
+ *
+ */
+__global__ void
+__launch_bounds__(THREADS_PER_BLOCK)
+    kernel_store2copy()
 {
     extern __shared__ uint _sh_[];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
@@ -654,6 +874,13 @@ __global__ void kernel_store2copy()
     }
 }
 
+/**
+ *
+ * kernel_insert_edges to add all edges in kv store to graph
+ *
+ * \param rel since all edges are coalesced by type we need to know the edge relation
+ *
+ */
 __global__ void kernel_insert_edges(uint rel)
 {
     uint index = blockIdx.x * blockDim.y + threadIdx.y;
@@ -674,6 +901,16 @@ __global__ void kernel_insert_edges(uint rel)
     }
 }
 
+/**
+ *
+ * kernelWrapper to automatically determine optimal parameters for the kernel
+ * as well as synchronizing needed events
+ *
+ * \param kernel the kernel to be executed
+ * \param statusString string to be printed before execution of the kernel
+ * \param args **args holds the kernel parameters
+ *
+ */
 __host__ void kernelWrapper(void *kernel, const char *statusString, void **args = 0)
 {
     printf("%s", statusString);
@@ -710,6 +947,17 @@ __host__ void kernelWrapper(void *kernel, const char *statusString, void **args 
     config->elapsedTime += elapsedTime;
 }
 
+/**
+ *
+ * host method to write edges into the memory
+ * stored edges in kv store on gpu to efficiently
+ * insert edges
+ *
+ * \param edges an edgeSet containing all the edges as two vectors
+ * \param inv bool whether or not the edges are inverted or not
+ * \param rel target relation for the edges
+ *
+ */
 __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 {
     uint numEdges = edges->second.size();
@@ -743,7 +991,15 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
 }
 
 /**
- * collect pts targets for src
+ *
+ * collect pts targets for src in memory
+ * this is used from the host
+ *
+ * \param src nodeid to collect targets for
+ * \param memory memory to probe for targets
+ * \param pts vector where to add the collected nodes (reference)
+ * \param rel relation to probe in memory
+ *
  */
 __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts, uint rel)
 {
@@ -772,6 +1028,17 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     }
 }
 
+/**
+ *
+ * check of two nodes alias, based on gpu (managed) memory
+ *
+ * \param a node 1
+ * \param a node 2
+ * \param memory memory to probe for targets
+ *
+ * \return bool for alias relation
+ *
+ */
 __host__ bool aliasBV(uint a, uint b, uint *memory)
 {
     std::vector<uint> ptsA, ptsB;
@@ -786,7 +1053,19 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
     return false;
 }
 
-__device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &currDiffPtsIndex, const uint diffPtsBits, const uint diffPtsNext)
+/**
+ *
+ * same as insertBitvector, but link instead of copying
+ * used when updating pts.
+ * reuse pts memory for currpts
+ *
+ * \param var currently updating this node
+ * \param ptsIndex index in the pts, dest for data
+ * \param currDiffPtsIndex index in currpts, 2nd dest for data, next to nextpts index
+ * \param diffPtsBits nextpts bits, source of data
+ * \param diffPtsNext nextpts next, rest of source data
+ *
+ */
 {
     insertBitvector(ptsIndex, diffPtsBits, diffPtsNext, PTS);
     if (currDiffPtsIndex != UINT_MAX)
@@ -808,75 +1087,69 @@ __device__ void insertBitvectorAndLink(uint var, const uint ptsIndex, uint &curr
  * present in PTS. The purpose of this function is to update PTS as PTS U NEXT_DIFF_PTS, and set
  * PTS_CURR as the difference between the old and new PTS for the given variable.
  *
- * @param var ID of the variable
- * @param pts memory for all points to bitvectors
- * @param curr_pts memory for previous iterations points to bitvectors in working set
- * @param next_pts memory for all newly added pts bitvectors
+ * @param var nodeid for currently updating variable
  * @return true if new pts edges have been added to this variable
  */
 __device__ bool computeDiffPts(const uint var)
 {
-    // next next index
+    // get diffpts index
     const uint diffPtsHeadIndex = getIndex(var, PTS_NEXT);
 
-    uint diffPtsBits = __memory__[diffPtsHeadIndex + threadIdx.x];
+    // read diffpts data
     uint diffPtsBase = __shfl_sync(FULL_MASK, diffPtsBits, BASE);
 
     if (diffPtsBase == UINT_MAX)
     {
         return false;
     }
+    // get next element for diffpts
+    // reset the diffpts data
 
-    uint diffPtsNext = __shfl_sync(FULL_MASK, diffPtsBits, NEXT_LOWER);
+    // get pts index
     __memory__[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
 
-    uint ptsIndex = getIndex(var, PTS);
+    // get pts data
     uint ptsBits = __memory__[ptsIndex + threadIdx.x];
     uint ptsBase = __shfl_sync(FULL_MASK, ptsBits, BASE);
 
     if (ptsBase == UINT_MAX)
     {
-        // we pass ptsBase instead of UINT_MAX because it's also UINT_MAX but it can be modified
-        insertBitvectorAndLink(var, ptsIndex, ptsBase, diffPtsBits, diffPtsNext);
+        // use dummy variable for currDiffPtsIndex and insert
         return true;
     }
-    uint ptsNext = __shfl_sync(FULL_MASK, ptsBits, NEXT_LOWER);
-    uint currDiffPtsIndex = UINT_MAX;
+    // get next pts element
+    // init currDiffPtsIndex to undef
     while (1)
     {
         if (ptsBase > diffPtsBase)
         {
-            uint newIndex = incEdgeCouter(PTS);
+            // insert new element for diffpts data
+            // and write previous pts data to new element
             __memory__[newIndex + threadIdx.x] = ptsBits;
             uint val = threadIdx.x == NEXT_LOWER ? newIndex : diffPtsBits;
             __memory__[ptsIndex + threadIdx.x] = val;
 
+            // update pts index
             ptsIndex = newIndex;
-            newIndex = currDiffPtsIndex == UINT_MAX ? getIndex(var, PTS_CURR) : incEdgeCouter(PTS_CURR);
-            val = threadIdx.x == NEXT_LOWER ? UINT_MAX : diffPtsBits;
+            // also write to currpts, instead of only writing to pts
             __memory__[newIndex + threadIdx.x] = val;
-            if (currDiffPtsIndex != UINT_MAX)
-            {
-                __memory__[currDiffPtsIndex + NEXT_LOWER] = newIndex;
-                assert(currDiffPtsIndex != newIndex);
-            }
-            if (diffPtsNext == UINT_MAX)
-            {
+            // abort if diffpts next is undefined alse update index
                 return true;
             }
             currDiffPtsIndex = newIndex;
 
+            // get next diffpts data
             diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
             diffPtsBase = __shfl_sync(FULL_MASK, diffPtsBits, BASE);
             diffPtsNext = __shfl_sync(FULL_MASK, diffPtsBits, NEXT_LOWER);
         }
         else if (ptsBase == diffPtsBase)
         {
-            uint newPtsNext = (ptsNext == UINT_MAX && diffPtsNext != UINT_MAX) ? incEdgeCouter(PTS) : ptsNext;
-            uint orBits = threadIdx.x == NEXT_LOWER ? newPtsNext : ptsBits | diffPtsBits;
+            // calculate bits that should be merged w/ pts
             uint ballot = __ballot_sync(FULL_MASK, orBits != ptsBits);
             if (ballot)
             {
+                // write the orbits
                 __memory__[ptsIndex + threadIdx.x] = orBits;
                 if (ballot & ((1 << BASE) - 1))
                 {
@@ -889,8 +1162,8 @@ __device__ bool computeDiffPts(const uint var)
                     {
                         orBits = UINT_MAX;
                     }
-                    uint newIndex;
-                    if (currDiffPtsIndex != UINT_MAX)
+
+                    // now write diffPtsBits & ~ptsBits to currpts at correct index
                     {
 
                         newIndex = incEdgeCouter(PTS_CURR);
@@ -905,19 +1178,23 @@ __device__ bool computeDiffPts(const uint var)
                     currDiffPtsIndex = newIndex;
                 }
             }
-            if (diffPtsNext == UINT_MAX)
+            // abort of diffnext in undefined
             {
                 return (currDiffPtsIndex != UINT_MAX);
             }
+
+            // else get next diff data
             diffPtsBits = __memory__[diffPtsNext + threadIdx.x];
             diffPtsBase = __shfl_sync(FULL_MASK, diffPtsBits, BASE);
             diffPtsNext = __shfl_sync(FULL_MASK, diffPtsBits, NEXT_LOWER);
 
-            if (ptsNext == UINT_MAX)
+            // if pts next is undefined skip next iteration and insertBitvectorAndLink instead
             {
                 insertBitvectorAndLink(var, newPtsNext, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
+
+            // else iterate and get next pts data as well
             ptsIndex = ptsNext;
 
             ptsBits = __memory__[ptsIndex + threadIdx.x];
@@ -928,12 +1205,12 @@ __device__ bool computeDiffPts(const uint var)
         { // ptsBase < diffPtsBase
             if (ptsNext == UINT_MAX)
             {
-                uint newPtsIndex = incEdgeCouter(PTS);
-                __memory__[ptsIndex + NEXT_LOWER] = newPtsIndex;
-                assert(ptsIndex != newPtsIndex);
+            // when ptsBase is too small and has no next, insertBitvectorAndLink
                 insertBitvectorAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
+
+            // else get next pts data and iterate
             ptsIndex = ptsNext;
             ptsBits = __memory__[ptsIndex + threadIdx.x];
             ptsBase = __shfl_sync(FULL_MASK, ptsBits, BASE);
@@ -942,7 +1219,11 @@ __device__ bool computeDiffPts(const uint var)
     }
 }
 
-__global__ void kernel_memoryCheck(const uint n)
+/**
+ * debug function to do some sanity checks on the memory
+ * i.e. check if index == next, which would result in infinite loops
+ *
+ */
 {
     __syncthreads();
 
@@ -1014,7 +1295,14 @@ __global__ void kernel_memoryCheck(const uint n)
     __syncthreads();
 }
 
-__global__ void kernel_count_pts(const uint n, uint rel)
+/**
+ *
+ * count targets in type of bitvector
+ * does not have to be pts, can be any memory region containing bitvectors
+ *
+ * \param rel for which to count the targets
+ *
+ */
 {
     uint start = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
@@ -1047,6 +1335,13 @@ __global__ void kernel_count_pts(const uint n, uint rel)
     }
 }
 
+/**
+ *
+ * update the pointer memory regions
+ * PTS = PTS U PTS_NEXT
+ * PTS_CURR = PTS_NEXT \ PTS
+ *
+ */
 __global__ void kernel_updatePts()
 {
     __done__ = true;
@@ -1073,6 +1368,16 @@ __global__ void kernel_updatePts()
     }
 }
 
+/**
+ *
+ * general rewrite rule
+ * given two relations, insert new edges for a third relation connecting both
+ * X -a-> Y -b-> Z  => X -c-> Z
+ *
+ * \param src apply rewrite rule for this variable
+ * \param _shared_ block of allocated shared memory
+ *
+ */
 template <uint originRel, uint fromRel, uint toRel>
 __device__ void rewriteRule(const uint src, uint *const _shared_)
 {
@@ -1096,7 +1401,15 @@ __device__ void rewriteRule(const uint src, uint *const _shared_)
     }
 }
 
-__global__ void kernel()
+/**
+ *
+ * this is the main kernel
+ * which applies copy load and partly store rewrite rules
+ *
+ */
+__global__ void
+__launch_bounds__(THREADS_PER_BLOCK)
+    kernel()
 {
     extern __shared__ uint _sh_[];
     uint *const _shared_ = &_sh_[threadIdx.y * 256];
@@ -1130,7 +1443,17 @@ __global__ void kernel()
     }
 }
 
-__host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
+/**
+ *
+ * helper function to print a bitvector element in its binary representation
+ * very useful for debugging
+ *
+ * \param memory graph to print from
+ * \param src nodeid / memory location to read
+ * \param rel target relation to read from memory
+ * \param isNodeId whether to calculate index from src or use as is, first is the default behaviour
+ *
+ */
 {
     // if (isNodeId)
     //     start *= 32;
@@ -1150,6 +1473,15 @@ __host__ void printWord(uint *memory, uint src, uint rel, bool isNodeId = true)
     std::cout << '\n';
 }
 
+/**
+ *
+ * helper function to print all pts for a relation in a graph
+ *
+ * \param V number of nodes in graph
+ * \param memory graph to print from
+ * \param rel target relation to read from memory
+ *
+ */
 __host__ void printAllPts(uint V, uint *memory, uint rel)
 {
     for (size_t i = 0; i < V; i++)
@@ -1182,6 +1514,16 @@ __host__ void printAllPts(uint V, uint *memory, uint rel)
     }
 }
 
+/**
+ *
+ * helper function to print all pts minimally for a relation in a graph
+ * minimal means that empty sets are omitted for easier reading / parsing
+ *
+ * \param V number of nodes in graph
+ * \param memory graph to print from
+ * \param rel target relation to read from memory
+ *
+ */
 __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
 {
     for (size_t i = 0; i < V; i++)
@@ -1198,7 +1540,16 @@ __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
     }
 }
 
-__host__ void printMemory(uint start, uint end, uint rel)
+/**
+ *
+ * print the memory state for a single relation in memory
+ * use freelist ot get state
+ *
+ * \param start start offset of the memory region (rel)
+ * \param end end offset of the memory region (rel)
+ * \param rel target relation to read from freelist
+ *
+ */
 {
     uint usedUints;
     if (rel == PTS_CURR)
@@ -1211,6 +1562,12 @@ __host__ void printMemory(uint start, uint end, uint rel)
     printf("%12s Elements:(uints)%16u\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
 }
 
+/**
+ *
+ * helper function to print the current state of memory
+ * print used and available memory for all relations in a graph
+ *
+ */
 __host__ void reportMemory()
 {
     printf("##### MEMORY USAGE\n");
@@ -1223,6 +1580,12 @@ __host__ void reportMemory()
     printf("##### MEMORY USAGE\n");
 }
 
+/**
+ *
+ * mainloop to calculate transitive closure for a given andersen analysis problem
+ * \return pointer for final memory, containing all relations
+ *
+ */
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
     setlocale(LC_NUMERIC, "");
