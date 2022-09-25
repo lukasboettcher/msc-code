@@ -13,8 +13,8 @@
 #define BASE (29U)
 #define NEXT_LOWER (30U)
 #define NEXT_UPPER (31U)
-#define BASE (30U)
-#define NEXT (31U)
+#define BV_THREADS_MASK 0x1FFFFFFF
+#define FULL_MASK 0xFFFFFFFF
 #define ELEMENT_WIDTH 32
 #define ELEMENT_CARDINALITY (BASE * 32)
 #define BASE_OF(x) ((x) / ELEMENT_CARDINALITY)
