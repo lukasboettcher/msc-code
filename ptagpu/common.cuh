@@ -105,4 +105,24 @@ static void calculateKernelParams(void *kernel)
             << std::endl;
 }
 
+/**
+ * 
+ * helper function to extract the lower 32 bits of a 64 bit integer
+ * 
+ */
+__device__ __host__ static inline uint getLower(index_t value)
+{
+  return value & 0xFFFFFFFF;
+}
+
+/**
+ * 
+ * helper function to extract the upper 32 bits of a 64 bit integer
+ * 
+ */
+__device__ __host__ static inline uint getUpper(index_t value)
+{
+  return value >> 32;
+}
+
 #endif
