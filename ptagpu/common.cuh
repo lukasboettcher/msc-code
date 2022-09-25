@@ -149,4 +149,16 @@ __device__ static inline index_t thread_load_size_t(uint bits)
   uint upper = __shfl_sync(FULL_MASK, bits, NEXT_UPPER);
   return load_size_t(lower, upper);
 }
+
+/**
+ * 
+ * helper function store a 64 bit index into two 32 bit memory locations
+ * 
+ */
+__device__ __host__ static inline void store_size_t(uint *__memory__, index_t index, index_t next)
+{
+  __memory__[index + NEXT_LOWER] = getLower(next);
+  __memory__[index + NEXT_UPPER] = getUpper(next);
+}
+
 #endif
