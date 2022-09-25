@@ -9,6 +9,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+typedef unsigned long long int index_t;
 
 #define BASE (29U)
 #define NEXT_LOWER (30U)
