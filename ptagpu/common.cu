@@ -173,7 +173,7 @@ __device__ __managed__ uint __numStoreConstraints__;
  * \return index of the bitvector
  *
  */
-__host__ __device__ size_t getIndex(uint src, uint rel)
+__host__ __device__ index_t getIndex(uint src, uint rel)
 {
     switch (rel)
     {
@@ -203,8 +203,9 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
  * \return index for new bitvector elememt
  *
  */
+__host__ index_t incEdgeCouterHost(int type)
 {
-    uint index = __freeList__[type];
+    index_t index = __freeList__[type];
     __freeList__[type] += 32;
     return index;
 }
@@ -219,8 +220,9 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
  * \return index for new bitvector elememt
  *
  */
+__device__ inline index_t incEdgeCouter(int type)
 {
-    uint newIndex;
+    index_t newIndex;
     if (!threadIdx.x)
         newIndex = atomicAdd(&__freeList__[type], 32);
     newIndex = __shfl_sync(FULL_MASK, newIndex, 0);
@@ -238,8 +240,9 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
  * \return index for inserted edge
  *
  */
+__device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
 {
-    uint index = getIndex(src, toRel);
+    index_t index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
     uint word = WORD_OF(dst);
     uint bit = BIT_OF(dst);
@@ -300,15 +303,14 @@ __host__ __device__ size_t getIndex(uint src, uint rel)
  */
 __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
 {
-    uint index = getIndex(src, toRel);
+    index_t index = getIndex(src, toRel);
     uint base = BASE_OF(dst);
     uint word = WORD_OF(dst);
     uint bit = BIT_OF(dst);
-    // printf("inserting edge %u -> %u\n\tindex: %u\n\tbase: %u\n\tword: %u\n\tbit: %u\n", src, dst, index, base, word, bit);
 
     if (graph[index + BASE] == UINT_MAX)
     {
-        for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+        for (size_t i = 0; i < BASE; i++)
             graph[index + i] = 0;
         graph[index + BASE] = base;
         graph[index + word] |= 1 << bit;
@@ -322,7 +324,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
 
         if (toBase == UINT_MAX)
         {
-            for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+            for (size_t i = 0; i < BASE; i++)
                 graph[index + i] = 0;
             graph[index + BASE] = base;
             graph[index + word] |= 1 << bit;
@@ -335,11 +337,10 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
                 uint nextIndex = incEdgeCouterHost(toRel);
                 graph[index + NEXT_LOWER] = nextIndex;
 
-                for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+                for (size_t i = 0; i < BASE; i++)
                     graph[nextIndex + i] = 0;
                 graph[nextIndex + BASE] = base;
                 graph[nextIndex + word] |= 1 << bit;
-
                 return;
             }
 
@@ -353,10 +354,10 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
         else if (toBase > base)
         {
 
-            uint nextIndex = incEdgeCouterHost(toRel);
+            index_t nextIndex = incEdgeCouterHost(toRel);
             for (size_t i = 0; i < ELEMENT_WIDTH; i++)
                 graph[nextIndex + i] = graph[index + i];
-            for (size_t i = 0; i < ELEMENT_WIDTH - 2; i++)
+            for (size_t i = 0; i < BASE; i++)
                 graph[nextIndex + i] = 0;
             graph[index + BASE] = base;
             graph[index + NEXT_LOWER] = nextIndex;
@@ -427,15 +428,14 @@ __device__ inline uint resetWorklistIndex()
  */
 __device__ void insert_store_map(const uint src, uint *const _shared_, uint numFrom)
 {
-    const uint storeIndex = getIndex(src, STORE);
+    const index_t storeIndex = getIndex(src, STORE);
     for (int i = 0; i < numFrom; i += 32)
     {
         uint size = min(numFrom - i, 32);
         uint next = getAndIncrement(&__storeMapHead__, size);
-        // TODO: we need to make sure that (next + threadIdx.x < MAX_HASH_SIZE)
         if (threadIdx.x < size)
         {
-            __key__[next + threadIdx.x] = _shared_[i + threadIdx.x]; // at most 2 transactions
+            __key__[next + threadIdx.x] = _shared_[i + threadIdx.x];
             __val__[next + threadIdx.x] = src;
         }
     }
@@ -452,20 +452,9 @@ __device__ void insert_store_map(const uint src, uint *const _shared_, uint numF
  * \param applyCopy should always be true, apply copy rule?
  *
  */
+__device__ void mergeBitvectorCopy(const uint to, const index_t fromIndex, uint *const storage, bool applyCopy = true)
 {
-    __syncthreads();
-    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
-    {
-        __worklistIndex0__ = 0;
-        __counter__ = 0;
-        return 1;
-    }
-    return 0;
-}
-
-__device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *const storage, bool applyCopy = true)
-{
-    uint toIndex = getIndex(to, COPY);
+    index_t toIndex = getIndex(to, COPY);
     if (fromIndex == toIndex)
     {
         return;
@@ -490,7 +479,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
     // keep count of used storage in shared memory
     // this storage is adjacent to previous collectBitvectorTargets memory
     uint numFrom = 0;
-    uint newVal;
+    index_t newVal;
     while (1)
     {
 
@@ -556,7 +545,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             // after that, we can simply insert the origin bitvector
             if (toNext == UINT_MAX)
             {
-                uint newNext = incEdgeCouter(COPY);
+                index_t newNext = incEdgeCouter(COPY);
                 __memory__[toIndex + NEXT_LOWER] = newNext;
                 toIndex = newNext;
                 toBits = UINT_MAX;
@@ -628,6 +617,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
  * \param toRel target relation
  *
  */
+__device__ void insertBitvector(index_t toIndex, uint fromBits, index_t fromNext, const uint toRel)
 {
     while (1)
     {
@@ -661,6 +651,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
  * \param toRel target relation, used for new element allocations
  *
  */
+__device__ void mergeBitvectorPts(uint to, index_t fromIndex, const uint toRel)
 {
     uint toIndex = getIndex(to, toRel);
     // read dst out edges
@@ -737,7 +728,7 @@ __device__ void mergeBitvectorCopy(const uint to, const uint fromIndex, uint *co
             // if toBase is greater than frombase
             // we need to insert another bitvector element before toindex
             // and shift the current element back (ref. linked lists)
-            uint newIndex = incEdgeCouter(toRel);
+            index_t newIndex = incEdgeCouter(toRel);
             // write the current bits from the target element to a new location
             __memory__[newIndex + threadIdx.x] = toBits;
             // then overwrite the current bits with fromBits (insert before node)
@@ -775,7 +766,7 @@ __device__ void mergeBitvectors(const uint to, const uint numDstNodes, uint *_sh
     // go through all dst nodes, and union the out edges of that node w/ src's out nodes
     for (size_t i = 0; i < numDstNodes; i++)
     {
-        uint fromIndex = getIndex(_shared_[i], fromRel);
+        index_t fromIndex = getIndex(_shared_[i], fromRel);
 
         if (toRel == COPY)
         {
@@ -1003,7 +994,7 @@ __host__ void insertEdges(edgeSet *edges, int inv, int rel)
  */
 __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pts, uint rel)
 {
-    uint index = getIndex(src, rel);
+    index_t index = getIndex(src, rel);
     while (index != UINT_MAX)
     {
         uint base = memory[index + BASE];
@@ -1066,6 +1057,7 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
  * \param diffPtsNext nextpts next, rest of source data
  *
  */
+__device__ void insertBitvectorAndLink(uint var, const index_t ptsIndex, index_t &currDiffPtsIndex, const uint diffPtsBits, const index_t diffPtsNext)
 {
     insertBitvector(ptsIndex, diffPtsBits, diffPtsNext, PTS);
     if (currDiffPtsIndex != UINT_MAX)
@@ -1093,7 +1085,7 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
 __device__ bool computeDiffPts(const uint var)
 {
     // get diffpts index
-    const uint diffPtsHeadIndex = getIndex(var, PTS_NEXT);
+    const index_t diffPtsIndex = getIndex(var, PTS_NEXT);
 
     // read diffpts data
     uint diffPtsBase = __shfl_sync(FULL_MASK, diffPtsBits, BASE);
@@ -1106,7 +1098,7 @@ __device__ bool computeDiffPts(const uint var)
     // reset the diffpts data
 
     // get pts index
-    __memory__[diffPtsHeadIndex + threadIdx.x] = UINT_MAX;
+    index_t ptsIndex = getIndex(var, PTS);
 
     // get pts data
     uint ptsBits = __memory__[ptsIndex + threadIdx.x];
@@ -1115,22 +1107,27 @@ __device__ bool computeDiffPts(const uint var)
     if (ptsBase == UINT_MAX)
     {
         // use dummy variable for currDiffPtsIndex and insert
+        index_t tmp = ULLONG_MAX;
+        insertBitvectorAndLink(var, ptsIndex, tmp, diffPtsBits, diffPtsNext);
         return true;
     }
     // get next pts element
     // init currDiffPtsIndex to undef
+    index_t currDiffPtsIndex = ULLONG_MAX;
     while (1)
     {
         if (ptsBase > diffPtsBase)
         {
             // insert new element for diffpts data
             // and write previous pts data to new element
+            index_t newIndex = incEdgeCouter(PTS);
             __memory__[newIndex + threadIdx.x] = ptsBits;
             uint val = threadIdx.x == NEXT_LOWER ? newIndex : diffPtsBits;
             __memory__[ptsIndex + threadIdx.x] = val;
 
             // update pts index
             ptsIndex = newIndex;
+
             // also write to currpts, instead of only writing to pts
             __memory__[newIndex + threadIdx.x] = val;
             // abort if diffpts next is undefined alse update index
@@ -1164,6 +1161,7 @@ __device__ bool computeDiffPts(const uint var)
                     }
 
                     // now write diffPtsBits & ~ptsBits to currpts at correct index
+                    index_t newIndex;
                     {
 
                         newIndex = incEdgeCouter(PTS_CURR);
@@ -1178,6 +1176,7 @@ __device__ bool computeDiffPts(const uint var)
                     currDiffPtsIndex = newIndex;
                 }
             }
+
             // abort of diffnext in undefined
             {
                 return (currDiffPtsIndex != UINT_MAX);
@@ -1224,14 +1223,16 @@ __device__ bool computeDiffPts(const uint var)
  * i.e. check if index == next, which would result in infinite loops
  *
  */
+__global__ void kernel_memoryCheck()
 {
     __syncthreads();
 
     uint start = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
-    uint bits, base, next, index;
+    uint bits, base;
+    index_t next, index;
 
-    for (int i = start; i < n; i += stride)
+    for (int i = start; i < V; i += stride)
     {
         index = getIndex(i, PTS_CURR);
         while (index != UINT_MAX)
@@ -1244,7 +1245,7 @@ __device__ bool computeDiffPts(const uint var)
             next = __shfl_sync(FULL_MASK, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("currpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_CURR]);
+                printf("currpts index: %llu has smaller next: %llu, freeList: %llu\n", index, next, __freeList__[PTS_CURR]);
                 break;
             }
             index = next;
@@ -1252,7 +1253,7 @@ __device__ bool computeDiffPts(const uint var)
     }
     __syncthreads();
 
-    for (int i = start; i < n; i += stride)
+    for (int i = start; i < V; i += stride)
     {
         index = getIndex(i, PTS);
         while (index != UINT_MAX)
@@ -1265,7 +1266,7 @@ __device__ bool computeDiffPts(const uint var)
             next = __shfl_sync(FULL_MASK, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("pts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS]);
+                printf("pts index: %llu has smaller next: %llu, freeList: %llu\n", index, next, __freeList__[PTS]);
                 break;
             }
             index = next;
@@ -1273,7 +1274,7 @@ __device__ bool computeDiffPts(const uint var)
     }
     __syncthreads();
 
-    for (int i = start; i < n; i += stride)
+    for (int i = start; i < V; i += stride)
     {
         index = getIndex(i, PTS_NEXT);
         while (index != UINT_MAX)
@@ -1286,7 +1287,7 @@ __device__ bool computeDiffPts(const uint var)
             next = __shfl_sync(FULL_MASK, bits, NEXT_LOWER);
             if (!threadIdx.x && next == index)
             {
-                printf("nextpts index: %u has smaller next: %u, freeList: %u\n", index, next, __freeList__[PTS_NEXT]);
+                printf("nextpts index: %llu has smaller next: %llu, freeList: %llu\n", index, next, __freeList__[PTS_NEXT]);
                 break;
             }
             index = next;
@@ -1303,12 +1304,14 @@ __device__ bool computeDiffPts(const uint var)
  * \param rel for which to count the targets
  *
  */
+__global__ void kernel_count_pts(uint rel)
 {
     uint start = blockIdx.x * blockDim.y + threadIdx.y;
     uint stride = blockDim.y * gridDim.x;
-    uint bits, base, next, index;
+    uint bits, base;
+    index_t next, index;
 
-    for (int i = start; i < n; i += stride)
+    for (int i = start; i < V; i += stride)
     {
         index = getIndex(i, rel);
         while (index != UINT_MAX)
@@ -1321,7 +1324,7 @@ __device__ bool computeDiffPts(const uint var)
             uint value = threadIdx.x < BASE ? __popc(bits) : 0;
 
             for (int i = 16; i >= 1; i /= 2)
-                value += __shfl_xor_sync(BV_THREADS_MASK, value, i);
+                value += __shfl_xor_sync(FULL_MASK, value, i);
 
             if (!threadIdx.x)
             {
@@ -1352,7 +1355,7 @@ __global__ void kernel_updatePts()
         newWork |= newStuff;
         if (!newStuff)
         {
-            const uint currPtsHeadIndex = getIndex(i, PTS_CURR);
+            const index_t currPtsHeadIndex = getIndex(i, PTS_CURR);
             __memory__[currPtsHeadIndex + threadIdx.x] = UINT_MAX;
         }
     }
@@ -1382,7 +1385,7 @@ template <uint originRel, uint fromRel, uint toRel>
 __device__ void rewriteRule(const uint src, uint *const _shared_)
 {
     uint usedShared = 0;
-    uint index = getIndex(src, originRel);
+    index_t index = getIndex(src, originRel);
     do
     {
         uint bits = __memory__[index + threadIdx.x];
@@ -1454,10 +1457,9 @@ __launch_bounds__(THREADS_PER_BLOCK)
  * \param isNodeId whether to calculate index from src or use as is, first is the default behaviour
  *
  */
+__host__ void printWord(uint *memory, index_t src, uint rel, bool isNodeId = true)
 {
-    // if (isNodeId)
-    //     start *= 32;
-    uint start;
+    index_t start;
     if (isNodeId)
         start = getIndex(src, rel);
     else
@@ -1550,8 +1552,9 @@ __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
  * \param rel target relation to read from freelist
  *
  */
+__host__ void printMemory(index_t start, index_t end, uint rel)
 {
-    uint usedUints;
+    index_t usedUints;
     if (rel == PTS_CURR)
         usedUints = tmpFreePtsCurr - start;
     else
@@ -1559,7 +1562,7 @@ __host__ void printAllPtsMinimal(uint V, uint *memory, uint rel)
     size_t usedBytes = usedUints * sizeof(uint);
     size_t totalBytes = (end - start) * sizeof(uint);
     assert(usedBytes < totalBytes);
-    printf("%12s Elements:(uints)%16u\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
+    printf("%12s Elements:(uints)%16llu\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
 }
 
 /**
