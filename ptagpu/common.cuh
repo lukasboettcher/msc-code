@@ -9,10 +9,14 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+
+#define BASE (29U)
+#define NEXT_LOWER (30U)
+#define NEXT_UPPER (31U)
 #define BASE (30U)
 #define NEXT (31U)
 #define ELEMENT_WIDTH 32
-#define ELEMENT_CARDINALITY (30 * 32)
+#define ELEMENT_CARDINALITY (BASE * 32)
 #define BASE_OF(x) ((x) / ELEMENT_CARDINALITY)
 #define WORD_OF(x) (div32((x) % ELEMENT_CARDINALITY))
 #define BIT_OF(x) (mod32(x))
