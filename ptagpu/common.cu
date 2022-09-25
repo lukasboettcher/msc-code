@@ -252,7 +252,9 @@ __device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
         myBits = 1 << bit;
     else if (threadIdx.x == BASE)
         myBits = base;
-    else if (threadIdx.x >= NEXT_LOWER)
+    else if (threadIdx.x == NEXT_LOWER)
+        myBits = UINT_MAX;
+    else if (threadIdx.x == NEXT_UPPER)
         myBits = UINT_MAX;
 
     while (1)
@@ -264,7 +266,7 @@ __device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
             __memory__[index + threadIdx.x] = myBits;
             return index;
         }
-        if (toBase == base)
+        else if (toBase == base)
         {
             uint orBits = toBits | myBits;
             if (orBits != toBits && threadIdx.x < NEXT_LOWER)
@@ -272,21 +274,21 @@ __device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
 
             return index;
         }
-        if (toBase < base)
+        else if (toBase < base)
         {
             uint toNext = __shfl_sync(FULL_MASK, toBits, NEXT_LOWER);
             if (toNext == UINT_MAX)
             {
-                uint newIndex = incEdgeCouter(toRel);
+                index_t newIndex = incEdgeCouter(toRel);
                 __memory__[index + NEXT_LOWER] = newIndex;
                 __memory__[newIndex + threadIdx.x] = myBits;
                 return newIndex;
             }
             index = toNext;
         }
-        else
+        else if (toBase > base)
         {
-            uint newIndex = incEdgeCouter(toRel);
+            index_t newIndex = incEdgeCouter(toRel);
             __memory__[newIndex + threadIdx.x] = toBits;
             uint val = threadIdx.x == NEXT_LOWER ? newIndex : myBits;
             __memory__[index + threadIdx.x] = val;
