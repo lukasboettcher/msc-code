@@ -125,4 +125,28 @@ __device__ __host__ static inline uint getUpper(index_t value)
   return value >> 32;
 }
 
+/**
+ * 
+ * helper function to create a 64 bit integer from two 32 bit integers, all being unsigned
+ * 
+ */
+__device__ __host__ static inline index_t load_size_t(uint lower, uint upper)
+{
+  index_t res = upper;
+  res <<= 32;
+  res |= lower;
+  return res;
+}
+
+/**
+ * 
+ * helper function load a 64 bit index from two threads in a cuda warp
+ * 
+ */
+__device__ static inline index_t thread_load_size_t(uint bits)
+{
+  uint lower = __shfl_sync(FULL_MASK, bits, NEXT_LOWER);
+  uint upper = __shfl_sync(FULL_MASK, bits, NEXT_UPPER);
+  return load_size_t(lower, upper);
+}
 #endif
