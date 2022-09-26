@@ -1675,6 +1675,12 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         kernel_updatePts<<<numBlocks, threadsPerBlock, 0>>>();
         checkCuda(cudaDeviceSynchronize());
 
+        checkCuda(cudaDeviceSynchronize());
+        kernel_count_pts<<<numBlocks, threadsPerBlock, 0>>>(PTS_CURR);
+        checkCuda(cudaDeviceSynchronize());
+        printf("\tnum currpts after update: %'u\n", __counter__);
+        __counter__ = 0;
+
         if (__done__)
         {
             std::cout << "\t\tno change recorded, aborting main loop in iter: " << iter << "\n";
