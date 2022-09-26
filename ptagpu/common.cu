@@ -277,10 +277,10 @@ __device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
         else if (toBase < base)
         {
             index_t toNext = thread_load_size_t(toBits);
-            if (toNext == UINT_MAX)
+            if (toNext == ULLONG_MAX)
             {
                 index_t newIndex = incEdgeCouter(toRel);
-                __memory__[index + NEXT_LOWER] = newIndex;
+                store_size_t(__memory__, index, newIndex);
                 __memory__[newIndex + threadIdx.x] = myBits;
                 return newIndex;
             }
@@ -336,8 +336,8 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
         {
             if (toNext == ULLONG_MAX)
             {
-                uint nextIndex = incEdgeCouterHost(toRel);
-                graph[index + NEXT_LOWER] = nextIndex;
+                index_t nextIndex = incEdgeCouterHost(toRel);
+                store_size_t(graph, index, nextIndex);
 
                 for (size_t i = 0; i < BASE; i++)
                     graph[nextIndex + i] = 0;
@@ -362,7 +362,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
             for (size_t i = 0; i < BASE; i++)
                 graph[nextIndex + i] = 0;
             graph[index + BASE] = base;
-            graph[index + NEXT_LOWER] = nextIndex;
+            store_size_t(graph, index, nextIndex);
             graph[index + word] |= 1 << bit;
         }
     }
@@ -549,7 +549,7 @@ __device__ void mergeBitvectorCopy(const uint to, const index_t fromIndex, uint 
             if (toNext == ULLONG_MAX)
             {
                 index_t newNext = incEdgeCouter(COPY);
-                __memory__[toIndex + NEXT_LOWER] = newNext;
+                store_size_t(__memory__, toIndex, newNext);
                 toIndex = newNext;
                 toBits = UINT_MAX;
                 toBase = UINT_MAX;
@@ -716,7 +716,7 @@ __device__ void mergeBitvectorPts(uint to, index_t fromIndex, const uint toRel)
             if (toNext == ULLONG_MAX)
             {
                 toNext = incEdgeCouter(toRel);
-                __memory__[toIndex + NEXT_LOWER] = toNext;
+                store_size_t(__memory__, toIndex, toNext);
                 insertBitvector(toNext, fromBits, fromNext, toRel);
                 return;
             }
@@ -1063,10 +1063,9 @@ __host__ bool aliasBV(uint a, uint b, uint *memory)
 __device__ void insertBitvectorAndLink(uint var, const index_t ptsIndex, index_t &currDiffPtsIndex, const uint diffPtsBits, const index_t diffPtsNext)
 {
     insertBitvector(ptsIndex, diffPtsBits, diffPtsNext, PTS);
-    if (currDiffPtsIndex != UINT_MAX)
+    if (currDiffPtsIndex != ULLONG_MAX)
     {
-        __memory__[currDiffPtsIndex + NEXT_LOWER] = ptsIndex;
-        assert(currDiffPtsIndex != ptsIndex);
+        store_size_t(__memory__, currDiffPtsIndex, ptsIndex);
     }
     else
     {
@@ -1119,6 +1118,7 @@ __device__ bool computeDiffPts(const uint var)
     }
     // get next pts element
     index_t ptsNext = thread_load_size_t(ptsBits);
+
     // init currDiffPtsIndex to undef
     index_t currDiffPtsIndex = ULLONG_MAX;
     while (1)
@@ -1140,6 +1140,8 @@ __device__ bool computeDiffPts(const uint var)
             val = threadIdx.x < NEXT_LOWER ? diffPtsBits : UINT_MAX;
             __memory__[newIndex + threadIdx.x] = val;
             if (currDiffPtsIndex != ULLONG_MAX)
+                store_size_t(__memory__, currDiffPtsIndex, newIndex);
+
             // abort if diffpts next is undefined alse update index
             if (diffPtsNext == ULLONG_MAX)
                 return true;
@@ -1181,8 +1183,7 @@ __device__ bool computeDiffPts(const uint var)
                     {
 
                         newIndex = incEdgeCouter(PTS_CURR);
-                        __memory__[currDiffPtsIndex + NEXT_LOWER] = newIndex;
-                        assert(currDiffPtsIndex != newIndex);
+                        store_size_t(__memory__, currDiffPtsIndex, newIndex);
                     }
                     else
                     {
@@ -1224,6 +1225,7 @@ __device__ bool computeDiffPts(const uint var)
             if (ptsNext == ULLONG_MAX)
             {
                 index_t newPtsIndex = incEdgeCouter(PTS);
+                store_size_t(__memory__, ptsIndex, newPtsIndex);
                 insertBitvectorAndLink(var, newPtsIndex, currDiffPtsIndex, diffPtsBits, diffPtsNext);
                 return true;
             }
