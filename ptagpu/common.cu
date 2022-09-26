@@ -290,7 +290,7 @@ __device__ index_t insertEdgeDevice(uint src, uint dst, uint toRel)
         {
             index_t newIndex = incEdgeCouter(toRel);
             __memory__[newIndex + threadIdx.x] = toBits;
-            uint val = threadIdx.x == NEXT_LOWER ? newIndex : myBits;
+            uint val = thread_load_val(myBits, newIndex);
             __memory__[index + threadIdx.x] = val;
             return index;
         }
@@ -322,7 +322,7 @@ __host__ void insertEdge(uint src, uint dst, uint *graph, uint toRel)
     while (1)
     {
         uint toBase = graph[index + BASE];
-        uint toNext = graph[index + NEXT_LOWER];
+        index_t toNext = load_size_t(graph[index + NEXT_LOWER], graph[index + NEXT_UPPER]);
 
         if (toBase == UINT_MAX)
         {
@@ -476,7 +476,7 @@ __device__ void mergeBitvectorCopy(const uint to, const index_t fromIndex, uint 
     // share needed data for to indices
     uint toBits = __memory__[toIndex + threadIdx.x];
     uint toBase = __shfl_sync(FULL_MASK, toBits, BASE);
-    uint toNext = __shfl_sync(FULL_MASK, toBits, NEXT_LOWER);
+    index_t toNext = thread_load_size_t(toBits);
 
     // keep count of used storage in shared memory
     // this storage is adjacent to previous collectBitvectorTargets memory
@@ -498,7 +498,7 @@ __device__ void mergeBitvectorCopy(const uint to, const index_t fromIndex, uint 
             }
 
             // each thread gets a value that will be written back to memory
-            uint val = threadIdx.x == NEXT_LOWER ? toNext : orBits;
+            uint val = thread_load_val(orBits, toNext);
             if (val != toBits)
                 __memory__[toIndex + threadIdx.x] = val;
 
@@ -579,7 +579,7 @@ __device__ void mergeBitvectorCopy(const uint to, const index_t fromIndex, uint 
             }
 
             // overwrite the current bits with fromBits (insert before node)
-            fromBits = threadIdx.x == NEXT_LOWER ? newVal : fromBits;
+            fromBits = thread_load_val(fromBits, newVal);
             __memory__[toIndex + threadIdx.x] = fromBits;
             if (applyCopy)
             {
@@ -628,7 +628,7 @@ __device__ void insertBitvector(index_t toIndex, uint fromBits, index_t fromNext
         // if that is the case, allocate a new index for a new element
         index_t newIndex = fromNext == ULLONG_MAX ? ULLONG_MAX : incEdgeCouter(toRel);
         // handle the special next entry, since we can not reuse the fromNext bits
-        uint val = threadIdx.x == NEXT_LOWER ? newIndex : fromBits;
+        uint val = thread_load_val(fromBits, newIndex);
         // write new values to target memory location
         __memory__[toIndex + threadIdx.x] = val;
 
@@ -656,7 +656,7 @@ __device__ void insertBitvector(index_t toIndex, uint fromBits, index_t fromNext
  */
 __device__ void mergeBitvectorPts(uint to, index_t fromIndex, const uint toRel)
 {
-    uint toIndex = getIndex(to, toRel);
+    index_t toIndex = getIndex(to, toRel);
     // read dst out edges
     uint fromBits = __memory__[fromIndex + threadIdx.x];
     // get the base from thread
@@ -687,7 +687,7 @@ __device__ void mergeBitvectorPts(uint to, index_t fromIndex, const uint toRel)
             // union the bits, adding the new edges
             uint orBits = fromBits | toBits;
             // each thread gets a value that will be written back to memory
-            uint val = threadIdx.x == NEXT_LOWER ? newToNext : orBits;
+            uint val = thread_load_val(orBits, newToNext);
             if (val != toBits)
                 __memory__[toIndex + threadIdx.x] = val;
 
@@ -735,7 +735,7 @@ __device__ void mergeBitvectorPts(uint to, index_t fromIndex, const uint toRel)
             // write the current bits from the target element to a new location
             __memory__[newIndex + threadIdx.x] = toBits;
             // then overwrite the current bits with fromBits (insert before node)
-            uint val = threadIdx.x == NEXT_LOWER ? newIndex : fromBits;
+            uint val = thread_load_val(fromBits, newIndex);
             __memory__[toIndex + threadIdx.x] = val;
 
             // if next from element is defined, update the bits
@@ -1001,7 +1001,7 @@ __host__ void collectFromBitvector(uint src, uint *memory, std::vector<uint> &pt
     while (index != ULLONG_MAX)
     {
         uint base = memory[index + BASE];
-        uint next = memory[index + NEXT_LOWER];
+        index_t next = load_size_t(memory[index + NEXT_LOWER], memory[index + NEXT_UPPER]);
         if (base == UINT_MAX)
         {
             break;
@@ -1129,7 +1129,7 @@ __device__ bool computeDiffPts(const uint var)
             // and write previous pts data to new element
             index_t newIndex = incEdgeCouter(PTS);
             __memory__[newIndex + threadIdx.x] = ptsBits;
-            uint val = threadIdx.x == NEXT_LOWER ? newIndex : diffPtsBits;
+            uint val = thread_load_val(diffPtsBits, newIndex);
             __memory__[ptsIndex + threadIdx.x] = val;
 
             // update pts index
@@ -1156,6 +1156,7 @@ __device__ bool computeDiffPts(const uint var)
         {
             // calculate bits that should be merged w/ pts
             index_t newPtsNext = (ptsNext == ULLONG_MAX && diffPtsNext != ULLONG_MAX) ? incEdgeCouter(PTS) : ptsNext;
+            uint orBits = thread_load_val(ptsBits | diffPtsBits, newPtsNext);
             uint ballot = __ballot_sync(FULL_MASK, orBits != ptsBits);
             if (ballot)
             {
