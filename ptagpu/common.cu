@@ -1345,8 +1345,12 @@ __global__ void kernel_count_pts(uint rel)
 
             uint value = threadIdx.x < BASE ? __popc(bits) : 0;
 
+#if __CUDA_ARCH__ >= 800
+            __reduce_add_sync(FULL_MASK, value);
+#else
             for (int i = 16; i >= 1; i /= 2)
                 value += __shfl_xor_sync(FULL_MASK, value, i);
+#endif
 
             if (!threadIdx.x)
                 atomicAdd(&__counter__, value);
