@@ -115,3 +115,14 @@ bash.bc ptagpu 0m16.312s ander 0m38.319s
 wireshark.bc(UI) ptagpu 0m2.755s ander 0m2.374s
 
 perl.bc ptagpu 0m36.619s 0m56.539s
+
+## notes on flamegraph generation
+
+```bash
+git clone https://github.com/brendangregg/FlameGraph  # or download it from github
+cd FlameGraph
+perf record -F 99 -a -g -- sleep 60
+perf script | ./stackcollapse-perf.pl > out.perf-folded
+./flamegraph.pl out.perf-folded > perf.svg
+firefox perf.svg  # or chrome, etc.
+```
