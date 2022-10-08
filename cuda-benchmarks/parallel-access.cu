@@ -6,28 +6,41 @@
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
 {
-  if (err != cudaSuccess)
-  {
-    fprintf(stderr, "CUDA Runtime Error at: '%s:%i'\n\t%s %s\n", file, line, cudaGetErrorString(err), func);
-    exit(EXIT_FAILURE);
-  }
+    if (err != cudaSuccess)
+    {
+        fprintf(stderr, "CUDA Runtime Error at: '%s:%i'\n\t%s %s\n", file, line, cudaGetErrorString(err), func);
+        exit(EXIT_FAILURE);
+    }
 }
-
-
 
 int args[100];
 // const size_t N = 1 * 1024 * 1024 * 1024L;
-const size_t N = 128 * 1024 * 1024L;
+const size_t N = 2 * 1024 * 1024 * 1024L;
 int num_gpus;
 
 __device__ __managed__ uint *__memory__;
+__managed__ uint N_FIB = 10000;
 
-__global__ void kernel(size_t start, size_t end, size_t n)
+__device__ __host__ uint fib(uint n)
+{
+    uint a = 0, b = 1, c, i;
+    if (n == 0)
+        return a;
+    for (i = 2; i <= n; i++)
+    {
+        c = a + b;
+        a = b;
+        b = c;
+    }
+    return b;
+}
+
+__global__ void kernel(size_t start, size_t end)
 {
     uint tid = start + threadIdx.x + blockIdx.x * blockDim.x;
-    for (uint i = tid; i < n && i < end; i += blockDim.x * gridDim.x)
+    for (uint i = tid; i < end; i += blockDim.x * gridDim.x)
     {
-        __memory__[i] = i;
+        __memory__[i] = i + fib(N_FIB);
     }
 }
 
@@ -42,13 +55,14 @@ void *launch_kernel(void *arg)
     size_t perGpu = (N + num_gpus - 1) / num_gpus;
 
     size_t start = threadId * perGpu;
+    size_t end = min(N, start + perGpu);
 
     cudaMemAdvise(__memory__ + start, perGpu, cudaMemAdviseSetPreferredLocation, threadId);
     cudaMemPrefetchAsync(__memory__ + start, perGpu, threadId, cudaStreamPerThread);
 
     // printf("starting thread %i w/ start: %i end: %i | total: %i, pergpu: %i\n", threadId, start, start + perGpu, N, perGpu);
 
-    kernel<<<blocksPerGrid, threadsPerBlock>>>(start, start + perGpu, N);
+    kernel<<<blocksPerGrid, threadsPerBlock>>>(start, end);
 
     cudaStreamSynchronize(cudaStreamPerThread);
 
@@ -57,9 +71,10 @@ void *launch_kernel(void *arg)
 
 void verify()
 {
+    uint static_fib = fib(N_FIB);
     for (size_t i = 0; i < N; i++)
         // assert(__memory__[i] == i);
-        if (__memory__[i] != i)
+        if (__memory__[i] != i + static_fib)
         {
             fprintf(stderr, "error, w/ iter: %lu\n", i);
             break;
@@ -121,7 +136,7 @@ void run_single_kernel()
     cudaEventRecord(start, 0);
     int threadsPerBlock = 1024;
     int blocksPerGrid = 80;
-    kernel<<<blocksPerGrid, threadsPerBlock>>>(0, N, N);
+    kernel<<<blocksPerGrid, threadsPerBlock>>>(0, N);
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
@@ -147,22 +162,39 @@ void run_multi_kernel_new()
 
     cudaEventRecord(start, 0);
 
+    printf("start multikenel\n");
+
+    for (size_t i = 0; i < num_gpus; i++)
+    {
+        size_t perGpu = (N + num_gpus - 1) / num_gpus;
+        size_t start = i * perGpu;
+        size_t end = min(N, start + perGpu);
+        cudaSetDevice(i);
+        cudaStreamCreate(&streams[i]);
+        cudaMemAdvise(__memory__ + start, (end - start) * sizeof(uint), cudaMemAdviseSetPreferredLocation, i);
+        cudaMemPrefetchAsync(__memory__ + start, (end - start) * sizeof(uint), i, streams[i]);
+    }
+
+    printf("prefetch done\n");
+
     for (int i = 0; i < num_gpus; i++)
     {
         size_t perGpu = (N + num_gpus - 1) / num_gpus;
-
         size_t start = i * perGpu;
+        size_t end = min(N, start + perGpu);
         checkCuda(cudaSetDevice(i));
         checkCuda(cudaStreamCreate(&streams[i]));
-
-        // cudaMemAdvise(__memory__ + start, perGpu, cudaMemAdviseSetPreferredLocation, i);
-        // cudaMemPrefetchAsync(__memory__ + start, perGpu, i, streams[i]);
-
-        kernel<<<80, 1024, 0, streams[i]>>>(start, start + perGpu, N);
-        // checkCuda(cudaStreamSynchronize(streams[i]));
+        kernel<<<80, 1024, 0, streams[i]>>>(start, end);
     }
+
+    for (size_t i = 0; i < num_gpus; i++)
+    {
+        cudaStreamSynchronize(streams[i]);
+    }
+
+    printf("kernel done\n");
+
     cudaSetDevice(0);
-    checkCuda(cudaDeviceSynchronize());
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     float elapsedTime;
@@ -192,7 +224,8 @@ int main()
 
     cudaError_t result;
     result = cudaGetLastError();
-    if (cudaSuccess != result){
+    if (cudaSuccess != result)
+    {
         fprintf(stderr, "error during execution: %s\n", cudaGetErrorString(result));
     }
 
