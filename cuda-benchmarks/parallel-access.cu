@@ -16,15 +16,17 @@ myclock::time_point before, after;
 
 int args[100];
 // const size_t N = 1 * 1024 * 1024 * 1024L;
-const size_t N = 2 * 1024 * 1024 * 1024L;
+const size_t N = 1 * 1024 * 1024 * 1024L;
 int num_gpus;
 
-__device__ __managed__ uint *__memory__;
-__managed__ uint N_FIB = 10000;
+typedef size_t data_t;
 
-__device__ __host__ uint fib(uint n)
+__device__ __managed__ data_t *__memory__;
+__managed__ data_t N_FIB = 100;
+
+__device__ __host__ data_t fib(data_t n)
 {
-    uint a = 0, b = 1, c, i;
+    data_t a = 0, b = 1, c, i;
     if (n == 0)
         return a;
     for (i = 2; i <= n; i++)
@@ -38,8 +40,8 @@ __device__ __host__ uint fib(uint n)
 
 __global__ void kernel(size_t start, size_t end)
 {
-    uint tid = start + threadIdx.x + blockIdx.x * blockDim.x;
-    for (uint i = tid; i < end; i += blockDim.x * gridDim.x)
+    data_t tid = start + threadIdx.x + blockIdx.x * blockDim.x;
+    for (data_t i = tid; i < end; i += blockDim.x * gridDim.x)
     {
         __memory__[i] = i + fib(N_FIB);
     }
@@ -70,7 +72,7 @@ void *launch_kernel(void *arg)
 
 void verify()
 {
-    uint static_fib = fib(N_FIB);
+    data_t static_fib = fib(N_FIB);
     for (size_t i = 0; i < N; i++)
         // assert(__memory__[i] == i);
         if (__memory__[i] != i + static_fib)
@@ -80,7 +82,7 @@ void verify()
         }
 }
 
-void run_multi_kernel()
+void run_multi_kernel_threaded()
 {
     cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N);
 
@@ -129,12 +131,9 @@ void run_single_kernel()
     verify();
 }
 
-void run_multi_kernel_new()
+void run_multi_kernel()
 {
-    checkCuda(cudaMemset(__memory__, UCHAR_MAX, sizeof(uint) * N));
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    checkCuda(cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N));
 
     cudaStream_t streams[num_gpus];
 
@@ -145,9 +144,10 @@ void run_multi_kernel_new()
         size_t start = i * perGpu;
         size_t end = min(N, start + perGpu);
         cudaSetDevice(i);
+        cudaFree(0);
         cudaStreamCreate(&streams[i]);
-        cudaMemAdvise(__memory__ + start, (end - start) * sizeof(uint), cudaMemAdviseSetPreferredLocation, i);
-        cudaMemPrefetchAsync(__memory__ + start, (end - start) * sizeof(uint), i, streams[i]);
+        cudaMemAdvise(__memory__ + start, (end - start) * sizeof(data_t), cudaMemAdviseSetPreferredLocation, i);
+        cudaMemPrefetchAsync(__memory__ + start, (end - start) * sizeof(data_t), i, streams[i]);
     }
 
     before = myclock::now();
@@ -158,22 +158,24 @@ void run_multi_kernel_new()
         size_t start = i * perGpu;
         size_t end = min(N, start + perGpu);
         checkCuda(cudaSetDevice(i));
-        checkCuda(cudaStreamCreate(&streams[i]));
         printf("\tstarting device %i on data [%lu, %lu) total: %lu\n", i, start, end, N);
         kernel<<<80, 1024, 0, streams[i]>>>(start, end);
     }
 
     for (int i = 0; i < num_gpus; i++)
     {
-        cudaStreamSynchronize(streams[i]);
+        checkCuda(cudaStreamSynchronize(streams[i]));
     }
 
     after = myclock::now();
 
-    printf("multi device (new) done after: %.3fms \n", elapsedTime);
+    printf("multi device (new) done after: %.3fms \n", std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before).count());
 
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    for (int i = 0; i < num_gpus; i++)
+    {
+        cudaSetDevice(i);
+        checkCuda(cudaStreamDestroy(streams[i]));
+    }
 
     verify();
 }
@@ -182,13 +184,13 @@ int main()
 {
     cudaGetDeviceCount(&num_gpus);
 
-    cudaMallocManaged(&__memory__, sizeof(uint) * N);
+    cudaMallocManaged(&__memory__, sizeof(data_t) * N);
 
-    run_multi_kernel();
+    // run_multi_kernel_threaded();
 
     run_single_kernel();
 
-    run_multi_kernel_new();
+    run_multi_kernel();
 
     cudaFree(__memory__);
 
