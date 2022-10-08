@@ -47,8 +47,6 @@ __global__ void kernel(size_t start, size_t end)
 void *launch_kernel(void *arg)
 {
     int threadId = *((int *)arg);
-    int threadsPerBlock = 1024;
-    int blocksPerGrid = 80;
 
     cudaSetDevice(threadId);
 
@@ -60,9 +58,9 @@ void *launch_kernel(void *arg)
     cudaMemAdvise(__memory__ + start, perGpu, cudaMemAdviseSetPreferredLocation, threadId);
     cudaMemPrefetchAsync(__memory__ + start, perGpu, threadId, cudaStreamPerThread);
 
-    // printf("starting thread %i w/ start: %i end: %i | total: %i, pergpu: %i\n", threadId, start, start + perGpu, N, perGpu);
+    printf("\tstarting thread %i w/ start: %lu end: %lu | total: %lu, pergpu: %lu\n", threadId, start, end, N, perGpu);
 
-    kernel<<<blocksPerGrid, threadsPerBlock>>>(start, end);
+    kernel<<<80, 1024>>>(start, end);
 
     cudaStreamSynchronize(cudaStreamPerThread);
 
@@ -117,7 +115,7 @@ void run_multi_kernel()
     float elapsedTime;
     cudaEventElapsedTime(&elapsedTime, start, stop);
 
-    printf("multi device done after: %.3fms \n", elapsedTime);
+    printf("multi device (pthreads) done after: %.3fms \n", elapsedTime);
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
@@ -134,9 +132,7 @@ void run_single_kernel()
 
     cudaMemset(__memory__, UCHAR_MAX, sizeof(uint) * N);
     cudaEventRecord(start, 0);
-    int threadsPerBlock = 1024;
-    int blocksPerGrid = 80;
-    kernel<<<blocksPerGrid, threadsPerBlock>>>(0, N);
+    kernel<<<80, 1024>>>(0, N);
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
@@ -160,12 +156,9 @@ void run_multi_kernel_new()
 
     cudaStream_t streams[num_gpus];
 
-    cudaEventRecord(start, 0);
-
-    printf("start multikenel\n");
-
-    for (size_t i = 0; i < num_gpus; i++)
+    for (int i = 0; i < num_gpus; i++)
     {
+        printf("\tcudaMemAdvise and prefetch for device %i\n", i);
         size_t perGpu = (N + num_gpus - 1) / num_gpus;
         size_t start = i * perGpu;
         size_t end = min(N, start + perGpu);
@@ -175,7 +168,7 @@ void run_multi_kernel_new()
         cudaMemPrefetchAsync(__memory__ + start, (end - start) * sizeof(uint), i, streams[i]);
     }
 
-    printf("prefetch done\n");
+    cudaEventRecord(start, 0);
 
     for (int i = 0; i < num_gpus; i++)
     {
@@ -184,15 +177,14 @@ void run_multi_kernel_new()
         size_t end = min(N, start + perGpu);
         checkCuda(cudaSetDevice(i));
         checkCuda(cudaStreamCreate(&streams[i]));
+        printf("\tstarting device %i on data [%lu, %lu) total: %lu\n", i, start, end, N);
         kernel<<<80, 1024, 0, streams[i]>>>(start, end);
     }
 
-    for (size_t i = 0; i < num_gpus; i++)
+    for (int i = 0; i < num_gpus; i++)
     {
         cudaStreamSynchronize(streams[i]);
     }
-
-    printf("kernel done\n");
 
     cudaSetDevice(0);
     cudaEventRecord(stop, 0);
@@ -214,7 +206,7 @@ int main()
 
     cudaMallocManaged(&__memory__, sizeof(uint) * N);
 
-    // run_multi_kernel();
+    run_multi_kernel();
 
     run_single_kernel();
 
