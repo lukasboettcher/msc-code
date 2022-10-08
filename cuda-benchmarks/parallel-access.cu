@@ -137,6 +137,7 @@ void run_multi_kernel()
 
     cudaStream_t streams[num_gpus];
 
+#pragma omp parallel for num_threads(num_gpus)
     for (int i = 0; i < num_gpus; i++)
     {
         printf("\tcudaMemAdvise and prefetch for device %i\n", i);
@@ -152,6 +153,7 @@ void run_multi_kernel()
 
     before = myclock::now();
 
+#pragma omp parallel for num_threads(num_gpus)
     for (int i = 0; i < num_gpus; i++)
     {
         size_t perGpu = (N + num_gpus - 1) / num_gpus;
@@ -162,6 +164,7 @@ void run_multi_kernel()
         kernel<<<80, 1024, 0, streams[i]>>>(start, end);
     }
 
+#pragma omp parallel for num_threads(num_gpus)
     for (int i = 0; i < num_gpus; i++)
     {
         checkCuda(cudaStreamSynchronize(streams[i]));
