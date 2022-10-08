@@ -19,6 +19,7 @@ public:
     edgeSet *tmpPts;
     edgeSet *tmpCopy;
     bool printEdges = false;
+    bool deepGepResolution = false;
     edgeSet addrEdges, directEdges, storeEdges, loadEdges;
 
     std::chrono::high_resolution_clock::time_point before, after;
@@ -192,12 +193,15 @@ public:
 
                             // Add the field-insensitive node into pts.
                             NodeID baseId = consCG->getFIObjVar(o);
-                            NodeBS &allFields = consCG->getAllFieldsObjVars(baseId);
-                            for (NodeBS::iterator fieldIt = allFields.begin(), fieldEit = allFields.end(); fieldIt != fieldEit; fieldIt++)
+                            if (deepGepResolution)
                             {
-                                NodeID fieldId = *fieldIt;
-                                if (fieldId != baseId)
-                                    tmpDstPts.push_back(fieldId);
+                                NodeBS &allFields = consCG->getAllFieldsObjVars(baseId);
+                                for (NodeBS::iterator fieldIt = allFields.begin(), fieldEit = allFields.end(); fieldIt != fieldEit; fieldIt++)
+                                {
+                                    NodeID fieldId = *fieldIt;
+                                    if (fieldId != baseId)
+                                        tmpDstPts.push_back(fieldId);
+                                }
                             }
                             tmpDstPts.push_back(baseId);
                         }
