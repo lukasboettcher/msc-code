@@ -1,8 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
-#include <assert.h>
-#include <math.h>
-#include <time.h>
+#include <chrono>
 #define checkCuda(val) check((val), #val, __FILE__, __LINE__)
 void check(cudaError_t err, const char *const func, const char *const file, const int line)
 {
@@ -12,6 +10,9 @@ void check(cudaError_t err, const char *const func, const char *const file, cons
         exit(EXIT_FAILURE);
     }
 }
+
+using myclock = std::chrono::high_resolution_clock;
+myclock::time_point before, after;
 
 int args[100];
 // const size_t N = 1 * 1024 * 1024 * 1024L;
@@ -81,16 +82,13 @@ void verify()
 
 void run_multi_kernel()
 {
-    cudaMemset(__memory__, UCHAR_MAX, sizeof(uint) * N);
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N);
 
     const int num_threads = num_gpus;
 
     pthread_t threads[num_threads];
 
-    cudaEventRecord(start, 0);
+    before = myclock::now();
 
     for (int i = 0; i < num_threads; i++)
     {
@@ -109,40 +107,24 @@ void run_multi_kernel()
         }
     }
 
-    cudaDeviceSynchronize();
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
-
-    printf("multi device (pthreads) done after: %.3fms \n", elapsedTime);
-
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    after = myclock::now();
+    printf("multi device (pthreads) done after: %.3fms \n", std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before).count());
 
     verify();
 }
 
 void run_single_kernel()
 {
-    cudaMemset(__memory__, UCHAR_MAX, sizeof(uint) * N);
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N);
 
-    cudaMemset(__memory__, UCHAR_MAX, sizeof(uint) * N);
-    cudaEventRecord(start, 0);
-    kernel<<<80, 1024>>>(0, N);
+    cudaMemAdvise(__memory__, sizeof(data_t) * N, cudaMemAdviseSetPreferredLocation, 0);
+    cudaMemPrefetchAsync(__memory__, sizeof(data_t) * N, 0, 0);
+    before = myclock::now();
+    kernel<<<80, 1024, 0, 0>>>(0, N);
     cudaDeviceSynchronize();
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
+    after = myclock::now();
 
-    printf("single device done after: %.3fms \n", elapsedTime);
-
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    printf("single device done after: %.3fms \n", std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before).count());
 
     verify();
 }
@@ -168,7 +150,7 @@ void run_multi_kernel_new()
         cudaMemPrefetchAsync(__memory__ + start, (end - start) * sizeof(uint), i, streams[i]);
     }
 
-    cudaEventRecord(start, 0);
+    before = myclock::now();
 
     for (int i = 0; i < num_gpus; i++)
     {
@@ -186,11 +168,7 @@ void run_multi_kernel_new()
         cudaStreamSynchronize(streams[i]);
     }
 
-    cudaSetDevice(0);
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, start, stop);
+    after = myclock::now();
 
     printf("multi device (new) done after: %.3fms \n", elapsedTime);
 
