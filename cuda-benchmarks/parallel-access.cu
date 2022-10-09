@@ -84,7 +84,7 @@ void verify()
 
 void run_multi_kernel_threaded()
 {
-    cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N);
+    cudaMemset(__memory__, 0, sizeof(data_t) * N);
 
     const int num_threads = num_gpus;
 
@@ -117,7 +117,7 @@ void run_multi_kernel_threaded()
 
 void run_single_kernel()
 {
-    cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N);
+    cudaMemset(__memory__, 0, sizeof(data_t) * N);
 
     cudaMemAdvise(__memory__, sizeof(data_t) * N, cudaMemAdviseSetPreferredLocation, 0);
     cudaMemPrefetchAsync(__memory__, sizeof(data_t) * N, 0, 0);
@@ -133,7 +133,7 @@ void run_single_kernel()
 
 void run_multi_kernel()
 {
-    checkCuda(cudaMemset(__memory__, UCHAR_MAX, sizeof(data_t) * N));
+    checkCuda(cudaMemset(__memory__, 0, sizeof(data_t) * N));
 
     cudaStream_t streams[num_gpus];
 
