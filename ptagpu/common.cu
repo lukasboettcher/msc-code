@@ -1669,15 +1669,18 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
     size_t iter = 0;
 
     std::chrono::high_resolution_clock::time_point before, after;
-    std::chrono::duration<double, std::milli> timeThrust(0), timeSvf(0);
+    std::chrono::duration<double, std::milli> timeThrust(0), timeSvf(0), timeUpdate(0), timeKernel(0), timeStore(0);
 
     while (1)
     {
         ++iter;
         printf("updating info \n");
         checkCuda(cudaDeviceSynchronize());
+        before = std::chrono::high_resolution_clock::now();
         kernel_updatePts<<<numBlocks, threadsPerBlock, 0>>>();
         checkCuda(cudaDeviceSynchronize());
+        after = std::chrono::high_resolution_clock::now();
+        timeUpdate += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
         checkCuda(cudaDeviceSynchronize());
         kernel_count_pts<<<numBlocks, threadsPerBlock, 0>>>(PTS_CURR);
@@ -1696,8 +1699,11 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
         printf("\trunning main kernel\n");
         checkCuda(cudaDeviceSynchronize());
+        before = std::chrono::high_resolution_clock::now();
         kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
         checkCuda(cudaDeviceSynchronize());
+        after = std::chrono::high_resolution_clock::now();
+        timeKernel += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
         before = std::chrono::high_resolution_clock::now();
         std::cout << "\tsorting and calculating offsets for store kernel\n";
@@ -1709,8 +1715,11 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         timeThrust += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
         checkCuda(cudaDeviceSynchronize());
+        before = std::chrono::high_resolution_clock::now();
         kernel_store2copy<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
         checkCuda(cudaDeviceSynchronize());
+        after = std::chrono::high_resolution_clock::now();
+        timeStore += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
         std::cout << "\thandle gep edges & ind calls";
         before = std::chrono::high_resolution_clock::now();
@@ -1726,10 +1735,10 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         reportMemory();
     }
 
-    printf("time update: %.3f ms\n", kernelParameters[(void *)&kernel_updatePts].elapsedTime);
-    printf("time kernel: %.3f ms\n", kernelParameters[(void *)&kernel].elapsedTime);
+    printf("time update: %.3f ms\n", timeUpdate.count());
+    printf("time kernel: %.3f ms\n", timeKernel.count());
     printf("time thrust: %.3f ms\n", timeThrust.count());
-    printf("time store : %.3f ms\n", kernelParameters[(void *)&kernel_store2copy].elapsedTime);
+    printf("time store : %.3f ms\n", timeStore.count());
     printf("time svf   : %.3f ms\n", timeSvf.count());
 
     // Free memory
