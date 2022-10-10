@@ -224,7 +224,7 @@ __device__ inline index_t incEdgeCouter(int type)
 {
     index_t newIndex;
     if (!threadIdx.x)
-        newIndex = atomicAdd(&__freeList__[type], 32);
+        newIndex = atomicAdd_system(&__freeList__[type], 32);
     newIndex = __shfl_sync(FULL_MASK, newIndex, 0);
     return newIndex;
 }
@@ -390,7 +390,7 @@ __device__ inline uint getAndIncrement(uint *counter, uint delta)
 {
     uint cnt;
     if (!threadIdx.x)
-        cnt = atomicAdd(counter, delta);
+        cnt = atomicAdd_system(counter, delta);
     cnt = __shfl_sync(FULL_MASK, cnt, 0);
     return cnt;
 }
@@ -408,7 +408,7 @@ __device__ inline uint getAndIncrement(uint *counter, uint delta)
 __device__ inline uint resetWorklistIndex()
 {
     __syncthreads();
-    if (!threadIdx.x && !threadIdx.y && atomicInc(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
+    if (!threadIdx.x && !threadIdx.y && atomicInc_system(&__counter__, gridDim.x - 1) == (gridDim.x - 1))
     {
         __worklistIndex0__ = 0;
         __counter__ = 0;
