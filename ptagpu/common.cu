@@ -1616,6 +1616,17 @@ __host__ void reportMemory()
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
     setlocale(LC_NUMERIC, "");
+
+    int N_GPU;
+    checkCuda(cudaGetDeviceCount(&N_GPU));
+    cudaStream_t streams[N_GPU];
+
+    for (int i = 0; i < N_GPU; i++)
+    {
+        checkCuda(cudaSetDevice(i));
+        checkCuda(cudaFree(0));
+        checkCuda(cudaStreamCreate(&streams[i]));
+    }
     // cudaDeviceProp prop; // CUDA device properties variable
     // checkCuda(cudaGetDeviceProperties(&prop, 0));
     // printf("total global memory available:\n\t\t%lu\n", prop.totalGlobalMem);
