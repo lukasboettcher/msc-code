@@ -1711,8 +1711,20 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         printf("\trunning main kernel\n");
         checkCuda(cudaDeviceSynchronize());
         before = std::chrono::high_resolution_clock::now();
-        kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
-        checkCuda(cudaDeviceSynchronize());
+
+        for (int i = 0; i < N_GPU; i++)
+        {
+            cudaSetDevice(i);
+            kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y, streams[i]>>>();
+        }
+        for (int i = 0; i < N_GPU; i++)
+        {
+            cudaSetDevice(i);
+            cudaStreamSynchronize(streams[i]);
+        }
+
+        // kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
+        // checkCuda(cudaDeviceSynchronize());
         after = std::chrono::high_resolution_clock::now();
         timeKernel += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
