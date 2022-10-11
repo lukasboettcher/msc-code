@@ -17,6 +17,7 @@ target_compile_options(ptagpu PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:
     --use_fast_math
     # -Xptxas -O4
     -O2
+    -arch=native
     >)
 
 file(GLOB filesc "${CMAKE_SOURCE_DIR}/Test-Suite/test_cases_bc/basic_c_tests/*.bc")
