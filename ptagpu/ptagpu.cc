@@ -156,6 +156,8 @@ public:
 
     void handleGeps()
     {
+        // set thread count to 16, depending on the system this might be improved
+#pragma omp parallel for num_threads(16)
         for (size_t i = 0; i < consCG->getTotalNodeNum(); i++)
         {
             // SVF::ConstraintNode *node = iter.second;
@@ -187,6 +189,7 @@ public:
                             if (!pag->getBaseObj(o)->isFieldInsensitive())
                             {
                                 MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
+#pragma omp critical
                                 mem->setFieldInsensitive();
                                 // consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
                             }
@@ -221,8 +224,9 @@ public:
                                 tmpDstPts.push_back(o);
                                 continue;
                             }
-
-                            NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+                            NodeID fieldSrcPtdNode;
+#pragma omp critical
+                            fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
                             tmpDstPts.push_back(fieldSrcPtdNode);
                         }
                     }
@@ -232,7 +236,7 @@ public:
                     }
 
                     NodeID dstId = edge->getDstID();
-
+#pragma omp critical
                     for (auto ptd : tmpDstPts)
                     {
                         addPts(dstId, ptd);
