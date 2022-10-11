@@ -1722,6 +1722,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
             cudaSetDevice(i);
             cudaStreamSynchronize(streams[i]);
         }
+        cudaSetDevice(0);
 
         // kernel<<<numBlocks, threadsPerBlock, 256 * sizeof(uint) * threadsPerBlock.y>>>();
         // checkCuda(cudaDeviceSynchronize());
