@@ -188,7 +188,7 @@ public:
                             {
                                 MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
                                 mem->setFieldInsensitive();
-                                consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
+                                // consCG->addNodeToBeCollapsed(consCG->getBaseObjVar(o));
                             }
 
                             // Add the field-insensitive node into pts.
