@@ -1345,7 +1345,7 @@ __global__ void kernel_count_pts(uint rel)
 
             uint value = threadIdx.x < BASE ? __popc(bits) : 0;
 
-#if __CUDA_ARCH__ >= 800
+#if __CUDA_ARCH__ >= 800 && 0
             __reduce_add_sync(FULL_MASK, value);
 #else
             for (int i = 16; i >= 1; i /= 2)
