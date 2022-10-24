@@ -72,7 +72,6 @@ int main(int argc, char **argv)
     AndersenWaveDiff::releaseAndersenWaveDiff();
     SVFIR::releaseSVFIR();
 
-    LLVMModuleSet::getLLVMModuleSet()->dumpModulesToFile(".svf.bc");
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
 
     llvm::llvm_shutdown();
