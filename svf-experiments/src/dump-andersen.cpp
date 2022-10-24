@@ -64,6 +64,24 @@ int main(int argc, char **argv)
         for (auto outedge : node.second->getOutEdges())
             calldump << outedge->getSrcID() << "\t" << outedge->getDstID() << "\t" << outedge->getEdgeKind() << "\n";
 
+    OrderedNodeSet pagNodes;
+    for (SVFIR::iterator it = pag->begin(), eit = pag->end(); it != eit; it++)
+    {
+        pagNodes.insert(it->first);
+    }
+
+    for (NodeID n : pagNodes)
+    {
+        const SVF::PointsTo &pts = ander->getPts(n);
+        if (true)
+        {
+            printf("\n %u -> [", n);
+            for (PointsTo::iterator it = pts.begin(); it != pts.end(); ++it)
+                printf("%u ", *it);
+            printf("]");
+        }
+    }
+
     pagdump.close();
     icfgdump.close();
     constrdump.close();
