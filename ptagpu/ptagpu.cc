@@ -51,13 +51,17 @@ public:
             fprintf(stderr, "%u %lu %lu %lu %lu\n", consCG->getTotalNodeNum(), consCG->getAddrCGEdges().size(), consCG->getDirectCGEdges().size(), consCG->getLoadCGEdges().size(), consCG->getStoreCGEdges().size());
         }
 
+        SVF::NodeID src, dst;
+
         ConstraintEdge::ConstraintEdgeSetTy &addrs = consCG->getAddrCGEdges();
         for (ConstraintEdge *edge : addrs)
         {
+            src = edge->getSrcID();
+            dst = edge->getDstID();
             if (printEdges)
-                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t addr\n";
-            addrEdges.first.push_back(edge->getSrcID());
-            addrEdges.second.push_back(edge->getDstID());
+                std::cerr << "src: " << src << " dst: " << dst << "\t addr\n";
+            addrEdges.first.push_back(src);
+            addrEdges.second.push_back(dst);
         }
 
         ConstraintEdge::ConstraintEdgeSetTy &directs = consCG->getDirectCGEdges();
@@ -65,29 +69,35 @@ public:
         {
             if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(edge))
             {
+                src = copy->getSrcID();
+                dst = copy->getDstID();
                 if (printEdges)
-                    std::cerr << "src: " << copy->getSrcID() << " dst: " << copy->getDstID() << "\t copy\n";
-                directEdges.first.push_back(copy->getSrcID());
-                directEdges.second.push_back(copy->getDstID());
+                    std::cerr << "src: " << src << " dst: " << dst << "\t copy\n";
+                directEdges.first.push_back(src);
+                directEdges.second.push_back(dst);
             }
         }
 
         ConstraintEdge::ConstraintEdgeSetTy &loads = consCG->getLoadCGEdges();
         for (ConstraintEdge *edge : loads)
         {
+            src = edge->getSrcID();
+            dst = edge->getDstID();
             if (printEdges)
-                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t load\n";
-            loadEdges.first.push_back(edge->getSrcID());
-            loadEdges.second.push_back(edge->getDstID());
+                std::cerr << "src: " << src << " dst: " << dst << "\t load\n";
+            loadEdges.first.push_back(src);
+            loadEdges.second.push_back(dst);
         }
 
         ConstraintEdge::ConstraintEdgeSetTy &stores = consCG->getStoreCGEdges();
         for (ConstraintEdge *edge : stores)
         {
+            src = edge->getSrcID();
+            dst = edge->getDstID();
             if (printEdges)
-                std::cerr << "src: " << edge->getSrcID() << " dst: " << edge->getDstID() << "\t store\n";
-            storeEdges.first.push_back(edge->getSrcID());
-            storeEdges.second.push_back(edge->getDstID());
+                std::cerr << "src: " << src << " dst: " << dst << "\t store\n";
+            storeEdges.first.push_back(src);
+            storeEdges.second.push_back(dst);
         }
     }
 
