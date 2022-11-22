@@ -178,19 +178,19 @@ __host__ __device__ index_t getIndex(uint src, uint rel)
     switch (rel)
     {
     case PTS:
-        return OFFSET_PTS + (32 * src);
+        return OFFSET_PTS + (ELEMENT_WIDTH * src);
     case PTS_CURR:
-        return OFFSET_PTS_CURR + (32 * src);
+        return OFFSET_PTS_CURR + (ELEMENT_WIDTH * src);
     case PTS_NEXT:
-        return OFFSET_PTS_NEXT + (32 * src);
+        return OFFSET_PTS_NEXT + (ELEMENT_WIDTH * src);
     case COPY:
-        return OFFSET_COPY + (32 * src);
+        return OFFSET_COPY + (ELEMENT_WIDTH * src);
     case LOAD:
-        return OFFSET_LOAD + (32 * src);
+        return OFFSET_LOAD + (ELEMENT_WIDTH * src);
     case STORE:
-        return OFFSET_STORE + (32 * src);
+        return OFFSET_STORE + (ELEMENT_WIDTH * src);
     }
-    return src * 32;
+    return src * ELEMENT_WIDTH;
 }
 
 /**
