@@ -21,6 +21,7 @@ public:
     bool printEdges = false;
     bool deepGepResolution = false;
     edgeSet addrEdges, directEdges, storeEdges, loadEdges;
+    uint edgeCounter;
 
     std::chrono::high_resolution_clock::time_point before, after;
     std::chrono::duration<double, std::milli> gepTime, indTime;
@@ -29,6 +30,7 @@ public:
     {
         gepTime = std::chrono::nanoseconds(0);
         indTime = std::chrono::nanoseconds(0);
+        edgeCounter = 0;
     }
     SVF::AliasResult alias(NodeID node1, NodeID node2)
     {
@@ -56,6 +58,7 @@ public:
         ConstraintEdge::ConstraintEdgeSetTy &addrs = consCG->getAddrCGEdges();
         for (ConstraintEdge *edge : addrs)
         {
+            edgeCounter++;
             src = edge->getSrcID();
             dst = edge->getDstID();
             if (printEdges)
@@ -67,6 +70,7 @@ public:
         ConstraintEdge::ConstraintEdgeSetTy &directs = consCG->getDirectCGEdges();
         for (ConstraintEdge *edge : directs)
         {
+            edgeCounter++;
             if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(edge))
             {
                 src = copy->getSrcID();
@@ -81,6 +85,7 @@ public:
         ConstraintEdge::ConstraintEdgeSetTy &loads = consCG->getLoadCGEdges();
         for (ConstraintEdge *edge : loads)
         {
+            edgeCounter++;
             src = edge->getSrcID();
             dst = edge->getDstID();
             if (printEdges)
@@ -92,6 +97,7 @@ public:
         ConstraintEdge::ConstraintEdgeSetTy &stores = consCG->getStoreCGEdges();
         for (ConstraintEdge *edge : stores)
         {
+            edgeCounter++;
             src = edge->getSrcID();
             dst = edge->getDstID();
             if (printEdges)
@@ -136,7 +142,7 @@ public:
 
     virtual inline void solveWorklist()
     {
-        std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << consCG->getTotalEdgeNum() << " Edges!\n";
+        std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << edgeCounter << " Edges!\n";
         pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, [&](uint *memory, edgeSet *pts, edgeSet *copy) -> uint
                   { return handleCallgraphCallback(memory, pts, copy); });
         std::cout << "SVF gep time: " << gepTime.count() << "ms" << std::endl;
