@@ -116,6 +116,72 @@ wireshark.bc(UI) ptagpu 0m2.755s ander 0m2.374s
 
 perl.bc ptagpu 0m36.619s 0m56.539s
 
+-------------
+local results
+
+vim
+time update: 4513.788 ms
+time kernel: 112369.299 ms
+time thrust: 178.973 ms
+time store : 20118.042 ms
+time svf   : 34238.890 ms
+SVF gep time: 8147.53ms
+SVF ind time: 4829.88ms
+
+real    3m4.680s
+user    3m50.043s
+sys     0m36.286s
+
+SVF
+real    7m25.984s
+user    7m20.615s
+sys     0m5.258s
+
+-------------
+ignis results
+
+postgres
+time update: 57920.007 ms
+time kernel: 192074.713 ms
+time thrust: 309.619 ms
+time store : 31159.732 ms
+time svf   : 90968.464 ms
+SVF gep time: 34480.4ms
+SVF ind time: 50979.2ms
+
+real    6m51.915s
+user    8m58.071s
+sys     1m53.304s
+
+SVF:
+real    11m37.881s
+user    11m20.623s
+sys     0m16.997s
+
+
+python
+time update: 11808.938 ms
+time kernel: 40383.684 ms
+time thrust: 267.243 ms
+time store : 9413.855 ms
+time svf   : 74339.161 ms
+SVF gep time: 13415.9ms
+SVF ind time: 75951.4ms
+
+real    2m37.556s
+user    3m27.655s
+sys     1m39.901s
+
+SVF:
+real    6m22.921s
+user    6m15.135s
+sys     0m7.606s
+
+
+linux SVF
+real    399m20.094s
+user    387m29.903s
+sys     11m39.542s
 ## notes on flamegraph generation
 
 ```bash
