@@ -1589,7 +1589,7 @@ __host__ void printMemory(index_t start, index_t end, uint rel)
     {
         printf("OOM, %lu of %lu\n", usedBytes, totalBytes);
     }
-    
+
     assert(usedBytes < totalBytes);
     printf("%12s Elements:(uints)%16llu\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
 }
