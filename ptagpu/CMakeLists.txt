@@ -39,3 +39,6 @@ foreach(filename ${filescpp})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
 endforeach()
+
+add_executable(ptagpu_stats stats.cc)
+target_link_libraries(ptagpu_stats Svf ${llvm_libs})
