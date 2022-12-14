@@ -1620,6 +1620,10 @@ __host__ void reportMemory()
  */
 __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdges, edgeSet *loadEdges, edgeSet *storeEdges, std::function<uint(uint *, edgeSet *pts, edgeSet *copy)> callgraphCallback)
 {
+    std::chrono::high_resolution_clock::time_point before, after;
+    std::chrono::duration<double, std::milli> cudaInitTime(0), timeThrust(0), timeSvf(0), timeUpdate(0), timeKernel(0), timeStore(0);
+    before = std::chrono::high_resolution_clock::now();
+
     setlocale(LC_NUMERIC, "");
 
     int N_GPU;
@@ -1684,8 +1688,8 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     size_t iter = 0;
 
-    std::chrono::high_resolution_clock::time_point before, after;
-    std::chrono::duration<double, std::milli> timeThrust(0), timeSvf(0), timeUpdate(0), timeKernel(0), timeStore(0);
+    after = std::chrono::high_resolution_clock::now();
+    cudaInitTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
 
     while (1)
     {
@@ -1764,6 +1768,7 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         reportMemory();
     }
 
+    printf("time cuda init: %.3f ms\n", cudaInitTime.count());
     printf("time update: %.3f ms\n", timeUpdate.count());
     printf("time kernel: %.3f ms\n", timeKernel.count());
     printf("time thrust: %.3f ms\n", timeThrust.count());
