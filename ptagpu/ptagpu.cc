@@ -24,10 +24,11 @@ public:
     uint edgeCounter;
 
     std::chrono::high_resolution_clock::time_point before, after;
-    std::chrono::duration<double, std::milli> gepTime, indTime;
+    std::chrono::duration<double, std::milli> svfInitTime, gepTime, indTime;
 
     AndersenCustom(SVFIR *_pag, PTATY type = Andersen_WPA, bool alias_check = true) : Andersen(_pag, type, alias_check)
     {
+        svfInitTime = std::chrono::nanoseconds(0);
         gepTime = std::chrono::nanoseconds(0);
         indTime = std::chrono::nanoseconds(0);
         edgeCounter = 0;
@@ -127,9 +128,12 @@ public:
 
     void analyze()
     {
+        before = std::chrono::high_resolution_clock::now();
         initialize();
         initWorklist();
         initEdgeSets();
+        after = std::chrono::high_resolution_clock::now();
+        svfInitTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
         do
         {
             reanalyze = false;
@@ -145,8 +149,9 @@ public:
         std::cout << "starting ptagpu w/ " << consCG->getTotalNodeNum() << " nodes and " << edgeCounter << " Edges!\n";
         pts = run(consCG->getTotalNodeNum(), &addrEdges, &directEdges, &loadEdges, &storeEdges, [&](uint *memory, edgeSet *pts, edgeSet *copy) -> uint
                   { return handleCallgraphCallback(memory, pts, copy); });
-        std::cout << "SVF gep time: " << gepTime.count() << "ms" << std::endl;
-        std::cout << "SVF ind time: " << indTime.count() << "ms" << std::endl;
+        std::cout << "\tSVF gep time: " << gepTime.count() << "ms" << std::endl;
+        std::cout << "\tSVF ind time: " << indTime.count() << "ms" << std::endl;
+        std::cout << "time svf init: " << svfInitTime.count() << "ms" << std::endl;
     }
 
     uint handleCallgraphCallback(uint *memory, edgeSet *ptsSet, edgeSet *copySet)
