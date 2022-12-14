@@ -349,6 +349,10 @@ static llvm::cl::opt<std::string> InputFilename(cl::Positional, llvm::cl::desc("
 
 int main(int argc, char **argv)
 {
+    std::chrono::high_resolution_clock::time_point start, end, afterAnder, beforeAnder;
+    std::chrono::duration<double, std::milli> totalTime, anderTime;
+    start = std::chrono::high_resolution_clock::now();
+
     int arg_num = 0;
     char **arg_value = new char *[argc];
     std::vector<std::string> moduleNameVec;
@@ -365,12 +369,22 @@ int main(int argc, char **argv)
 
     AndersenCustom *ander = new AndersenCustom(pag);
 
+    beforeAnder = std::chrono::high_resolution_clock::now();
     ander->analyze();
+    afterAnder = std::chrono::high_resolution_clock::now();
 
     SVFIR::releaseSVFIR();
 
     SVF::LLVMModuleSet::releaseLLVMModuleSet();
 
     llvm::llvm_shutdown();
+    end = std::chrono::high_resolution_clock::now();
+
+    anderTime = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(afterAnder - beforeAnder);
+    totalTime = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end - start);
+
+    std::cout << "anderTime (w/o llvm pag setup): " << anderTime.count() << "ms" << std::endl;
+    std::cout << "total: " << totalTime.count() << "ms" << std::endl;
+
     return 0;
 }
