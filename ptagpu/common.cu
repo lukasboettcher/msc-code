@@ -1768,18 +1768,23 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
         reportMemory();
     }
 
-    printf("time cuda init: %.3f ms\n", cudaInitTime.count());
-    printf("time update: %.3f ms\n", timeUpdate.count());
-    printf("time kernel: %.3f ms\n", timeKernel.count());
-    printf("time thrust: %.3f ms\n", timeThrust.count());
-    printf("time store : %.3f ms\n", timeStore.count());
-    printf("time svf   : %.3f ms\n", timeSvf.count());
+    before = std::chrono::high_resolution_clock::now();
 
     // Free memory
     checkCuda(cudaFree(__key__));
     checkCuda(cudaFree(__val__));
     checkCuda(cudaFree(__offsets__));
     checkCuda(cudaFree(__storeConstraints__));
+
+    after = std::chrono::high_resolution_clock::now();
+    cudaInitTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
+
+    printf("time cuda init + uninit: %.3f ms\n", cudaInitTime.count());
+    printf("time update: %.3f ms\n", timeUpdate.count());
+    printf("time kernel: %.3f ms\n", timeKernel.count());
+    printf("time thrust: %.3f ms\n", timeThrust.count());
+    printf("time store : %.3f ms\n", timeStore.count());
+    printf("time svf   : %.3f ms\n", timeSvf.count());
 
     return memory;
 }
