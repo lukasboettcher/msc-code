@@ -163,6 +163,7 @@ public:
 
         before = std::chrono::high_resolution_clock::now();
         handleGeps();
+        // threadedHandleGeps();
         after = std::chrono::high_resolution_clock::now();
         gepTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
         printf("  geps done  ");
@@ -282,7 +283,7 @@ public:
     void handleGeps()
     {
         // set thread count to 16, depending on the system this might be improved
-#pragma omp parallel for num_threads(16)
+        // #pragma omp parallel for num_threads(16)
         for (size_t i = 0; i < consCG->getTotalNodeNum(); i++)
         {
             // SVF::ConstraintNode *node = iter.second;
