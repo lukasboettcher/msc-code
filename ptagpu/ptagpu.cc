@@ -5,6 +5,7 @@
 #include "SVF-FE/SVFIRBuilder.h"
 #include "Util/Options.h"
 #include "shared.h"
+#include <future>
 
 using namespace llvm;
 using namespace std;
@@ -173,6 +174,109 @@ public:
         printf("  indcall done  ");
 
         return consCG->getTotalNodeNum();
+    }
+
+    void threadedHandleGeps()
+    {
+        mutex field_mutex;
+        unsigned int worksize = consCG->getTotalNodeNum();
+        unsigned int n_threads = std::thread::hardware_concurrency();
+        vector<future<vector<pair<uint, uint>>>> pool;
+
+        for (size_t i = 0; i < n_threads; i++)
+        {
+            size_t idxStart = worksize * i / n_threads;
+            size_t idxEnd = worksize * (i + 1) / n_threads;
+
+            auto handleGepFuture = [&, idxStart, idxEnd]
+            { return handleGepRange(idxStart, idxEnd, field_mutex); };
+            pool.push_back(async(handleGepFuture));
+        }
+
+        for_each(pool.begin(), pool.end(), [&](auto &newPtsChunk)
+                 { newPtsChunk.wait(); });
+        for_each(pool.begin(), pool.end(), [&](auto &newPtsChunk)
+                 {for (auto &p : newPtsChunk.get()) addPts(p.first, p.second); });
+    }
+
+    vector<pair<uint, uint>> handleGepRange(size_t start, size_t end, mutex &field_mutex)
+    {
+        vector<pair<uint, uint>> results;
+        for (size_t i = start; i < end; i++)
+        {
+            SVF::ConstraintNode *node = consCG->getGNode(i);
+            for (ConstraintEdge *uedge : node->getGepOutEdges())
+            {
+                if (GepCGEdge *edge = SVFUtil::dyn_cast<GepCGEdge>(uedge))
+                {
+                    NodeVector tmpSrcPts;
+                    collectFromBitvector(edge->getSrcID(), pts, tmpSrcPts, PTS_CURR);
+                    NodeVector tmpDstPts;
+                    if (SVFUtil::isa<VariantGepCGEdge>(edge))
+                    {
+                        for (NodeID o : tmpSrcPts)
+                        {
+                            if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                                continue;
+
+                            if (consCG->isBlkObjOrConstantObj(o))
+                            {
+                                tmpDstPts.push_back(o);
+                                continue;
+                            }
+                            if (!pag->getBaseObj(o)->isFieldInsensitive())
+                            {
+                                MemObj *mem = const_cast<MemObj *>(pag->getBaseObj(o));
+                                std::lock_guard<std::mutex> lock(field_mutex);
+                                mem->setFieldInsensitive();
+                            }
+
+                            // Add the field-insensitive node into pts.
+                            NodeID baseId = consCG->getFIObjVar(o);
+                            if (deepGepResolution)
+                            {
+                                NodeBS &allFields = consCG->getAllFieldsObjVars(baseId);
+                                for (NodeBS::iterator fieldIt = allFields.begin(), fieldEit = allFields.end(); fieldIt != fieldEit; fieldIt++)
+                                {
+                                    NodeID fieldId = *fieldIt;
+                                    if (fieldId != baseId)
+                                        tmpDstPts.push_back(fieldId);
+                                }
+                            }
+                            tmpDstPts.push_back(baseId);
+                        }
+                    }
+                    else if (const NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(edge))
+                    {
+                        for (NodeID o : tmpSrcPts)
+                        {
+                            if (!SVF::SVFUtil::isa<SVF::ObjVar>(pag->getGNode(o)))
+                                continue;
+
+                            if (consCG->isBlkObjOrConstantObj(o) || pag->getBaseObj(o)->isFieldInsensitive())
+                            {
+                                tmpDstPts.push_back(o);
+                                continue;
+                            }
+                            NodeID fieldSrcPtdNode;
+                            {
+                                std::lock_guard<std::mutex> lock(field_mutex);
+                                fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
+                            }
+
+                            tmpDstPts.push_back(fieldSrcPtdNode);
+                        }
+                    }
+
+                    NodeID dstId = edge->getDstID();
+                    for (auto ptd : tmpDstPts)
+                    {
+                        results.push_back(make_pair(dstId, ptd));
+                    }
+                }
+            }
+        }
+        return results;
     }
 
     void handleGeps()
