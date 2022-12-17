@@ -42,3 +42,5 @@ endforeach()
 
 add_executable(ptagpu_stats stats.cc)
 target_link_libraries(ptagpu_stats Svf ${llvm_libs})
+add_executable(ptagpu_time time-measure.cc)
+target_link_libraries(ptagpu_time Svf ${llvm_libs})
