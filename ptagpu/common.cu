@@ -8,6 +8,14 @@
  */
 char const *relNames[6] = {"PTS", "PTS Current", "PTS Next", "Inv COPY", "Inv LOAD", "Inv Store"};
 
+/**
+ *
+ * this variable holds the max used memory for each of the relations
+ * this allows us to print the maximum memory consumption at completion
+ *
+ */
+size_t relMemUsed[6] = {0, 0, 0, 0, 0, 0};
+
 struct KernelInfo
 {
     bool initialized = false;
@@ -1464,6 +1472,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
     {
         __key__[__storeMapHead__] = UINT_MAX;
         __val__[__storeMapHead__] = UINT_MAX;
+        assert(__storeMapHead__ < KV_SIZE);
         __numKeys__ = __storeMapHead__ + 1;
         __storeMapHead__ = 0;
         __worklistIndex1__ = 0;
@@ -1592,6 +1601,9 @@ __host__ void printMemory(index_t start, index_t end, uint rel)
 
     assert(usedBytes < totalBytes);
     printf("%12s Elements:(uints)%16llu\t[%10.3f MiB / %5lu MiB]\n", relNames[rel], usedUints, (usedBytes / (1024.0 * 1024.0)), totalBytes >> 20);
+
+    // update max used memory counter
+    relMemUsed[rel] = relMemUsed[rel] < usedBytes ? usedBytes : relMemUsed[rel];
 }
 
 /**
@@ -1778,6 +1790,15 @@ __host__ uint *run(unsigned int numNodes, edgeSet *addrEdges, edgeSet *directEdg
 
     after = std::chrono::high_resolution_clock::now();
     cudaInitTime += std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(after - before);
+
+    printf("\n\n");
+    size_t usedMemTotal = 0;
+    for (size_t i = 0; i < N_TYPES; i++)
+    {
+        usedMemTotal += relMemUsed[i];
+        printf("%12s\t%lu\tKiB\n", relNames[i], relMemUsed[i]/(1024));
+    }
+    printf("\tTOTAL: \t%lu\tKiB\n\n", usedMemTotal/1024);
 
     printf("time cuda init + uninit: %.3f ms\n", cudaInitTime.count());
     printf("time update: %.3f ms\n", timeUpdate.count());
