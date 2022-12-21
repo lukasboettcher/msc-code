@@ -41,11 +41,12 @@ int main(int argc, char **argv)
     SVFIR *pag = builder.build(svfModule);
     ConstraintGraph *consCG = new ConstraintGraph(pag);
 
-    uint edgeCounter{0};
+    uint edgeCounter{0}, addrCount{0}, copyCount{0}, storeCount{0}, loadCount{0}, normalGepCount{0}, variantGepCount{0};
     ConstraintEdge::ConstraintEdgeSetTy &addrs = consCG->getAddrCGEdges();
     for (ConstraintEdge *edge : addrs)
     {
         edgeCounter++;
+        addrCount++;
     }
 
     ConstraintEdge::ConstraintEdgeSetTy &directs = consCG->getDirectCGEdges();
@@ -54,14 +55,17 @@ int main(int argc, char **argv)
         edgeCounter++;
         if (CopyCGEdge *copy = SVFUtil::dyn_cast<CopyCGEdge>(edge))
         {
+            copyCount++;
         }
         else if (GepCGEdge *gep = SVFUtil::dyn_cast<GepCGEdge>(edge))
         {
             if (NormalGepCGEdge *normalGepEdge = SVFUtil::dyn_cast<NormalGepCGEdge>(gep))
             {
+                normalGepCount++;
             }
             else if (VariantGepCGEdge *variantGepEdge = SVFUtil::dyn_cast<VariantGepCGEdge>(gep))
             {
+                variantGepCount++;
             }
         }
     }
@@ -70,12 +74,14 @@ int main(int argc, char **argv)
     for (ConstraintEdge *edge : loads)
     {
         edgeCounter++;
+        loadCount++;
     }
 
     ConstraintEdge::ConstraintEdgeSetTy &stores = consCG->getStoreCGEdges();
     for (ConstraintEdge *edge : stores)
     {
         edgeCounter++;
+        storeCount++;
     }
 
     size_t degreeSum{0};
@@ -89,7 +95,8 @@ int main(int argc, char **argv)
     double avgOutDegree = (double)degreeSum / (double)consCG->getTotalNodeNum();
     double density = (double)edgeCounter / (double)(consCG->getTotalNodeNum() * (consCG->getTotalNodeNum() - 1));
 
-    printf("%s\t\t%u K\t%u K\t%lu KiB\t%.3e\t%.3f\n", moduleNameVec[0].c_str(), consCG->getTotalNodeNum()/1000, edgeCounter/1000, fs::file_size(moduleNameVec[0]) / 1024, density, avgOutDegree);
+    printf("%s\t\t%u K\t%u K\t%lu KiB\t%.3e\t%.3f\n", moduleNameVec[0].c_str(), consCG->getTotalNodeNum() / 1000, edgeCounter / 1000, fs::file_size(moduleNameVec[0]) / 1024, density, avgOutDegree);
+    printf("addr: %u, copy: %u, load: %u, store: %u, normalGep: %u, variantGep: %u\n", addrCount, copyCount, loadCount, storeCount, normalGepCount, variantGepCount);
 
     delete consCG;
     SVFIR::releaseSVFIR();
